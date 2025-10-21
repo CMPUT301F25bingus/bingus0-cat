@@ -11,5 +11,5 @@ It supports three main user roles: **Entrant**, **Organizer**, and **Admin**, ea
 | Maansi Sati | **maansi1** |
 | Raahim Khan | **raahim2** |
 | Zachary Oldford | **toldford**  |
-|             |             |
-|             |             |
+| Basma Ebeid | **bebeid**      |
+| Sara Bader  | **sbader**   |
