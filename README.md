@@ -10,6 +10,6 @@ It supports three main user roles: **Entrant**, **Organizer**, and **Admin**, ea
 | Ipsa Manhas | **imanhas** |
 | Maansi Sati | **maansi1** |
 | Raahim Khan | **raahim2** |
-|             |             |
+| Zachary Oldford | **toldford**  |
 |             |             |
 |             |             |
