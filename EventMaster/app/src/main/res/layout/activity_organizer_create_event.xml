@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ui.organizer.OrganizerCreateEventActivity">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Title -->
+        <EditText
+            android:id="@+id/editTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Event title"
+            android:inputType="textCapWords"
+            android:maxLines="1" />
+
+        <!-- Description -->
+        <EditText
+            android:id="@+id/editDescription"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Description"
+            android:inputType="textMultiLine"
+            android:minLines="3"
+            android:gravity="top|start"
+            android:layout_marginTop="12dp" />
+
+        <!-- Location -->
+        <EditText
+            android:id="@+id/editLocation"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Location"
+            android:inputType="textCapWords"
+            android:maxLines="1"
+            android:layout_marginTop="12dp" />
+
+        <!-- Registration Open -->
+        <EditText
+            android:id="@+id/editRegOpen"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Reg Open (YYYY-MM-DD HH:MM)"
+            android:inputType="datetime"
+            android:maxLines="1"
+            android:layout_marginTop="16dp" />
+
+        <!-- Registration Close -->
+        <EditText
+            android:id="@+id/editRegClose"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Reg Close (YYYY-MM-DD HH:MM)"
+            android:inputType="datetime"
+            android:maxLines="1"
+            android:layout_marginTop="8dp" />
+
+        <!-- Publish -->
+        <Button
+            android:id="@+id/btnPublish"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Publish"
+            android:layout_marginTop="20dp" />
+
+        <!-- (Optional) Helper text -->
+        <TextView
+            android:id="@+id/tvHint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Tip: we’ll add date/time pickers next."
+            android:textSize="12sp"
+            android:textColor="#666666"
+            android:layout_marginTop="8dp" />
+
+    </LinearLayout>
+</ScrollView>
