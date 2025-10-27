@@ -1,0 +1,48 @@
+# --- OS cruft ---
+.DS_Store
+Thumbs.db
+
+# --- IDE (JetBrains/VS Code) ---
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+
+# --- Gradle ---
+.gradle/
+build/
+*/build/
+# Keep the wrapper JAR so others can build
+!gradle/wrapper/gradle-wrapper.jar
+# Wrapper logs
+gradle/wrapper/gradle-wrapper.properties~
+.gradle/gradle.*
+
+# --- Android/NDK & generated outputs ---
+local.properties
+.cxx/
+.externalNativeBuild/
+captures/
+outputs/
+*/release/
+*/debug/
+*.apk
+*.ap_
+*.aab
+
+# --- Signing/keys (never commit these) ---
+*.jks
+*.keystore
+keystore.properties
+
+# --- Logs & misc ---
+*.log
+firebase-debug.log
+
+# --- Kotlin/Java compiler caches ---
+.kotlinc/
+out/
+
+# --- Optional: ignore Google services (uncomment if your team doesn't commit it) ---
+# app/google-services.json
