@@ -85,6 +85,24 @@
             android:minHeight="48dp"
             android:layout_marginTop="20dp"/>
 
+        <!-- Poster select + preview -->
+        <Button
+            android:id="@+id/btnPickPoster"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Select Poster"
+            android:minHeight="48dp"
+            android:layout_marginTop="16dp"/>
+
+        <ImageView
+            android:id="@+id/imgPosterPreview"
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:scaleType="centerCrop"
+            android:contentDescription="Poster preview"
+            android:layout_marginTop="8dp"
+            android:background="#11111111"/>
+
     </LinearLayout>
 </ScrollView>
 

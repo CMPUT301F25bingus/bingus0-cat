@@ -17,11 +17,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.eventmaster.R;
 import com.example.eventmaster.data.api.EventRepository;
-import com.example.eventmaster.data.api.PosterRepository;
-import com.example.eventmaster.data.api.QRManager;
 import com.example.eventmaster.data.firestore.EventRepositoryFs;
-import com.example.eventmaster.data.firestore.PosterRepositoryFs;
-import com.example.eventmaster.data.firestore.QRManagerFs;
 import com.example.eventmaster.model.Event;
 import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.Timestamp;
@@ -41,15 +37,13 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
 
     // Repos
     private EventRepository events;
-    private QRManager qr;
-    private PosterRepository posters;
 
     // Date/time state
     private Timestamp openTs = null;
     private Timestamp closeTs = null;
     private final SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
 
-    // Poster selection
+    // Poster selection (local preview only for now)
     private Uri selectedPosterUri = null;
     private ActivityResultLauncher<String> pickPosterLauncher; // GetContent => input is MIME type
 
@@ -68,16 +62,14 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
         btnPickPoster = findViewById(R.id.btnPickPoster);
         posterPreview = findViewById(R.id.imgPosterPreview);
 
-        // Repos
+        // Repo
         events  = new EventRepositoryFs();
-        qr      = new QRManagerFs();
-        posters = new PosterRepositoryFs();
 
         // Date/time pickers
         tvOpen.setOnClickListener(v -> pickDateTime(true));
         tvClose.setOnClickListener(v -> pickDateTime(false));
 
-        // Image picker: SAF "GetContent" (simple, stable)
+        // Image picker: SAF "GetContent" (simple, stable). Local preview only (no upload yet).
         pickPosterLauncher = registerForActivityResult(
                 new ActivityResultContracts.GetContent(),
                 uri -> {
@@ -131,8 +123,16 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
         ).show();
     }
 
+    /** DEV MODE (no Storage/Auth): create → update placeholders → publish */
     private void handlePublish() {
+        if (com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser() == null) {
+            toast("Not signed in yet. Try again in a second.");
+            publishBtn.setEnabled(true);
+            android.util.Log.w("CreateFlow", "Blocked: no currentUser");
+            return;
+        }
         publishBtn.setEnabled(false);
+        android.util.Log.d("CreateFlow", "Publish clicked (dev no-uploads)");
 
         String title = safeText(titleEt);
         String desc  = safeText(descEt);
@@ -143,50 +143,53 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
         if (error != null) {
             toast(error);
             publishBtn.setEnabled(true);
+            android.util.Log.w("CreateFlow", "Validation failed: " + error);
             return;
         }
 
-        // 1) Create -> 2) (optional) poster upload -> 3) QR upload -> 4) update -> 5) publish
+        android.util.Log.d("CreateFlow", "Creating event…");
         events.create(e)
                 .continueWithTask(t -> {
                     if (!t.isSuccessful()) return Tasks.forException(t.getException());
                     String eventId = t.getResult();
+                    android.util.Log.d("CreateFlow", "Created eventId=" + eventId);
 
-                    var posterTask = (selectedPosterUri != null)
-                            ? posters.upload(eventId, selectedPosterUri)
-                            : Tasks.forResult(null);
+                    // No uploads. Save placeholders so downstream UI doesn't break.
+                    HashMap<String, Object> fields = new HashMap<>();
+                    if (selectedPosterUri != null) {
+                        fields.put("posterUrl", "poster-skipped-dev"); // placeholder
+                    }
+                    fields.put("qrUrl", "qr-skipped-dev"); // placeholder
 
-                    return posterTask
-                            .continueWithTask(tp -> {
-                                String posterUrl = (tp != null && tp.isSuccessful()) ? (String) tp.getResult() : null;
-
-                                String payload = "event://" + eventId; // or your deep link
-                                return qr.generateAndUpload(eventId, payload)
-                                        .continueWithTask(tqr -> {
-                                            if (!tqr.isSuccessful()) return Tasks.forException(tqr.getException());
-                                            String qrUrl = tqr.getResult();
-
-                                            HashMap<String, Object> fields = new HashMap<>();
-                                            if (posterUrl != null) fields.put("posterUrl", posterUrl);
-                                            fields.put("qrUrl", qrUrl);
-
-                                            return events.update(eventId, fields)
-                                                    .continueWithTask(tu -> {
-                                                        if (!tu.isSuccessful()) return Tasks.forException(tu.getException());
-                                                        return events.publish(eventId);
-                                                    })
-                                                    .continueWith(tDone -> eventId);
-                                        });
-                            });
+                    android.util.Log.d("CreateFlow", "Updating event with placeholder URLs…");
+                    return events.update(eventId, fields)
+                            .continueWithTask(tu -> {
+                                if (!tu.isSuccessful()) return Tasks.forException(tu.getException());
+                                android.util.Log.d("CreateFlow", "Publishing event…");
+                                return events.publish(eventId);
+                            })
+                            .continueWith(tDone -> eventId);
                 })
                 .addOnSuccessListener(eventId -> {
-                    toast("Event published!");
+                    android.util.Log.d("CreateFlow", "Done. Event published: " + eventId);
+                    toast("Event published (no uploads).");
                     publishBtn.setEnabled(true);
                 })
                 .addOnFailureListener(ex -> {
-                    toast("Failed: " + (ex.getMessage() == null ? "Unknown error" : ex.getMessage()));
+                    String msg = ex != null && ex.getMessage() != null ? ex.getMessage() : "Unknown error";
+                    toast("Failed: " + msg);
                     publishBtn.setEnabled(true);
+                    android.util.Log.e("CreateFlow", "Flow failed", ex);
                 });
+
+        // Watchdog so the button doesn't stay stuck if something hangs
+        new android.os.Handler(getMainLooper()).postDelayed(() -> {
+            if (!publishBtn.isEnabled()) {
+                publishBtn.setEnabled(true);
+                toast("Taking longer than expected. Check Firestore setup.");
+                android.util.Log.w("CreateFlow", "Watchdog re-enabled button (possible Firestore issue).");
+            }
+        }, 15000);
     }
 
     private String safeText(EditText et) {
