@@ -1,8 +1,11 @@
 package com.example.eventmaster.ui.organizer;
 
+import android.app.DatePickerDialog;
+import android.app.TimePickerDialog;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
@@ -17,38 +20,83 @@ import com.example.eventmaster.model.Event;
 import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.Timestamp;
 
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.Locale;
 
 public class OrganizerCreateEventActivity extends AppCompatActivity {
 
-    private EditText titleEt, descEt, locEt, openEt, closeEt;
+    private EditText titleEt, descEt, locEt;
+    private TextView tvOpen, tvClose;
     private Button publishBtn;
 
     private EventRepository events;
     private QRManager qr;
+
+    // Picked values (source of truth)
+    private Timestamp openTs = null;
+    private Timestamp closeTs = null;
+
+    private final SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_organizer_create_event);
 
-        // Inputs (make sure your XML uses these IDs)
         titleEt = findViewById(R.id.editTitle);
         descEt  = findViewById(R.id.editDescription);
         locEt   = findViewById(R.id.editLocation);
-        openEt  = findViewById(R.id.editRegOpen);   // "YYYY-MM-DD HH:MM"
-        closeEt = findViewById(R.id.editRegClose);  // "YYYY-MM-DD HH:MM"
-
-        // Button
+        tvOpen  = findViewById(R.id.tvRegOpen);
+        tvClose = findViewById(R.id.tvRegClose);
         publishBtn = findViewById(R.id.btnPublish);
 
-        // Repos
         events = new EventRepositoryFs();
         qr = new QRManagerFs();
 
-        // Click handler
+        tvOpen.setOnClickListener(v -> pickDateTime(true));
+        tvClose.setOnClickListener(v -> pickDateTime(false));
         publishBtn.setOnClickListener(v -> handlePublish());
+    }
+
+    /** Show a DatePicker then a TimePicker, set open/close Timestamp + label text. */
+    private void pickDateTime(boolean isOpen) {
+        final Calendar cal = Calendar.getInstance();
+
+        new DatePickerDialog(
+                this,
+                (view, year, month, dayOfMonth) -> {
+                    cal.set(Calendar.YEAR, year);
+                    cal.set(Calendar.MONTH, month);
+                    cal.set(Calendar.DAY_OF_MONTH, dayOfMonth);
+
+                    new TimePickerDialog(
+                            this,
+                            (tp, hour, minute) -> {
+                                cal.set(Calendar.HOUR_OF_DAY, hour);
+                                cal.set(Calendar.MINUTE, minute);
+                                cal.set(Calendar.SECOND, 0);
+                                cal.set(Calendar.MILLISECOND, 0);
+
+                                Timestamp ts = new Timestamp(cal.getTime());
+                                if (isOpen) {
+                                    openTs = ts;
+                                    tvOpen.setText("Reg Open: " + fmt.format(cal.getTime()));
+                                } else {
+                                    closeTs = ts;
+                                    tvClose.setText("Reg Close: " + fmt.format(cal.getTime()));
+                                }
+                            },
+                            cal.get(Calendar.HOUR_OF_DAY),
+                            cal.get(Calendar.MINUTE),
+                            true
+                    ).show();
+                },
+                cal.get(Calendar.YEAR),
+                cal.get(Calendar.MONTH),
+                cal.get(Calendar.DAY_OF_MONTH)
+        ).show();
     }
 
     private void handlePublish() {
@@ -57,9 +105,6 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
         String title = safeText(titleEt);
         String desc  = safeText(descEt);
         String loc   = safeText(locEt);
-
-        Timestamp openTs  = parseTimestamp(safeText(openEt));
-        Timestamp closeTs = parseTimestamp(safeText(closeEt));
 
         Event e = new Event(title, desc, loc, openTs, closeTs);
         String error = e.validate();
@@ -74,7 +119,7 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
                 .continueWithTask(t -> {
                     if (!t.isSuccessful()) return Tasks.forException(t.getException());
                     String eventId = t.getResult();
-                    String payload = "event://" + eventId; // replace with your deep link if you have one
+                    String payload = "event://" + eventId; // your deep link if any
                     return qr.generateAndUpload(eventId, payload)
                             .continueWithTask(t2 -> {
                                 if (!t2.isSuccessful()) return Tasks.forException(t2.getException());
@@ -91,7 +136,7 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
                 })
                 .addOnSuccessListener(eventId -> {
                     toast("Event published!");
-                    // TODO: navigate to a detail/success screen with eventId if desired
+                    // TODO: navigate to a detail screen with eventId if desired
                     publishBtn.setEnabled(true);
                 })
                 .addOnFailureListener(ex -> {
@@ -102,27 +147,6 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
 
     private String safeText(EditText et) {
         return et.getText() == null ? "" : et.getText().toString().trim();
-    }
-
-    /** Simple parser for "YYYY-MM-DD HH:MM"; returns null if invalid (caught by validate()). */
-    private @Nullable Timestamp parseTimestamp(String text) {
-        try {
-            String[] parts = text.split(" ");
-            String[] d = parts[0].split("-");
-            String[] t = parts.length > 1 ? parts[1].split(":") : new String[]{"0","0"};
-            Calendar c = Calendar.getInstance();
-            c.set(
-                    Integer.parseInt(d[0]),
-                    Integer.parseInt(d[1]) - 1,
-                    Integer.parseInt(d[2]),
-                    Integer.parseInt(t[0]),
-                    Integer.parseInt(t[1]),
-                    0
-            );
-            return new Timestamp(new java.util.Date(c.getTimeInMillis()));
-        } catch (Exception e) {
-            return null;
-        }
     }
 
     private void toast(String msg) {

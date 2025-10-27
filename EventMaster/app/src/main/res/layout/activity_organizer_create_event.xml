@@ -17,8 +17,11 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Event title"
-            android:inputType="textCapWords"
-            android:maxLines="1" />
+            android:inputType="textCapSentences"
+            android:maxLines="1"
+            android:minHeight="48dp"
+            android:paddingTop="12dp"
+            android:paddingBottom="12dp"/>
 
         <!-- Description -->
         <EditText
@@ -28,8 +31,11 @@
             android:hint="Description"
             android:inputType="textMultiLine"
             android:minLines="3"
+            android:minHeight="48dp"
             android:gravity="top|start"
-            android:layout_marginTop="12dp" />
+            android:layout_marginTop="12dp"
+            android:paddingTop="12dp"
+            android:paddingBottom="12dp"/>
 
         <!-- Location -->
         <EditText
@@ -39,27 +45,36 @@
             android:hint="Location"
             android:inputType="textCapWords"
             android:maxLines="1"
-            android:layout_marginTop="12dp" />
+            android:minHeight="48dp"
+            android:layout_marginTop="12dp"
+            android:paddingTop="12dp"
+            android:paddingBottom="12dp"/>
 
-        <!-- Registration Open -->
-        <EditText
-            android:id="@+id/editRegOpen"
+        <!-- Registration Open (click to pick) -->
+        <TextView
+            android:id="@+id/tvRegOpen"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Reg Open (YYYY-MM-DD HH:MM)"
-            android:inputType="datetime"
-            android:maxLines="1"
-            android:layout_marginTop="16dp" />
+            android:text="Reg Open: pick date and time"
+            android:padding="14dp"
+            android:minHeight="48dp"
+            android:layout_marginTop="16dp"
+            android:background="?attr/selectableItemBackground"
+            android:focusable="true"
+            android:clickable="true"/>
 
-        <!-- Registration Close -->
-        <EditText
-            android:id="@+id/editRegClose"
+        <!-- Registration Close (click to pick) -->
+        <TextView
+            android:id="@+id/tvRegClose"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Reg Close (YYYY-MM-DD HH:MM)"
-            android:inputType="datetime"
-            android:maxLines="1"
-            android:layout_marginTop="8dp" />
+            android:text="Reg Close: pick date and time"
+            android:padding="14dp"
+            android:minHeight="48dp"
+            android:layout_marginTop="8dp"
+            android:background="?attr/selectableItemBackground"
+            android:focusable="true"
+            android:clickable="true" />
 
         <!-- Publish -->
         <Button
@@ -67,17 +82,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Publish"
-            android:layout_marginTop="20dp" />
-
-        <!-- (Optional) Helper text -->
-        <TextView
-            android:id="@+id/tvHint"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Tip: we’ll add date/time pickers next."
-            android:textSize="12sp"
-            android:textColor="#666666"
-            android:layout_marginTop="8dp" />
+            android:minHeight="48dp"
+            android:layout_marginTop="20dp"/>
 
     </LinearLayout>
 </ScrollView>
+
+
