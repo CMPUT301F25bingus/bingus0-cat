@@ -2,11 +2,16 @@ package com.example.eventmaster.ui.organizer;
 
 import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
+import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -20,7 +25,9 @@ import com.example.eventmaster.data.api.EventRepository;
 import com.example.eventmaster.data.firestore.EventRepositoryFs;
 import com.example.eventmaster.model.Event;
 import com.google.android.gms.tasks.Tasks;
+import com.google.android.material.appbar.MaterialToolbar;
 import com.google.firebase.Timestamp;
+import com.google.firebase.auth.FirebaseAuth;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -34,8 +41,9 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
     private TextView tvOpen, tvClose;
     private Button publishBtn, btnPickPoster;
     private ImageView posterPreview;
+    private ProgressBar progress; // optional spinner in layout
 
-    // Repos
+    // Repo
     private EventRepository events;
 
     // Date/time state
@@ -45,12 +53,15 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
 
     // Poster selection (local preview only for now)
     private Uri selectedPosterUri = null;
-    private ActivityResultLauncher<String> pickPosterLauncher; // GetContent => input is MIME type
+    private ActivityResultLauncher<String> pickPosterLauncher;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_organizer_create_event);
+
+        MaterialToolbar bar = findViewById(R.id.topBar);
+        bar.setNavigationOnClickListener(v -> onBackPressed());
 
         // Bind views
         titleEt       = findViewById(R.id.editTitle);
@@ -61,15 +72,26 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
         publishBtn    = findViewById(R.id.btnPublish);
         btnPickPoster = findViewById(R.id.btnPickPoster);
         posterPreview = findViewById(R.id.imgPosterPreview);
+        progress      = findViewById(R.id.progress); // may be null if not in XML
 
         // Repo
-        events  = new EventRepositoryFs();
+        events = new EventRepositoryFs();
 
         // Date/time pickers
-        tvOpen.setOnClickListener(v -> pickDateTime(true));
-        tvClose.setOnClickListener(v -> pickDateTime(false));
+        tvOpen.setOnClickListener(v -> { pickDateTime(true); updatePublishEnabled(); });
+        tvClose.setOnClickListener(v -> { pickDateTime(false); updatePublishEnabled(); });
 
-        // Image picker: SAF "GetContent" (simple, stable). Local preview only (no upload yet).
+        // Enable/disable Publish based on validity
+        TextWatcher w = new TextWatcher() {
+            public void beforeTextChanged(CharSequence s, int st, int c, int a) {}
+            public void onTextChanged(CharSequence s, int st, int b, int c) { updatePublishEnabled(); }
+            public void afterTextChanged(Editable s) {}
+        };
+        titleEt.addTextChangedListener(w);
+        locEt.addTextChangedListener(w);
+        updatePublishEnabled();
+
+        // Image picker (local preview only; no Storage yet)
         pickPosterLauncher = registerForActivityResult(
                 new ActivityResultContracts.GetContent(),
                 uri -> {
@@ -81,8 +103,26 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
         );
         btnPickPoster.setOnClickListener(v -> pickPosterLauncher.launch("image/*"));
 
-        // Publish
-        publishBtn.setOnClickListener(v -> handlePublish());
+        // Try to sign in (non-blocking)
+        trySignInSilently();
+
+        // Publish (no auth gating; works with open Firestore rules)
+        publishBtn.setOnClickListener(v -> doPublish());
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        trySignInSilently();   // best-effort on every show
+        updatePublishEnabled();
+    }
+
+    /** Attempt anonymous auth, but don't block UI if it fails. */
+    private void trySignInSilently() {
+        if (FirebaseAuth.getInstance().getCurrentUser() != null) return;
+        FirebaseAuth.getInstance().signInAnonymously()
+                .addOnSuccessListener(r -> android.util.Log.d("Auth", "Anon OK uid=" + r.getUser().getUid()))
+                .addOnFailureListener(e -> android.util.Log.w("Auth", "Anon FAILED: " + e.getMessage()));
     }
 
     private void pickDateTime(boolean isOpen) {
@@ -111,6 +151,7 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
                                     closeTs = ts;
                                     tvClose.setText("Reg Close: " + fmt.format(cal.getTime()));
                                 }
+                                updatePublishEnabled();
                             },
                             cal.get(Calendar.HOUR_OF_DAY),
                             cal.get(Calendar.MINUTE),
@@ -123,15 +164,10 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
         ).show();
     }
 
-    /** DEV MODE (no Storage/Auth): create → update placeholders → publish */
-    private void handlePublish() {
-        if (com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser() == null) {
-            toast("Not signed in yet. Try again in a second.");
-            publishBtn.setEnabled(true);
-            android.util.Log.w("CreateFlow", "Blocked: no currentUser");
-            return;
-        }
+    /** DEV MODE (no Storage): create -> update placeholders -> publish -> details */
+    private void doPublish() {
         publishBtn.setEnabled(false);
+        if (progress != null) progress.setVisibility(View.VISIBLE);
         android.util.Log.d("CreateFlow", "Publish clicked (dev no-uploads)");
 
         String title = safeText(titleEt);
@@ -143,6 +179,7 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
         if (error != null) {
             toast(error);
             publishBtn.setEnabled(true);
+            if (progress != null) progress.setVisibility(View.GONE);
             android.util.Log.w("CreateFlow", "Validation failed: " + error);
             return;
         }
@@ -154,12 +191,10 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
                     String eventId = t.getResult();
                     android.util.Log.d("CreateFlow", "Created eventId=" + eventId);
 
-                    // No uploads. Save placeholders so downstream UI doesn't break.
+                    // No uploads yet; save placeholders so UI downstream doesn't break
                     HashMap<String, Object> fields = new HashMap<>();
-                    if (selectedPosterUri != null) {
-                        fields.put("posterUrl", "poster-skipped-dev"); // placeholder
-                    }
-                    fields.put("qrUrl", "qr-skipped-dev"); // placeholder
+                    if (selectedPosterUri != null) fields.put("posterUrl", "poster-skipped-dev");
+                    fields.put("qrUrl", "qr-skipped-dev");
 
                     android.util.Log.d("CreateFlow", "Updating event with placeholder URLs…");
                     return events.update(eventId, fields)
@@ -174,22 +209,35 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
                     android.util.Log.d("CreateFlow", "Done. Event published: " + eventId);
                     toast("Event published (no uploads).");
                     publishBtn.setEnabled(true);
+                    if (progress != null) progress.setVisibility(View.GONE);
+
+                    startActivity(new Intent(this, EventDetailsActivity.class)
+                            .putExtra(EventDetailsActivity.EXTRA_EVENT_ID, eventId));
                 })
                 .addOnFailureListener(ex -> {
                     String msg = ex != null && ex.getMessage() != null ? ex.getMessage() : "Unknown error";
                     toast("Failed: " + msg);
                     publishBtn.setEnabled(true);
+                    if (progress != null) progress.setVisibility(View.GONE);
                     android.util.Log.e("CreateFlow", "Flow failed", ex);
                 });
 
-        // Watchdog so the button doesn't stay stuck if something hangs
+        // Safety: never leave the button stuck
         new android.os.Handler(getMainLooper()).postDelayed(() -> {
             if (!publishBtn.isEnabled()) {
                 publishBtn.setEnabled(true);
+                if (progress != null) progress.setVisibility(View.GONE);
                 toast("Taking longer than expected. Check Firestore setup.");
-                android.util.Log.w("CreateFlow", "Watchdog re-enabled button (possible Firestore issue).");
+                android.util.Log.w("CreateFlow", "Watchdog re-enabled button.");
             }
         }, 15000);
+    }
+
+    private void updatePublishEnabled() {
+        boolean hasTitle = !safeText(titleEt).isEmpty();
+        boolean hasLoc   = !safeText(locEt).isEmpty();
+        boolean timesOk  = openTs != null && closeTs != null && !openTs.toDate().after(closeTs.toDate());
+        publishBtn.setEnabled(hasTitle && hasLoc && timesOk);
     }
 
     private String safeText(EditText et) {

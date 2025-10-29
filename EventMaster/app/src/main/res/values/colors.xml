@@ -2,4 +2,13 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="teal_bg">#5EC1B6</color>        <!-- card teal -->
+    <color name="teal_dark">#0F8A86</color>      <!-- button teal -->
+    <color name="teal_light">#D8F2EF</color>     <!-- chips bg -->
+    <color name="surface">#FFFFFFFF</color>      <!-- inputs -->
+    <color name="ink">#222222</color>            <!-- text -->
+    <color name="muted">#7A7A7A</color>          <!-- hints -->
+    <color name="check_purple">#6C5CE7</color>   <!-- checkbox check -->
+    <color name="stroke">#1A000000</color>       <!-- subtle strokes -->
+    <color name="shadow">#33000000</color>
 </resources>
