@@ -10,11 +10,10 @@ import com.google.firebase.firestore.IgnoreExtraProperties;
 
 public class Registration {
     @Exclude
-    private String id;                 // usually entrantId; client-side convenience
-
+    private String id;
     private String eventId;
     private String entrantId;
-    private RegistrationStatus status; // ACTIVE | CANCELLED_*
+    private RegistrationStatus status;
     private long createdAtUtc;
     private @Nullable Long cancelledAtUtc;
 
