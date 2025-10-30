@@ -13,7 +13,7 @@ public class PosterRepositoryFs implements PosterRepository {
     @Override
     public Task<String> upload(String eventId, Uri localPoster) {
         try {
-            StorageReference ref = root.child("posters/" + eventId + ".jpg");
+            StorageReference ref = root.child("events/" + eventId + "/poster.jpg");
             return ref.putFile(localPoster)
                     .continueWithTask(t -> {
                         if (!t.isSuccessful()) return Tasks.forException(t.getException());

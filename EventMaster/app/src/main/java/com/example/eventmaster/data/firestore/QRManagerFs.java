@@ -28,7 +28,7 @@ public class QRManagerFs implements QRManager {
             bmp.compress(Bitmap.CompressFormat.PNG, 100, out);
             byte[] bytes = out.toByteArray();
 
-            StorageReference ref = root.child("qrcodes/" + eventId + ".png");
+            StorageReference ref = root.child("events/" + eventId + "/qr.png");
             return ref.putBytes(bytes)
                     .continueWithTask(t -> ref.getDownloadUrl())
                     .continueWith(t -> {

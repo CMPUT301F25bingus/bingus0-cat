@@ -1,18 +1,15 @@
 package com.example.eventmaster.ui.organizer;
 
-import android.app.DatePickerDialog;
-import android.app.TimePickerDialog;
+import android.Manifest;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
-import android.text.Editable;
-import android.text.TextWatcher;
-import android.view.View;
-import android.widget.Button;
-import android.widget.EditText;
+import android.text.TextUtils;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -21,230 +18,297 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.eventmaster.R;
-import com.example.eventmaster.data.api.EventRepository;
-import com.example.eventmaster.data.firestore.EventRepositoryFs;
-import com.example.eventmaster.model.Event;
-import com.google.android.gms.tasks.Tasks;
 import com.google.android.material.appbar.MaterialToolbar;
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.checkbox.MaterialCheckBox;
+import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.WriterException;
+import com.google.zxing.qrcode.QRCodeWriter;
 
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
-import java.util.Locale;
+import java.util.Map;
 
 public class OrganizerCreateEventActivity extends AppCompatActivity {
 
-    // Inputs
-    private EditText titleEt, descEt, locEt;
-    private TextView tvOpen, tvClose;
-    private Button publishBtn, btnPickPoster;
-    private ImageView posterPreview;
-    private ProgressBar progress; // optional spinner in layout
+    private MaterialToolbar topBar;
+    private ImageView imgPosterPreview;
+    private MaterialButton btnPickPoster, tvRegOpen, tvRegClose, btnPublish;
+    private MaterialCheckBox cbGenerateQr;
+    private TextInputEditText editTitle, editDescription, editLocation;
+    private ProgressBar progress;
 
-    // Repo
-    private EventRepository events;
+    private Uri posterUri = null;
+    private String regStartIso = null, regEndIso = null; // yyyy-MM-dd HH:mm
 
-    // Date/time state
-    private Timestamp openTs = null;
-    private Timestamp closeTs = null;
-    private final SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
+    private final ActivityResultLauncher<String> pickPoster =
+            registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
+                if (uri != null) {
+                    posterUri = uri;
+                    imgPosterPreview.setImageURI(uri);
+                }
+            });
 
-    // Poster selection (local preview only for now)
-    private Uri selectedPosterUri = null;
-    private ActivityResultLauncher<String> pickPosterLauncher;
+    private final ActivityResultLauncher<String> requestPermission =
+            registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> {
+                if (granted) pickPoster.launch("image/*");
+                else toast("Permission denied.");
+            });
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // ✅ Always sign in (anonymous) so Storage uploads work
+        FirebaseAuth.getInstance().signInAnonymously()
+                .addOnSuccessListener(r -> {})
+                .addOnFailureListener(e -> Toast.makeText(this, "Auth failed: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+
         setContentView(R.layout.activity_organizer_create_event);
 
-        MaterialToolbar bar = findViewById(R.id.topBar);
-        bar.setNavigationOnClickListener(v -> onBackPressed());
-
-        // Bind views
-        titleEt       = findViewById(R.id.editTitle);
-        descEt        = findViewById(R.id.editDescription);
-        locEt         = findViewById(R.id.editLocation);
-        tvOpen        = findViewById(R.id.tvRegOpen);
-        tvClose       = findViewById(R.id.tvRegClose);
-        publishBtn    = findViewById(R.id.btnPublish);
+        topBar = findViewById(R.id.topBar);
+        imgPosterPreview = findViewById(R.id.imgPosterPreview);
         btnPickPoster = findViewById(R.id.btnPickPoster);
-        posterPreview = findViewById(R.id.imgPosterPreview);
-        progress      = findViewById(R.id.progress); // may be null if not in XML
+        editTitle = findViewById(R.id.editTitle);
+        editDescription = findViewById(R.id.editDescription);
+        editLocation = findViewById(R.id.editLocation);
+        tvRegOpen = findViewById(R.id.tvRegOpen);
+        tvRegClose = findViewById(R.id.tvRegClose);
+        cbGenerateQr = findViewById(R.id.cbGenerateQr);
+        btnPublish = findViewById(R.id.btnPublish);
+        progress = findViewById(R.id.progress);
 
-        // Repo
-        events = new EventRepositoryFs();
+        if (topBar != null) topBar.setNavigationOnClickListener(v -> onBackPressed());
 
-        // Date/time pickers
-        tvOpen.setOnClickListener(v -> { pickDateTime(true); updatePublishEnabled(); });
-        tvClose.setOnClickListener(v -> { pickDateTime(false); updatePublishEnabled(); });
+        tvRegOpen.setOnClickListener(v -> showDatePickerDialog(date -> {
+            regStartIso = date;
+            tvRegOpen.setText("Start: " + date);
+        }));
 
-        // Enable/disable Publish based on validity
-        TextWatcher w = new TextWatcher() {
-            public void beforeTextChanged(CharSequence s, int st, int c, int a) {}
-            public void onTextChanged(CharSequence s, int st, int b, int c) { updatePublishEnabled(); }
-            public void afterTextChanged(Editable s) {}
-        };
-        titleEt.addTextChangedListener(w);
-        locEt.addTextChangedListener(w);
-        updatePublishEnabled();
+        tvRegClose.setOnClickListener(v -> showDatePickerDialog(date -> {
+            regEndIso = date;
+            tvRegClose.setText("End: " + date);
+        }));
 
-        // Image picker (local preview only; no Storage yet)
-        pickPosterLauncher = registerForActivityResult(
-                new ActivityResultContracts.GetContent(),
-                uri -> {
-                    if (uri != null) {
-                        selectedPosterUri = uri;
-                        posterPreview.setImageURI(uri);
-                    }
-                }
-        );
-        btnPickPoster.setOnClickListener(v -> pickPosterLauncher.launch("image/*"));
+        btnPickPoster.setOnClickListener(v -> {
+            if (Build.VERSION.SDK_INT >= 33) {
+                requestPermission.launch(Manifest.permission.READ_MEDIA_IMAGES);
+            } else {
+                requestPermission.launch(Manifest.permission.READ_EXTERNAL_STORAGE);
+            }
+        });
 
-        // Try to sign in (non-blocking)
-        trySignInSilently();
-
-        // Publish (no auth gating; works with open Firestore rules)
-        publishBtn.setOnClickListener(v -> doPublish());
+        btnPublish.setOnClickListener(v -> publishEvent());
     }
 
-    @Override
-    protected void onStart() {
-        super.onStart();
-        trySignInSilently();   // best-effort on every show
-        updatePublishEnabled();
+    private void publishEvent() {
+        String title = textOf(editTitle);
+        String desc = textOf(editDescription);
+        String location = textOf(editLocation);
+
+        if (TextUtils.isEmpty(title)) { editTitle.setError("Required"); return; }
+        if (TextUtils.isEmpty(regStartIso)) { toast("Pick a start date"); return; }
+        if (TextUtils.isEmpty(regEndIso)) { toast("Pick an end date"); return; }
+
+        Timestamp regStart = parseDateToTimestamp(regStartIso);
+        Timestamp regEnd = parseDateToTimestamp(regEndIso);
+        if (regStart == null || regEnd == null) { toast("Invalid date/time"); return; }
+        if (regEnd.compareTo(regStart) < 0) { toast("End must be after start"); return; }
+
+        String organizerId = FirebaseAuth.getInstance().getCurrentUser() != null
+                ? FirebaseAuth.getInstance().getCurrentUser().getUid() : "anonymous";
+
+        setBusy(true);
+
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        DocumentReference doc = db.collection("events").document();
+        String eventId = doc.getId();
+
+        Map<String, Object> base = new HashMap<>();
+        base.put("title", title);
+        base.put("description", desc);
+        base.put("location", location);
+        base.put("regStart", regStart);
+        base.put("regEnd", regEnd);
+        base.put("organizerId", organizerId);
+        base.put("posterUrl", null);
+        base.put("qrUrl", null);
+        base.put("createdAt", Timestamp.now());
+
+        doc.set(base).addOnSuccessListener(unused -> {
+            if (posterUri != null) {
+                uploadPoster(doc, eventId, posterUri, () -> maybeGenerateQr(doc, eventId));
+            } else {
+                maybeGenerateQr(doc, eventId);
+            }
+
+        }).addOnFailureListener(e -> {
+            setBusy(false);
+            toast("Failed to create event: " + e.getMessage());
+        });
     }
 
-    /** Attempt anonymous auth, but don't block UI if it fails. */
-    private void trySignInSilently() {
-        if (FirebaseAuth.getInstance().getCurrentUser() != null) return;
-        FirebaseAuth.getInstance().signInAnonymously()
-                .addOnSuccessListener(r -> android.util.Log.d("Auth", "Anon OK uid=" + r.getUser().getUid()))
-                .addOnFailureListener(e -> android.util.Log.w("Auth", "Anon FAILED: " + e.getMessage()));
-    }
-
-    private void pickDateTime(boolean isOpen) {
-        final Calendar cal = Calendar.getInstance();
-
-        new DatePickerDialog(
-                this,
-                (view, year, month, day) -> {
-                    cal.set(Calendar.YEAR, year);
-                    cal.set(Calendar.MONTH, month);
-                    cal.set(Calendar.DAY_OF_MONTH, day);
-
-                    new TimePickerDialog(
-                            this,
-                            (tp, hour, minute) -> {
-                                cal.set(Calendar.HOUR_OF_DAY, hour);
-                                cal.set(Calendar.MINUTE, minute);
-                                cal.set(Calendar.SECOND, 0);
-                                cal.set(Calendar.MILLISECOND, 0);
-
-                                Timestamp ts = new Timestamp(cal.getTime());
-                                if (isOpen) {
-                                    openTs = ts;
-                                    tvOpen.setText("Reg Open: " + fmt.format(cal.getTime()));
-                                } else {
-                                    closeTs = ts;
-                                    tvClose.setText("Reg Close: " + fmt.format(cal.getTime()));
-                                }
-                                updatePublishEnabled();
-                            },
-                            cal.get(Calendar.HOUR_OF_DAY),
-                            cal.get(Calendar.MINUTE),
-                            true
-                    ).show();
-                },
-                cal.get(Calendar.YEAR),
-                cal.get(Calendar.MONTH),
-                cal.get(Calendar.DAY_OF_MONTH)
-        ).show();
-    }
-
-    /** DEV MODE (no Storage): create -> update placeholders -> publish -> details */
-    private void doPublish() {
-        publishBtn.setEnabled(false);
-        if (progress != null) progress.setVisibility(View.VISIBLE);
-        android.util.Log.d("CreateFlow", "Publish clicked (dev no-uploads)");
-
-        String title = safeText(titleEt);
-        String desc  = safeText(descEt);
-        String loc   = safeText(locEt);
-
-        Event e = new Event(title, desc, loc, openTs, closeTs);
-        String error = e.validate();
-        if (error != null) {
-            toast(error);
-            publishBtn.setEnabled(true);
-            if (progress != null) progress.setVisibility(View.GONE);
-            android.util.Log.w("CreateFlow", "Validation failed: " + error);
+    private void maybeGenerateQr(DocumentReference doc, String eventId) {
+        if (!cbGenerateQr.isChecked()) {
+            setBusy(false);
+            toast("Event published!");
+            redirectToDetails(eventId);
             return;
         }
+        generateAndUploadQrThenFinish(doc, eventId);
+    }
 
-        android.util.Log.d("CreateFlow", "Creating event…");
-        events.create(e)
-                .continueWithTask(t -> {
-                    if (!t.isSuccessful()) return Tasks.forException(t.getException());
-                    String eventId = t.getResult();
-                    android.util.Log.d("CreateFlow", "Created eventId=" + eventId);
+    private void uploadPoster(DocumentReference doc, String eventId, Uri uri, Runnable onDone) {
+        try {
+            byte[] bytes = readAllBytes(uri);
+            StorageReference ref = FirebaseStorage.getInstance()
+                    .getReference("events/" + eventId + "/poster.jpg");
+            ref.putBytes(bytes)
+                    .continueWithTask(task -> { if (!task.isSuccessful()) throw task.getException(); return ref.getDownloadUrl(); })
+                    .addOnSuccessListener(posterUrl ->
+                            doc.update("posterUrl", posterUrl.toString())
+                                    .addOnSuccessListener(unused -> onDone.run())
+                                    .addOnFailureListener(e -> { setBusy(false); toast("Poster URL save failed: " + e.getMessage()); })
+                    )
+                    .addOnFailureListener(e -> { setBusy(false); toast("Poster upload failed: " + e.getMessage()); });
+        } catch (Exception e) {
+            setBusy(false);
+            toast("Poster read failed: " + e.getMessage());
+        }
+    }
 
-                    // No uploads yet; save placeholders so UI downstream doesn't break
-                    HashMap<String, Object> fields = new HashMap<>();
-                    if (selectedPosterUri != null) fields.put("posterUrl", "poster-skipped-dev");
-                    fields.put("qrUrl", "qr-skipped-dev");
+    private void generateAndUploadQrThenFinish(DocumentReference doc, String eventId) {
+        String deepLink = "eventmaster://event/" + eventId; // replace with HTTPS if needed
 
-                    android.util.Log.d("CreateFlow", "Updating event with placeholder URLs…");
-                    return events.update(eventId, fields)
-                            .continueWithTask(tu -> {
-                                if (!tu.isSuccessful()) return Tasks.forException(tu.getException());
-                                android.util.Log.d("CreateFlow", "Publishing event…");
-                                return events.publish(eventId);
-                            })
-                            .continueWith(tDone -> eventId);
-                })
-                .addOnSuccessListener(eventId -> {
-                    android.util.Log.d("CreateFlow", "Done. Event published: " + eventId);
-                    toast("Event published (no uploads).");
-                    publishBtn.setEnabled(true);
-                    if (progress != null) progress.setVisibility(View.GONE);
+        Bitmap qr = createQrBitmap(deepLink, 640);
+        if (qr == null) { setBusy(false); toast("QR generation failed."); return; }
 
-                    startActivity(new Intent(this, EventDetailsActivity.class)
-                            .putExtra(EventDetailsActivity.EXTRA_EVENT_ID, eventId));
-                })
-                .addOnFailureListener(ex -> {
-                    String msg = ex != null && ex.getMessage() != null ? ex.getMessage() : "Unknown error";
-                    toast("Failed: " + msg);
-                    publishBtn.setEnabled(true);
-                    if (progress != null) progress.setVisibility(View.GONE);
-                    android.util.Log.e("CreateFlow", "Flow failed", ex);
-                });
+        byte[] qrPng = bitmapToPng(qr);
+        StorageReference ref = FirebaseStorage.getInstance()
+                .getReference("events/" + eventId + "/qr.png");
 
-        // Safety: never leave the button stuck
-        new android.os.Handler(getMainLooper()).postDelayed(() -> {
-            if (!publishBtn.isEnabled()) {
-                publishBtn.setEnabled(true);
-                if (progress != null) progress.setVisibility(View.GONE);
-                toast("Taking longer than expected. Check Firestore setup.");
-                android.util.Log.w("CreateFlow", "Watchdog re-enabled button.");
+        ref.putBytes(qrPng)
+                .continueWithTask(task -> { if (!task.isSuccessful()) throw task.getException(); return ref.getDownloadUrl(); })
+                .addOnSuccessListener(qrUrl ->
+                        doc.update("qrUrl", qrUrl.toString())
+                                .addOnSuccessListener(unused -> {
+                                    setBusy(false);
+                                    toast("Event published!");
+                                    redirectToDetails(eventId);
+                                })
+                                .addOnFailureListener(e -> { setBusy(false); toast("Failed saving QR URL: " + e.getMessage()); })
+                )
+                .addOnFailureListener(e -> { setBusy(false); toast("QR upload failed: " + e.getMessage()); });
+    }
+
+    private void redirectToDetails(String eventId) {
+        Intent i = new Intent(this, EventDetailsActivity.class);
+        i.putExtra("eventId", eventId);
+        startActivity(i);
+        finish();
+    }
+
+    // ---------- Helpers ----------
+
+    private interface DatePicked { void onPick(String yyyyMmDd); }
+
+    private void showDatePickerDialog(DatePicked cb) {
+        final java.util.Calendar c = java.util.Calendar.getInstance();
+        int year = c.get(java.util.Calendar.YEAR);
+        int month = c.get(java.util.Calendar.MONTH);
+        int day = c.get(java.util.Calendar.DAY_OF_MONTH);
+
+        new android.app.DatePickerDialog(this, (view, y, m, d) -> {
+            // After picking the date, show a time picker
+            new android.app.TimePickerDialog(this, (tView, hour, min) -> {
+                String dateTime = String.format("%04d-%02d-%02d %02d:%02d", y, m + 1, d, hour, min);
+                cb.onPick(dateTime);  // Pass full date+time string
+            }, 12, 0, true).show();
+        }, year, month, day).show();
+    }
+
+    private String textOf(TextInputEditText e) {
+        return e.getText() == null ? "" : e.getText().toString().trim();
+    }
+
+    // ✅ supports both "yyyy-MM-dd" and "yyyy-MM-dd HH:mm"
+    private Timestamp parseDateToTimestamp(String input) {
+        try {
+            if (Build.VERSION.SDK_INT >= 26) {
+                if (input.contains(" ")) {
+                    DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+                    java.time.LocalDateTime dt = java.time.LocalDateTime.parse(input, fmt);
+                    long millis = java.util.Date.from(dt.atZone(java.time.ZoneId.systemDefault()).toInstant()).getTime();
+                    return new Timestamp(new java.util.Date(millis));
+                } else {
+                    LocalDate d = LocalDate.parse(input, DateTimeFormatter.ISO_LOCAL_DATE);
+                    long millis = java.util.Date.from(d.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant()).getTime();
+                    return new Timestamp(new java.util.Date(millis));
+                }
+            } else {
+                String[] p = input.split("[\\s:-]");
+                int y = Integer.parseInt(p[0]);
+                int m = Integer.parseInt(p[1]) - 1;
+                int d = Integer.parseInt(p[2]);
+                int h = p.length > 3 ? Integer.parseInt(p[3]) : 0;
+                int min = p.length > 4 ? Integer.parseInt(p[4]) : 0;
+                java.util.Calendar cal = java.util.Calendar.getInstance();
+                cal.set(y, m, d, h, min, 0);
+                cal.set(java.util.Calendar.MILLISECOND, 0);
+                return new Timestamp(cal.getTime());
             }
-        }, 15000);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
-    private void updatePublishEnabled() {
-        boolean hasTitle = !safeText(titleEt).isEmpty();
-        boolean hasLoc   = !safeText(locEt).isEmpty();
-        boolean timesOk  = openTs != null && closeTs != null && !openTs.toDate().after(closeTs.toDate());
-        publishBtn.setEnabled(hasTitle && hasLoc && timesOk);
+    private byte[] readAllBytes(Uri uri) throws IOException {
+        try (java.io.InputStream in = getContentResolver().openInputStream(uri);
+             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            byte[] buf = new byte[8192];
+            int n;
+            while ((n = in.read(buf)) > 0) out.write(buf, 0, n);
+            return out.toByteArray();
+        }
     }
 
-    private String safeText(EditText et) {
-        return et.getText() == null ? "" : et.getText().toString().trim();
+    private Bitmap createQrBitmap(String data, int size) {
+        try {
+            com.google.zxing.common.BitMatrix m = new QRCodeWriter().encode(data, BarcodeFormat.QR_CODE, size, size);
+            Bitmap bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+            for (int x = 0; x < size; x++)
+                for (int y = 0; y < size; y++)
+                    bmp.setPixel(x, y, m.get(x, y) ? Color.BLACK : Color.WHITE);
+            return bmp;
+        } catch (WriterException e) {
+            return null;
+        }
     }
 
-    private void toast(String msg) {
-        Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
+    private byte[] bitmapToPng(Bitmap bmp) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        bmp.compress(Bitmap.CompressFormat.PNG, 100, baos);
+        return baos.toByteArray();
+    }
+
+    private void setBusy(boolean busy) {
+        btnPublish.setEnabled(!busy);
+        btnPickPoster.setEnabled(!busy);
+        progress.setVisibility(busy ? android.view.View.VISIBLE : android.view.View.GONE);
+    }
+
+    private void toast(String m) {
+        Toast.makeText(this, m, Toast.LENGTH_SHORT).show();
     }
 }
