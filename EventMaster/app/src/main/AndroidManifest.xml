@@ -1,25 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
-
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
         android:allowBackup="true"
-        android:dataExtractionRules="@xml/data_extraction_rules"
-        android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.EventMaster">
+
         <activity
-            android:name=".MainActivity"
+            android:name=".ui.admin.AdminWelcomeActivity"
             android:exported="true">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-    </application>
 
+        <activity android:name=".ui.admin.AdminBrowseActivity" android:exported="false"/>
+        <activity android:name=".ui.admin.profiles.BrowseOrganizersActivity" android:exported="false"/>
+        <activity android:name=".ui.admin.profiles.BrowseEntrantsActivity" android:exported="false"/>
+
+        <activity
+            android:name=".ui.admin.profiles.AdminProfileDetailActivity"
+            android:exported="false"
+            android:parentActivityName=".ui.admin.profiles.BrowseOrganizersActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".ui.admin.profiles.BrowseOrganizersActivity"/>
+        </activity>
+    </application>
 </manifest>
