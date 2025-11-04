@@ -12,18 +12,25 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.eventmaster.R;
 import com.example.eventmaster.model.Profile;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class AdminProfileAdapter extends RecyclerView.Adapter<AdminProfileAdapter.VH> {
 
     public interface OnRowClick { void onOpen(Profile p); }
 
-    private final List<Profile> data;
+    private final List<Profile> data = new ArrayList<>();
     private final OnRowClick onRowClick;
 
-    public AdminProfileAdapter(List<Profile> data, OnRowClick onRowClick) {
-        this.data = data;
+    public AdminProfileAdapter(List<Profile> initial, OnRowClick onRowClick) {
+        if (initial != null) data.addAll(initial);
         this.onRowClick = onRowClick;
+    }
+
+    public void replace(List<Profile> items) {
+        data.clear();
+        if (items != null) data.addAll(items);
+        notifyDataSetChanged();
     }
 
     @NonNull @Override
@@ -33,35 +40,32 @@ public class AdminProfileAdapter extends RecyclerView.Adapter<AdminProfileAdapte
         return new VH(v);
     }
 
-    @Override public void onBindViewHolder(@NonNull VH h, int pos) {
+    @Override
+    public void onBindViewHolder(@NonNull VH h, int pos) {
         Profile p = data.get(pos);
-        h.tvName.setText("Name: " + ns(p.getName()));
-        h.tvEmail.setText("Email: " + ns(p.getEmail()));
-        h.tvPhone.setText("Phone: " + ns(p.getPhone()));
+        h.tvName.setText(ns(p.getName()));
+        h.tvEmail.setText(ns(p.getEmail()));
+        h.tvPhone.setText(ns(p.getPhone()));
+
         View.OnClickListener open = v -> { if (onRowClick != null) onRowClick.onOpen(p); };
-        h.btnOpen.setOnClickListener(open);
         h.itemView.setOnClickListener(open);
+        h.btnOpen.setOnClickListener(open);
     }
 
     @Override public int getItemCount() { return data.size(); }
 
-    public void addAll(List<Profile> more) {
-        int start = data.size();
-        data.addAll(more);
-        notifyItemRangeInserted(start, more.size());
-    }
-
     static class VH extends RecyclerView.ViewHolder {
-        ImageView btnOpen;
+        ImageView imgAvatar, btnOpen;
         TextView tvName, tvEmail, tvPhone;
         VH(@NonNull View v) {
             super(v);
-            btnOpen = v.findViewById(R.id.btnOpen);
-            tvName  = v.findViewById(R.id.tvName);
-            tvEmail = v.findViewById(R.id.tvEmail);
-            tvPhone = v.findViewById(R.id.tvPhone);
+            imgAvatar = v.findViewById(R.id.imgAvatar);
+            btnOpen   = v.findViewById(R.id.btnOpen);
+            tvName    = v.findViewById(R.id.tvName);
+            tvEmail   = v.findViewById(R.id.tvEmail);
+            tvPhone   = v.findViewById(R.id.tvPhone);
         }
     }
 
-    private String ns(String s) { return s == null ? "—" : s; }
+    private String ns(String s){ return (s == null || s.trim().isEmpty()) ? "—" : s; }
 }

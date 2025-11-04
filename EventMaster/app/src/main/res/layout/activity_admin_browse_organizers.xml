@@ -18,21 +18,10 @@
         app:elevation="0dp" />
 
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvProfiles"
+        android:id="@+id/recycler"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
         android:padding="16dp"
-        android:clipToPadding="false" />
-
-    <!-- “View more” at bottom -->
-    <TextView
-        android:id="@+id/tvViewMore"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="View more"
-        android:gravity="center"
-        android:padding="14dp"
-        android:textColor="@android:color/white"
-        android:textStyle="bold"/>
+        android:clipToPadding="false"/>
 </LinearLayout>

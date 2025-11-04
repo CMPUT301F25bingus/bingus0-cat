@@ -2,15 +2,16 @@ package com.example.eventmaster.ui.admin;
 
 import android.content.Intent;
 import android.os.Bundle;
+
 import androidx.appcompat.app.AppCompatActivity;
+
 import com.example.eventmaster.R;
-import com.example.eventmaster.ui.admin.profiles.BrowseOrganizersActivity;
 import com.example.eventmaster.ui.admin.profiles.BrowseEntrantsActivity;
+import com.example.eventmaster.ui.admin.profiles.BrowseOrganizersActivity;
 import com.google.android.material.button.MaterialButton;
 
 public class AdminBrowseActivity extends AppCompatActivity {
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    @Override protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_admin_browse);
 
@@ -20,20 +21,15 @@ public class AdminBrowseActivity extends AppCompatActivity {
         MaterialButton btnNotifications = findViewById(R.id.btnNotifications);
 
         btnOrganizers.setOnClickListener(v ->
-                startActivity(new Intent(this, BrowseOrganizersActivity.class))
-        );
+                startActivity(new Intent(this, BrowseOrganizersActivity.class)));
 
         btnProfiles.setOnClickListener(v ->
-                startActivity(new Intent(this, BrowseEntrantsActivity.class))
-        );
+                startActivity(new Intent(this, BrowseEntrantsActivity.class)));
 
-        // The other two just show placeholders for now
         btnEvents.setOnClickListener(v ->
-                android.widget.Toast.makeText(this, "Browse Events not implemented", android.widget.Toast.LENGTH_SHORT).show()
-        );
+                android.widget.Toast.makeText(this, "Browse Events not implemented", android.widget.Toast.LENGTH_SHORT).show());
 
         btnNotifications.setOnClickListener(v ->
-                android.widget.Toast.makeText(this, "Notifications not implemented", android.widget.Toast.LENGTH_SHORT).show()
-        );
+                android.widget.Toast.makeText(this, "Notifications not implemented", android.widget.Toast.LENGTH_SHORT).show());
     }
 }

@@ -1,23 +1,25 @@
+// app/src/main/java/com/example/eventmaster/ui/admin/profiles/BrowseEntrantsActivity.java
 package com.example.eventmaster.ui.admin.profiles;
 
-import android.content.DialogInterface;
 import android.os.Bundle;
-import android.widget.TextView;
+import android.view.View;
 
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.eventmaster.R;
+import com.example.eventmaster.data.firestore.ProfileRepositoryFs;
 import com.example.eventmaster.model.Profile;
 import com.google.android.material.appbar.MaterialToolbar;
+import com.google.firebase.firestore.ListenerRegistration;
 
 import java.util.ArrayList;
-import java.util.List;
 
 public class BrowseEntrantsActivity extends AppCompatActivity {
 
+    private final ProfileRepositoryFs repo = new ProfileRepositoryFs();
+    private ListenerRegistration reg;
     private EntrantAdapter adapter;
 
     @Override protected void onCreate(Bundle savedInstanceState) {
@@ -30,39 +32,30 @@ public class BrowseEntrantsActivity extends AppCompatActivity {
         RecyclerView rv = findViewById(R.id.rvProfiles);
         rv.setLayoutManager(new LinearLayoutManager(this));
 
-        adapter = new EntrantAdapter(seedEntrants(),
-                p -> {/* no-op for now */},
-                (pos, p) -> confirmRemove(pos, p));
+        adapter = new EntrantAdapter(new ArrayList<>(),
+                p -> { /* optional: open detail */ },
+                (pos, p) -> {
+                    // delete from Firestore; realtime listener updates the list
+                    if (p.getId() != null) {
+                        repo.delete(p.getId(), v -> {}, e -> {});
+                    }
+                });
         rv.setAdapter(adapter);
 
-        TextView tvViewMore = findViewById(R.id.tvViewMore);
-        tvViewMore.setOnClickListener(v -> adapter.addAll(seedMore()));
+        // If your layout still has a "View more" text, hide it for the Firestore version.
+        View vm = findViewById(R.id.tvViewMore);
+        if (vm != null) vm.setVisibility(View.GONE);
     }
 
-    private void confirmRemove(int position, Profile p) {
-        new AlertDialog.Builder(this)
-                .setTitle("Remove entrant?")
-                .setMessage("Are you sure you want to remove " + (p.getName() == null ? "this entrant" : p.getName()) + "?")
-                .setPositiveButton("Remove", (DialogInterface dialog, int which) -> adapter.removeAt(position))
-                .setNegativeButton("Cancel", null)
-                .show();
+    @Override protected void onStart() {
+        super.onStart();
+        reg = repo.listenEntrants(
+                list -> adapter.replace(list),   // <-- now exists on the adapter
+                err  -> { /* log/toast if you want */ });
     }
 
-    /** Dummy data for now  */
-    private List<Profile> seedEntrants() {
-        List<Profile> list = new ArrayList<>();
-        list.add(new Profile(null,"Bingus3","bingus3@example.com","+1 (780) 533-4567","entrant"));
-        list.add(new Profile(null,"Bingus4","bingus4@example.com","+1 (780) 533-4567","entrant"));
-        list.add(new Profile(null,"Bingus5","bingus5@example.com","+1 (785) 534-1229","entrant"));
-        list.add(new Profile(null,"Bingus6","bingus6@example.com","+1 (780) 533-4567","entrant"));
-        list.add(new Profile(null,"Bingus7","bingus7@example.com","+1 (780) 533-4567","entrant"));
-        return list;
-    }
-
-    private List<Profile> seedMore() {
-        List<Profile> list = new ArrayList<>();
-        list.add(new Profile(null,"Entrant A","entrant.a@example.com","+1 (555) 000-0101","entrant"));
-        list.add(new Profile(null,"Entrant B","entrant.b@example.com","+1 (555) 000-0102","entrant"));
-        return list;
+    @Override protected void onStop() {
+        super.onStop();
+        if (reg != null) { reg.remove(); reg = null; }
     }
 }

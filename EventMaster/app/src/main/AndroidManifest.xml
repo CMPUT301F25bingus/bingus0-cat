@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -8,8 +9,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.EventMaster">
 
+        <!-- Make Profile the launcher while you test it -->
         <activity
-            android:name=".ui.admin.AdminWelcomeActivity"
+            android:name=".ui.profile.ProfileActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
@@ -17,17 +19,13 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".ui.admin.AdminBrowseActivity" android:exported="false"/>
-        <activity android:name=".ui.admin.profiles.BrowseOrganizersActivity" android:exported="false"/>
-        <activity android:name=".ui.admin.profiles.BrowseEntrantsActivity" android:exported="false"/>
-
-        <activity
-            android:name=".ui.admin.profiles.AdminProfileDetailActivity"
-            android:exported="false"
-            android:parentActivityName=".ui.admin.profiles.BrowseOrganizersActivity">
-            <meta-data
-                android:name="android.support.PARENT_ACTIVITY"
-                android:value=".ui.admin.profiles.BrowseOrganizersActivity"/>
-        </activity>
+        <!-- Keep other activities, but WITHOUT launcher filters -->
+        <activity android:name=".ui.profile.EditProfileActivity" />
+        <activity android:name=".ui.admin.AdminWelcomeActivity" />
+        <activity android:name=".ui.admin.AdminBrowseActivity" />
+        <activity android:name=".ui.admin.profiles.BrowseOrganizersActivity" />
+        <activity android:name=".ui.admin.profiles.BrowseEntrantsActivity" />
+        <activity android:name=".ui.admin.profiles.AdminProfileDetailActivity" />
     </application>
+
 </manifest>

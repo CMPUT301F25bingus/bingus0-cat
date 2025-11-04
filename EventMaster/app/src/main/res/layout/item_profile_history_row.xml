@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="wrap_content"
+    android:orientation="vertical" android:paddingVertical="10dp">
+
+    <TextView
+        android:id="@+id/tvEventTitle"
+        android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="Event title" android:textStyle="bold" android:textSize="15sp"/>
+
+    <LinearLayout
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:gravity="start">
+
+        <TextView
+            android:id="@+id/tvStatus"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="ACTIVE" android:textStyle="bold"
+            android:paddingHorizontal="8dp" android:paddingVertical="4dp"
+            android:background="#EAF2FF" android:textColor="#2C5FD5"
+            android:layout_marginEnd="12dp"/>
+
+        <TextView
+            android:id="@+id/tvJoined"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Joined: Jan 5, 2025" android:alpha="0.8"/>
+    </LinearLayout>
+</LinearLayout>

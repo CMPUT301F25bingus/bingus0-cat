@@ -1,79 +1,69 @@
 package com.example.eventmaster.ui.admin.profiles;
 
 import android.os.Bundle;
-import android.util.Log;
+import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.content.ContextCompat;
 
 import com.example.eventmaster.R;
+import com.example.eventmaster.data.firestore.ProfileRepositoryFs;
+import com.example.eventmaster.model.Profile;
 import com.google.android.material.appbar.MaterialToolbar;
-import com.google.android.material.button.MaterialButton;
 
 public class AdminProfileDetailActivity extends AppCompatActivity {
 
-    private String name, email, phone;
-    private MaterialButton btnBan;
-    private BanStore banStore;
+    private final ProfileRepositoryFs repo = new ProfileRepositoryFs();
+    private String profileId;
+    private TextView tvName, tvEmail, tvPhone, tvState;
+    private Button btnBan;
 
-    @Override protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_admin_profile_detail); // <- ensure this matches your XML file
-
-        banStore = new BanStore(this);
+    @Override protected void onCreate(Bundle b){
+        super.onCreate(b);
+        setContentView(R.layout.activity_admin_profile_detail);
 
         MaterialToolbar tb = findViewById(R.id.toolbar);
         tb.setNavigationOnClickListener(v -> finish());
 
-        name  = getIntent().getStringExtra("name");
-        email = getIntent().getStringExtra("email");
-        phone = getIntent().getStringExtra("phone");
-        Log.d("AdminDetail","name="+name+" email="+email+" phone="+phone);
+        profileId = getIntent().getStringExtra("profileId");
 
-        ((TextView)findViewById(R.id.tvName)).setText("Name: "  + nz(name));
-        ((TextView)findViewById(R.id.tvEmail)).setText("Email: " + nz(email));
-        ((TextView)findViewById(R.id.tvPhone)).setText("Phone: " + nz(phone));
+        tvName  = findViewById(R.id.tvName);
+        tvEmail = findViewById(R.id.tvEmail);
+        tvPhone = findViewById(R.id.tvPhone);
+        tvState = findViewById(R.id.tvState);
+        btnBan  = findViewById(R.id.btnBan);
 
-        btnBan = findViewById(R.id.btnBan); // <- must not be null
-        if (btnBan == null) {
-            Toast.makeText(this, "btnBan not found in layout", Toast.LENGTH_LONG).show();
-            return;
-        }
-
-        refreshBanButton();
-
-        btnBan.setOnClickListener(v -> showBanDialog());
+        btnBan.setOnClickListener(v -> toggleBan());
     }
 
-    private void showBanDialog() {
-        final boolean currentlyBanned = banStore.isBanned(email);
-        final String action = currentlyBanned ? "unban" : "ban";
-        new AlertDialog.Builder(this)
-                .setTitle(cap(action) + " organizer?")
-                .setMessage("Are you sure you want to " + action + " " + nz(name) + "?")
-                .setPositiveButton(cap(action), (d, w) -> {
-                    banStore.setBanned(email, !currentlyBanned);
-                    Toast.makeText(this,
-                            (currentlyBanned ? "Unbanned " : "Banned ") + nz(name),
-                            Toast.LENGTH_SHORT).show();
-                    refreshBanButton();
-                })
-                .setNegativeButton("Cancel", null)
-                .show();
+    @Override protected void onResume(){ super.onResume(); load(); }
+
+    private void load(){
+        repo.get(profileId, this::bind, e -> tvName.setText("Error loading profile"));
     }
 
-    private void refreshBanButton() {
-        boolean banned = banStore.isBanned(email);
+    private void bind(Profile p){
+        tvName.setText(ns(p.getName()));
+        tvEmail.setText(ns(p.getEmail()));
+        tvPhone.setText(ns(p.getPhone()));
+        boolean banned = p.getBanned();
+        tvState.setText(banned ? "BANNED" : "Active");
         btnBan.setText(banned ? "Unban organizer" : "Ban organizer");
-        btnBan.setBackgroundTintList(ContextCompat.getColorStateList(
-                this, banned ? R.color.btn_neutral : R.color.btn_danger));
-        btnBan.setRippleColor(ContextCompat.getColorStateList(
-                this, banned ? R.color.btn_neutral_pressed : R.color.btn_danger_pressed));
     }
 
-    private String nz(String s) { return s == null ? "—" : s; }
-    private String cap(String s) { return s == null || s.isEmpty() ? "" : s.substring(0,1).toUpperCase()+s.substring(1); }
+    private void toggleBan(){
+        repo.get(profileId, p -> {
+            boolean next = !p.getBanned();
+            new AlertDialog.Builder(this)
+                    .setTitle(next ? "Ban organizer?" : "Unban organizer?")
+                    .setMessage((next ? "Ban " : "Unban ") + ns(p.getName()) + "?")
+                    .setNegativeButton("Cancel", null)
+                    .setPositiveButton(next ? "Ban" : "Unban",
+                            (d, w) -> repo.setBanned(profileId, next, v -> load(), err -> {}))
+                    .show();
+        }, e -> {});
+    }
+
+    private String ns(String s){ return (s == null || s.trim().isEmpty()) ? "—" : s; }
 }

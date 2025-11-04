@@ -1,63 +1,45 @@
 package com.example.eventmaster.ui.profile;
 
 import android.os.Bundle;
+import android.widget.Button;
 import android.widget.EditText;
-import android.widget.Toast;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.eventmaster.R;
-import com.example.eventmaster.data.ProfileLocalStore;
-import com.google.android.material.appbar.MaterialToolbar;
-import com.google.android.material.button.MaterialButton;
+import com.example.eventmaster.data.firestore.ProfileRepositoryFs;
+import com.example.eventmaster.model.Profile;
 
 public class EditProfileActivity extends AppCompatActivity {
+    private final ProfileRepositoryFs repo = new ProfileRepositoryFs();
+    private String profileId;
 
-    private ProfileLocalStore store;
     private EditText etName, etEmail, etPhone;
-    private MaterialButton btnUpdate;
+    private Button btnSave;
 
-    @Override protected void onCreate(Bundle savedInstanceState) {
+    @Override protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_edit_profile);
 
-        store = new ProfileLocalStore(this);
-
-        MaterialToolbar tb = findViewById(R.id.toolbarEdit);
-        tb.setNavigationOnClickListener(v -> finish());
-
+        profileId = getIntent().getStringExtra("profileId");
         etName  = findViewById(R.id.etName);
         etEmail = findViewById(R.id.etEmail);
         etPhone = findViewById(R.id.etPhone);
-        btnUpdate = findViewById(R.id.btnUpdate);
+        btnSave = findViewById(R.id.btnSave);
 
-        // Pre-fill if exists
-        if (store.hasProfile()) {
-            if (store.name()  != null) etName.setText(store.name());
-            if (store.email() != null) etEmail.setText(store.email());
-            if (store.phone() != null) etPhone.setText(store.phone());
-            btnUpdate.setText("Update");
-        } else {
-            btnUpdate.setText("Create");
-        }
+        repo.get(profileId, p -> {
+            etName.setText(p.getName());
+            etEmail.setText(p.getEmail());
+            etPhone.setText(p.getPhone());
+        }, e -> {});
 
-        btnUpdate.setOnClickListener(v -> doSave());
-    }
-
-    private void doSave() {
-        String name  = etName.getText().toString().trim();
-        String email = etEmail.getText().toString().trim();
-        String phone = etPhone.getText().toString().trim();
-
-        if (name.isEmpty() || email.isEmpty()) {
-            Toast.makeText(this, "Name and email are required.", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        store.save(name, email, phone);
-        Toast.makeText(this, store.hasProfile() ? "Profile updated" : "Profile created", Toast.LENGTH_SHORT).show();
-        finish();
+        btnSave.setOnClickListener(v -> {
+            Profile p = new Profile(profileId,
+                    etName.getText().toString().trim(),
+                    etEmail.getText().toString().trim(),
+                    etPhone.getText().toString().trim());
+            repo.upsert(profileId, p, x -> finish(), err -> {});
+        });
     }
 }
-
-
