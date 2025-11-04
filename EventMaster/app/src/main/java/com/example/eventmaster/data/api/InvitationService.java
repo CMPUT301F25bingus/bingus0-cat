@@ -28,4 +28,7 @@ public interface InvitationService {
      * @return Task that resolves to the entrant's invitations (may be empty)
      */
     Task<List<Invitation>> listByEntrant(String entrantId);
+    Task<List<Invitation>> listByEventWithStatuses(String eventId, List<String> statuses);
+    /** Returns the (first) invitation for this entrant for a specific event, or null. */
+    Task<Invitation> getForEventAndEntrant(String eventId, String entrantId);
 }

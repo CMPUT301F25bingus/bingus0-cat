@@ -60,11 +60,11 @@ public class InvitationInboxFragment extends Fragment {
 //        // Optional debug seeder
 //        FloatingActionButton fab = v.findViewById(R.id.fabSeed);
 //        if (fab != null) fab.setOnClickListener(btn -> seedPendingInvitation());
-        View fab = v.findViewById(R.id.fabSeed);
-        if (fab != null) fab.setVisibility(DEBUG_SEEDER ? View.VISIBLE : View.GONE);
-        if (DEBUG_SEEDER && fab != null) {
-            fab.setOnClickListener(btn -> seedPendingInvitation());
-        }
+//        View fab = v.findViewById(R.id.fabSeed);
+//        if (fab != null) fab.setVisibility(DEBUG_SEEDER ? View.VISIBLE : View.GONE);
+//        if (DEBUG_SEEDER && fab != null) {
+//            fab.setOnClickListener(btn -> seedPendingInvitation());
+//        }
     }
 
     // --- UI Actions ---
@@ -90,8 +90,8 @@ public class InvitationInboxFragment extends Fragment {
                 .addOnSuccessListener(list -> { adapter.submitList(list); snackbar("Loaded "+list.size()); })
                 //.addOnSuccessListener(this::display)
                 .addOnFailureListener(e -> { setUiEnabled(true); snackbar(e.getMessage()); });
-                //.addOnSuccessListener(list -> { adapter.submitList(list); setUiEnabled(true); })
-                //.addOnFailureListener(e -> { setUiEnabled(true); snackbar(e.getMessage()); });
+        //.addOnSuccessListener(list -> { adapter.submitList(list); setUiEnabled(true); })
+        //.addOnFailureListener(e -> { setUiEnabled(true); snackbar(e.getMessage()); });
     }
 
     // --- Helpers ---
@@ -117,33 +117,33 @@ public class InvitationInboxFragment extends Fragment {
     }
 
     /** Debug helper: seed minimal event + one PENDING invitation for this entrant. */
-    private void seedPendingInvitation() {
-        String uid = currentEntrantId();
-        String eventId = "event-123";
-        String invitationId = "inv-" + System.currentTimeMillis();
-
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
-
-        DocumentReference eventRef = db.collection("events").document(eventId);
-        Map<String, Object> eventStub = new HashMap<>();
-        eventStub.put("title", "Debug Event");
-        eventStub.put("capacity", 5);
-        eventStub.put("createdAtUtc", System.currentTimeMillis());
-
-        long now = System.currentTimeMillis();
-        Map<String, Object> inv = new HashMap<>();
-        inv.put("eventId", eventId);
-        inv.put("entrantId", uid);
-        inv.put("status", "PENDING");
-        inv.put("issuedAtUtc", now);
-        inv.put("expiresAtUtc", now + 86_400_000L);
-
-        setUiEnabled(false);
-        eventRef.set(eventStub, SetOptions.merge())
-                .continueWithTask(t -> eventRef.collection("invitations").document(invitationId).set(inv))
-                .addOnSuccessListener(x -> { snackbar("Seeded invitation"); refresh(); })
-                .addOnFailureListener(e -> { setUiEnabled(true); snackbar(e.getMessage()); });
-    }
+//    private void seedPendingInvitation() {
+//        String uid = currentEntrantId();
+//        String eventId = "event-123";
+//        String invitationId = "inv-" + System.currentTimeMillis();
+//
+//        FirebaseFirestore db = FirebaseFirestore.getInstance();
+//
+//        DocumentReference eventRef = db.collection("events").document(eventId);
+//        Map<String, Object> eventStub = new HashMap<>();
+//        eventStub.put("title", "Debug Event");
+//        eventStub.put("capacity", 5);
+//        eventStub.put("createdAtUtc", System.currentTimeMillis());
+//
+//        long now = System.currentTimeMillis();
+//        Map<String, Object> inv = new HashMap<>();
+//        inv.put("eventId", eventId);
+//        inv.put("entrantId", uid);
+//        inv.put("status", "PENDING");
+//        inv.put("issuedAtUtc", now);
+//        inv.put("expiresAtUtc", now + 86_400_000L);
+//
+//        setUiEnabled(false);
+//        eventRef.set(eventStub, SetOptions.merge())
+//                .continueWithTask(t -> eventRef.collection("invitations").document(invitationId).set(inv))
+//                .addOnSuccessListener(x -> { snackbar("Seeded invitation"); refresh(); })
+//                .addOnFailureListener(e -> { setUiEnabled(true); snackbar(e.getMessage()); });
+//    }
 
     // --- Static factory if you want to pass entrantId from activity ---
     public static InvitationInboxFragment newInstance(String entrantId) {
