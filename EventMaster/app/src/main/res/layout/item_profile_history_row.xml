@@ -1,28 +1,62 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent" android:layout_height="wrap_content"
-    android:orientation="vertical" android:paddingVertical="10dp">
-
-    <TextView
-        android:id="@+id/tvEventTitle"
-        android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:text="Event title" android:textStyle="bold" android:textSize="15sp"/>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="10dp"
+    app:cardCornerRadius="12dp"
+    app:cardUseCompatPadding="true"
+    app:strokeWidth="0dp"
+    app:cardBackgroundColor="@color/surface_white">
 
     <LinearLayout
-        android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="horizontal" android:gravity="start">
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="12dp">
 
+        <!-- Event title -->
         <TextView
-            android:id="@+id/tvStatus"
-            android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="ACTIVE" android:textStyle="bold"
-            android:paddingHorizontal="8dp" android:paddingVertical="4dp"
-            android:background="#EAF2FF" android:textColor="#2C5FD5"
-            android:layout_marginEnd="12dp"/>
+            android:id="@+id/tvTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Event title"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary_dark"
+            android:ellipsize="end"
+            android:maxLines="1" />
 
-        <TextView
-            android:id="@+id/tvJoined"
-            android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="Joined: Jan 5, 2025" android:alpha="0.8"/>
+        <!-- Status chip + Date -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="6dp"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/tvStatusChip"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
+                android:text="Selected"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/white"
+                android:background="@drawable/chip_history_active" />
+
+            <TextView
+                android:id="@+id/tvDate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:text="Date: Jul 17, 2025"
+                android:textSize="12sp"
+                android:textColor="@color/text_secondary_dark" />
+        </LinearLayout>
     </LinearLayout>
-</LinearLayout>
+</com.google.android.material.card.MaterialCardView>

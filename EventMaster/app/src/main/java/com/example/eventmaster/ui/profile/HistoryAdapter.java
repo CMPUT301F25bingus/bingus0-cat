@@ -1,3 +1,4 @@
+// app/src/main/java/com/example/eventmaster/ui/profile/HistoryAdapter.java
 package com.example.eventmaster.ui.profile;
 
 import android.view.LayoutInflater;
@@ -14,60 +15,68 @@ import com.example.eventmaster.model.RegistrationStatus;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.VH> {
+class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.VH> {
 
-    public static class Row {
-        public final Registration reg;
-        public final String eventTitle;
-        public Row(Registration reg, String eventTitle) { this.reg = reg; this.eventTitle = eventTitle; }
+    static class Row {
+        final Registration reg;
+        final String eventTitle;
+        Row(Registration r, String title){ this.reg = r; this.eventTitle = title; }
     }
 
     private final List<Row> data = new ArrayList<>();
     private final SimpleDateFormat fmt = new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
 
-    public void replace(List<Row> rows) {
+    void replace(List<Row> rows){
         data.clear();
         if (rows != null) data.addAll(rows);
         notifyDataSetChanged();
     }
 
-    @NonNull @Override public VH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+    @NonNull @Override
+    public VH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View v = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_profile_history_row, parent, false);
         return new VH(v);
     }
 
-    @Override public void onBindViewHolder(@NonNull VH h, int pos) {
-        Row row = data.get(pos);
-        h.tvEventTitle.setText(row.eventTitle == null ? "(Untitled event)" : row.eventTitle);
+    @Override
+    public void onBindViewHolder(@NonNull VH h, int position) {
+        Row row = data.get(position);
 
+        String title = (row.eventTitle == null || row.eventTitle.trim().isEmpty())
+                ? "—" : row.eventTitle;
+        h.tvTitle.setText(title);
+
+        // Status -> label + chip color
         RegistrationStatus st = row.reg.getStatus();
-        h.tvStatus.setText(st.name());
-        // simple styling by status
         if (st == RegistrationStatus.ACTIVE) {
-            h.tvStatus.setBackgroundColor(0xFFE6F7EE); // light green
-            h.tvStatus.setTextColor(0xFF0F8A4B);
+            h.tvStatusChip.setText("Selected");
+            h.tvStatusChip.setBackgroundResource(R.drawable.chip_history_active);
+        } else if (st == RegistrationStatus.CANCELLED_BY_ORGANIZER
+                || st == RegistrationStatus.CANCELLED_BY_ENTRANT) {
+            h.tvStatusChip.setText("Cancelled");
+            h.tvStatusChip.setBackgroundResource(R.drawable.chip_history_cancelled);
         } else {
-            h.tvStatus.setBackgroundColor(0xFFFDEEEE); // light red
-            h.tvStatus.setTextColor(0xFFD5483A);
+            h.tvStatusChip.setText("Not Selected");
+            h.tvStatusChip.setBackgroundResource(R.drawable.chip_history_not_selected);
         }
 
-        h.tvJoined.setText("Joined: " + fmt.format(new Date(row.reg.getCreatedAtUtc())));
+        String dateText = "Date: " + fmt.format(row.reg.getCreatedAtUtc());
+        h.tvDate.setText(dateText);
     }
 
     @Override public int getItemCount() { return data.size(); }
 
     static class VH extends RecyclerView.ViewHolder {
-        TextView tvEventTitle, tvStatus, tvJoined;
+        TextView tvTitle, tvStatusChip, tvDate;
         VH(@NonNull View v) {
             super(v);
-            tvEventTitle = v.findViewById(R.id.tvEventTitle);
-            tvStatus     = v.findViewById(R.id.tvStatus);
-            tvJoined     = v.findViewById(R.id.tvJoined);
+            tvTitle = v.findViewById(R.id.tvTitle);
+            tvStatusChip = v.findViewById(R.id.tvStatusChip);
+            tvDate = v.findViewById(R.id.tvDate);
         }
     }
 }
