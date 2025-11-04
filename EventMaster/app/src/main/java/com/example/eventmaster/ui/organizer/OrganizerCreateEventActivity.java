@@ -166,6 +166,7 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
         String eventId = doc.getId();
 
         Map<String, Object> base = new HashMap<>();
+        base.put("eventId", eventId);
         base.put("title", title);
         base.put("description", desc);
         base.put("location", location);
@@ -238,35 +239,58 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
      * @param eventId event identifier
      */
     private void generateAndUploadQrThenFinish(DocumentReference doc, String eventId) {
-        String deepLink = "eventmaster://event/" + eventId; // replace with HTTPS if needed
+        Bitmap qr = com.example.eventmaster.utils.QRCodeGenerator.generateQRCode(eventId);
 
-        Bitmap qr = createQrBitmap(deepLink, 640);
-        if (qr == null) { setBusy(false); toast("QR generation failed."); return; }
+        if (qr == null) {
+            setBusy(false);
+            toast("QR generation failed.");
+            return;
+        }
 
-        byte[] qrPng = bitmapToPng(qr);
+        // Convert bitmap to bytes
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        qr.compress(Bitmap.CompressFormat.PNG, 100, baos);
+        byte[] qrBytes = baos.toByteArray();
+
+        // Upload to Firebase Storage
         StorageReference ref = FirebaseStorage.getInstance()
                 .getReference("events/" + eventId + "/qr.png");
 
-        ref.putBytes(qrPng)
-                .continueWithTask(task -> { if (!task.isSuccessful()) throw task.getException(); return ref.getDownloadUrl(); })
-                .addOnSuccessListener(qrUrl ->
-                        doc.update("qrUrl", qrUrl.toString())
-                                .addOnSuccessListener(unused -> {
-                                    setBusy(false);
-                                    toast("Event published!");
-                                    redirectToDetails(eventId);
-                                })
-                                .addOnFailureListener(e -> { setBusy(false); toast("Failed saving QR URL: " + e.getMessage()); })
-                )
-                .addOnFailureListener(e -> { setBusy(false); toast("QR upload failed: " + e.getMessage()); });
+        ref.putBytes(qrBytes)
+                .continueWithTask(task -> {
+                    if (!task.isSuccessful()) throw task.getException();
+                    return ref.getDownloadUrl();
+                })
+                .addOnSuccessListener(qrUrl -> {
+                    doc.update("qrUrl", qrUrl.toString())
+                            .addOnSuccessListener(unused -> {
+                                setBusy(false);
+                                toast("Event published!");
+                                redirectToDetails(eventId);
+                            })
+                            .addOnFailureListener(e -> {
+                                setBusy(false);
+                                toast("Failed saving QR URL: " + e.getMessage());
+                            });
+                })
+                .addOnFailureListener(e -> {
+                    setBusy(false);
+                    toast("QR upload failed: " + e.getMessage());
+                });
     }
 
+
+    /**
+     * After successful event creation, redirect the organizer
+     * to the Manage Events screen instead of the details page.
+     */
     private void redirectToDetails(String eventId) {
-        Intent i = new Intent(this, EventDetailsActivity.class);
+        Intent i = new Intent(this, OrganizerManageEventsActivity.class);
         i.putExtra("eventId", eventId);
         startActivity(i);
-        finish();
+        finish(); // close create screen
     }
+
 
     // ---------- Helpers ----------
 

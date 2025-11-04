@@ -57,8 +57,11 @@ dependencies {
     androidTestImplementation("androidx.test.espresso:espresso-intents:3.6.1")
     androidTestImplementation("androidx.test.espresso:espresso-contrib:3.6.1") // PickerActions
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
-    implementation("com.github.bumptech.glide:glide:4.16.0")
-    annotationProcessor ("com.github.bumptech.glide:compiler:4.16.0")
-    testImplementation("org.robolectric:robolectric:4.12.1")
 
+    // --- Firestore + FirebaseUI + Glide ---
+    implementation("com.firebaseui:firebase-ui-firestore:8.0.2")
+    implementation("com.github.bumptech.glide:glide:4.16.0")
+    annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
+
+    testImplementation("org.robolectric:robolectric:4.12.1")
 }
