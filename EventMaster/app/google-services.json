@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "58716228619",
-    "project_id": "bingus0",
-    "storage_bucket": "bingus0.firebasestorage.app"
+    "project_number": "843364541813",
+    "project_id": "symmetric-flare-476704-t1",
+    "storage_bucket": "symmetric-flare-476704-t1.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:58716228619:android:09b7d55169a0b279f74b0e",
+        "mobilesdk_app_id": "1:843364541813:android:82503027aef8b3129b1f3c",
         "android_client_info": {
           "package_name": "com.example.eventmaster"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyA7MNawL9TZ3nxQhwtOgMRRYvvqmRtpPDo"
+          "current_key": "AIzaSyDrvYwmunWQpt9LL5DKvKBPJbm8wV-wdm8"
         }
       ],
       "services": {

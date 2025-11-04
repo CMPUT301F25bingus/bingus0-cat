@@ -25,19 +25,19 @@ public class MainActivity extends AppCompatActivity {
 //                    .replace(R.id.main_container, InvitationInboxFragment.newInstance("test-entrant-42"))
 //                    .commit();
 //            //for organizer:
-//            getSupportFragmentManager().beginTransaction()
-//                    .replace(R.id.main_container,
-//                            com.example.eventmaster.ui.organizer.enrollments.OrganizerEntrantsHubFragment
-//                                    .newInstance("event-123")) // <-- use a real eventId that has registrations
-//                    .commit();
-            String eventId = "test_event_1";
-            String userId = "testUser1";
-
-
-            getSupportFragmentManager()
-                    .beginTransaction()
-                    .replace(R.id.main_container, EventDetailsFragment.newInstance(eventId, userId))
+            getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.main_container,
+                            com.example.eventmaster.ui.organizer.enrollments.OrganizerEntrantsHubFragment
+                                    .newInstance("event-123")) // <-- use a real eventId that has registrations
                     .commit();
+//            String eventId = "test_event_1";
+//            String userId = "testUser1";
+//
+//
+//            getSupportFragmentManager()
+//                    .beginTransaction()
+//                    .replace(R.id.main_container, EventDetailsFragment.newInstance(eventId, userId))
+//                    .commit();
 
 
         }

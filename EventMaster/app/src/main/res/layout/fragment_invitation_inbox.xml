@@ -1,30 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@color/backgroundColor"
+    >
 
-    <TextView
-        android:id="@+id/emptyText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="No invitations yet.\nTap + to seed one for testing."
-        android:gravity="center"
-        android:layout_gravity="center"
-        android:textSize="16sp"
-        android:visibility="gone"/>
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/invitationRecycler"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
-    <!-- Debug-only: seed a pending invitation (hide in release) -->
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fabSeed"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_margin="16dp"
-        android:contentDescription="Seed invitation"
-        android:src="@android:drawable/ic_input_add"/>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@android:color/darker_gray"
+            android:paddingTop="54sp"
+            android:paddingBottom="20sp"
+            android:text="Invitations"
+            android:textAlignment="center"
+            android:textSize="24sp" />
+
+        <TextView
+            android:id="@+id/emptyText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:text="No invitations yet."
+            android:textSize="16sp"
+            android:visibility="gone" />
+
+        <!--    used https://www.geeksforgeeks.org/android/android-recyclerview/-->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/invitationRecycler"
+            android:layout_width="match_parent"
+            android:layout_height="393dp" />
+
+        <!-- Debug-only: seed a pending invitation (hide in release) -->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fabSeed"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_margin="16dp"
+            android:contentDescription="Seed invitation"
+            android:src="@android:drawable/ic_input_add"/>
+    </LinearLayout>
 </FrameLayout>
