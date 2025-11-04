@@ -182,3 +182,4 @@ public class QRScannerActivity extends AppCompatActivity {
 }
 
 
+

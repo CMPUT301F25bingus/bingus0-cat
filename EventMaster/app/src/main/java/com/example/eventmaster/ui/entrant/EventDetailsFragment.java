@@ -1,5 +1,6 @@
 package com.example.eventmaster.ui.entrant;
 
+import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -20,6 +21,7 @@ import com.example.eventmaster.data.firestore.WaitingListRepositoryFs;
 import com.example.eventmaster.model.Event;
 import com.example.eventmaster.model.WaitingListEntry;
 import com.example.eventmaster.utils.DeviceUtils;
+import com.example.eventmaster.utils.QRCodeGenerator;
 import com.google.android.material.button.MaterialButton;
 
 import java.text.SimpleDateFormat;
@@ -46,6 +48,7 @@ public class EventDetailsFragment extends Fragment {
     private ImageView posterImage;
     private ImageView backButton;
     private ImageView favoriteIcon;
+    private ImageView qrCodeImage;
     private TextView eventNameText;
     private TextView organizerText;
     private TextView eventDateText;
@@ -96,6 +99,7 @@ public class EventDetailsFragment extends Fragment {
         posterImage = view.findViewById(R.id.event_poster_image);
         backButton = view.findViewById(R.id.back_button);
         favoriteIcon = view.findViewById(R.id.favorite_icon);
+        qrCodeImage = view.findViewById(R.id.qr_code_image);
         eventNameText = view.findViewById(R.id.event_name_text);
         organizerText = view.findViewById(R.id.event_organizer_text);
         eventDateText = view.findViewById(R.id.event_date_text);
@@ -179,6 +183,37 @@ public class EventDetailsFragment extends Fragment {
 
         // TODO: Load poster image if posterUrl is available
         // For now, you can use an image loading library like Glide or Picasso
+
+        // Generate and display QR code for this event
+        generateQRCode();
+    }
+
+    /**
+     * Generates and displays the QR code for this event.
+     * The QR code contains the event ID so others can scan and view/join the event.
+     */
+    private void generateQRCode() {
+        if (eventId == null || eventId.isEmpty()) {
+            return;
+        }
+
+        // Generate QR code on background thread to avoid blocking UI
+        new Thread(() -> {
+            final Bitmap qrCodeBitmap = QRCodeGenerator.generateQRCode(eventId, 400, 400);
+            
+            // Update UI on main thread
+            if (getActivity() != null) {
+                getActivity().runOnUiThread(() -> {
+                    if (qrCodeBitmap != null) {
+                        qrCodeImage.setImageBitmap(qrCodeBitmap);
+                    } else {
+                        qrCodeImage.setVisibility(View.GONE);
+                        Toast.makeText(requireContext(), "Failed to generate QR code", 
+                                Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+        }).start();
     }
 
     /**
