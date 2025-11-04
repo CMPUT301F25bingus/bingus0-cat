@@ -35,29 +35,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setupButtons() {
-        MaterialButton seedDataButton = findViewById(R.id.seed_data_button);
-        MaterialButton event1Button = findViewById(R.id.test_event1_button);
-        MaterialButton event2Button = findViewById(R.id.test_event2_button);
-        MaterialButton event3Button = findViewById(R.id.test_event3_button);
         MaterialButton viewEventListButton = findViewById(R.id.view_event_list_button);
         MaterialButton adminBrowseEventsButton = findViewById(R.id.admin_browse_events_button);
         MaterialButton scanQRButton = findViewById(R.id.scan_qr_button);
-
-        // Seed test data
-        seedDataButton.setOnClickListener(v -> {
-            TestDataHelper testDataHelper = new TestDataHelper();
-            testDataHelper.createSampleEvents();
-            Toast.makeText(this, "Test data seeded! Check Firestore.", Toast.LENGTH_LONG).show();
-        });
-
-        // Test event 1 - Swimming Lessons (registration open)
-        event1Button.setOnClickListener(v -> openEventDetails("test_event_1"));
-
-        // Test event 2 - Piano Lessons (registration not yet open)
-        event2Button.setOnClickListener(v -> openEventDetails("test_event_2"));
-
-        // Test event 3 - Dance Class (registration open)
-        event3Button.setOnClickListener(v -> openEventDetails("test_event_3"));
 
         // View Event List (US #8)
         viewEventListButton.setOnClickListener(v -> openEventList());
@@ -67,12 +47,6 @@ public class MainActivity extends AppCompatActivity {
 
         // Scan QR Code (US #20)
         scanQRButton.setOnClickListener(v -> openQRScanner());
-    }
-
-    private void openEventDetails(String eventId) {
-        Intent intent = new Intent(this, EventDetailsActivity.class);
-        intent.putExtra(EventDetailsActivity.EXTRA_EVENT_ID, eventId);
-        startActivity(intent);
     }
 
     private void openEventList() {
