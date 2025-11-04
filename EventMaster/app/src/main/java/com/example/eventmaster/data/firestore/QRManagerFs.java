@@ -1,3 +1,20 @@
+/**
+ * QRManagerFs
+ *
+ * Role:
+ *  - Generates a QR code bitmap for a given payload and uploads it to Firebase Storage.
+ *
+ * Storage Path:
+ *  - events/{eventId}/qr.png  (PNG, public read; write requires Firebase Auth)
+ *
+ * Rendering:
+ *  - Uses ZXing (QRCodeWriter) to render a square QR bitmap in-memory.
+ *
+ * Contract:
+ *  - generateAndUpload(eventId, payload) -> Task<String> with public download URL.
+ *  - renderLocal(payload, sizePx) -> Bitmap for local preview or tests.
+ */
+
 package com.example.eventmaster.data.firestore;
 
 import android.graphics.Bitmap;
@@ -20,6 +37,12 @@ import java.util.Map;
 public class QRManagerFs implements QRManager {
     private final StorageReference root = FirebaseStorage.getInstance().getReference();
 
+    /**
+     * Renders a QR and uploads it as PNG to Firebase Storage; resolves to the public URL.
+     * @param eventId Firestore event identifier used to build the storage path
+     * @param payload string encoded into the QR (e.g., deep link to the event)
+     * @return Task<String> resolving to the uploaded PNG's download URL
+     */
     @Override
     public Task<String> generateAndUpload(String eventId, String payload) {
         try {

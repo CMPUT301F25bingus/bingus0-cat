@@ -1,3 +1,25 @@
+/**
+ * OrganizerCreateEventActivity
+ *
+ * Role:
+ *  - Form for organizers to publish a new event.
+ *  - Selects poster image (with preview) and uploads to Firebase Storage.
+ *  - Sets registration start/end (date + time) and stores as Firestore Timestamps.
+ *  - Creates Firestore event doc, generates & uploads QR, then redirects to details.
+ *
+ * Data:
+ *  - Firestore: collection("events")/{eventId}
+ *      fields: title, description, location, regStart, regEnd, organizerId, posterUrl, qrUrl, createdAt
+ *  - Storage:
+ *      events/{eventId}/poster.jpg
+ *      events/{eventId}/qr.png
+ *
+ * Notes / Outstanding:
+ *  - Join-window enforcement happens on Entrant side (not in this Activity).
+ *  - Anonymous FirebaseAuth sign-in used for Storage writes.
+ */
+
+
 package com.example.eventmaster.ui.organizer;
 
 import android.Manifest;
@@ -42,14 +64,18 @@ import java.util.Map;
 public class OrganizerCreateEventActivity extends AppCompatActivity {
 
     private MaterialToolbar topBar;
-    private ImageView imgPosterPreview;
-    private MaterialButton btnPickPoster, tvRegOpen, tvRegClose, btnPublish;
-    private MaterialCheckBox cbGenerateQr;
+    ImageView imgPosterPreview;
+    private MaterialButton btnPickPoster;
+    public MaterialButton tvRegOpen;
+    public MaterialButton tvRegClose;
+    private MaterialButton btnPublish;
+    MaterialCheckBox cbGenerateQr;
     private TextInputEditText editTitle, editDescription, editLocation;
     private ProgressBar progress;
 
     private Uri posterUri = null;
-    private String regStartIso = null, regEndIso = null; // yyyy-MM-dd HH:mm
+    public String regStartIso = null;
+    public String regEndIso = null; // yyyy-MM-dd HH:mm
 
     private final ActivityResultLauncher<String> pickPoster =
             registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
@@ -111,6 +137,11 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
         btnPublish.setOnClickListener(v -> publishEvent());
     }
 
+    /**
+     * Publishes a new event:
+     * 1) validates inputs; 2) writes base event doc; 3) uploads poster (optional);
+     * 4) generates + uploads QR (optional via checkbox); 5) navigates to details.
+     */
     private void publishEvent() {
         String title = textOf(editTitle);
         String desc = textOf(editDescription);
@@ -158,6 +189,11 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * After poster upload completes (or if none), decides whether to generate QR.
+     * @param doc Firestore document for the event
+     * @param eventId ID of the event document
+     */
     private void maybeGenerateQr(DocumentReference doc, String eventId) {
         if (!cbGenerateQr.isChecked()) {
             setBusy(false);
@@ -168,6 +204,14 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
         generateAndUploadQrThenFinish(doc, eventId);
     }
 
+    /**
+     * Uploads the selected poster bytes to Firebase Storage: events/{eventId}/poster.jpg
+     * and persists the download URL to the event doc.
+     * @param doc Firestore document reference for the event
+     * @param eventId event identifier
+     * @param uri local content Uri of the poster image
+     * @param onDone callback invoked after Firestore is updated
+     */
     private void uploadPoster(DocumentReference doc, String eventId, Uri uri, Runnable onDone) {
         try {
             byte[] bytes = readAllBytes(uri);
@@ -187,6 +231,12 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Generates a QR bitmap for a deep link to this event and uploads it to Storage,
+     * then writes the public URL back to the event document and redirects to details.
+     * @param doc Firestore document reference
+     * @param eventId event identifier
+     */
     private void generateAndUploadQrThenFinish(DocumentReference doc, String eventId) {
         String deepLink = "eventmaster://event/" + eventId; // replace with HTTPS if needed
 
@@ -222,6 +272,10 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
 
     private interface DatePicked { void onPick(String yyyyMmDd); }
 
+    /**
+     * Opens a DatePicker followed by a TimePicker; returns "yyyy-MM-dd HH:mm" via callback.
+     * @param cb callback receiving the combined date-time string
+     */
     private void showDatePickerDialog(DatePicked cb) {
         final java.util.Calendar c = java.util.Calendar.getInstance();
         int year = c.get(java.util.Calendar.YEAR);
@@ -241,8 +295,12 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
         return e.getText() == null ? "" : e.getText().toString().trim();
     }
 
-    // ✅ supports both "yyyy-MM-dd" and "yyyy-MM-dd HH:mm"
-    private Timestamp parseDateToTimestamp(String input) {
+    /**
+     * Parses either "yyyy-MM-dd" or "yyyy-MM-dd HH:mm" into a Firestore Timestamp.
+     * @param input date or date-time string
+     * @return Timestamp or null if parsing fails
+     */
+    public Timestamp parseDateToTimestamp(String input) {
         try {
             if (Build.VERSION.SDK_INT >= 26) {
                 if (input.contains(" ")) {
@@ -283,7 +341,7 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
         }
     }
 
-    private Bitmap createQrBitmap(String data, int size) {
+    public Bitmap createQrBitmap(String data, int size) {
         try {
             com.google.zxing.common.BitMatrix m = new QRCodeWriter().encode(data, BarcodeFormat.QR_CODE, size, size);
             Bitmap bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
@@ -296,7 +354,7 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
         }
     }
 
-    private byte[] bitmapToPng(Bitmap bmp) {
+    public byte[] bitmapToPng(Bitmap bmp) {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         bmp.compress(Bitmap.CompressFormat.PNG, 100, baos);
         return baos.toByteArray();
@@ -308,7 +366,19 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
         progress.setVisibility(busy ? android.view.View.VISIBLE : android.view.View.GONE);
     }
 
+    /**
+     * Simple toast helper.
+     * @param m message to show
+     */
     private void toast(String m) {
         Toast.makeText(this, m, Toast.LENGTH_SHORT).show();
     }
+
+    // Used only for UI tests — lets Espresso simulate a poster being chosen
+    public void testSetPosterPreview(android.net.Uri uri) {
+        if (uri != null && imgPosterPreview != null) {
+            imgPosterPreview.setImageURI(uri);
+        }
+    }
+
 }
