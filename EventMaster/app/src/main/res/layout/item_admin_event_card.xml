@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="16dp"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="4dp"
+    app:cardBackgroundColor="#FFFFFF">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp">
+
+        <!-- Event Thumbnail -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/thumbnail_card"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="0dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <ImageView
+                android:id="@+id/event_thumbnail"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:background="#CCCCCC"
+                android:contentDescription="Event thumbnail" />
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- Event Name -->
+        <TextView
+            android:id="@+id/event_name"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="Swimming Lessons for Kids"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="#000000"
+            android:layout_marginStart="16dp"
+            android:maxLines="2"
+            android:ellipsize="end"
+            app:layout_constraintStart_toEndOf="@id/thumbnail_card"
+            app:layout_constraintTop_toTopOf="@id/thumbnail_card"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <!-- Event Info -->
+        <TextView
+            android:id="@+id/event_date_text"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="Date → Jan 10 - Feb 20, 2025"
+            android:textSize="13sp"
+            android:textColor="#666666"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="4dp"
+            app:layout_constraintStart_toEndOf="@id/thumbnail_card"
+            app:layout_constraintTop_toBottomOf="@id/event_name"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <TextView
+            android:id="@+id/registration_deadline_text"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="Registration deadline → Dec 15, 2025"
+            android:textSize="13sp"
+            android:textColor="#666666"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="2dp"
+            app:layout_constraintStart_toEndOf="@id/thumbnail_card"
+            app:layout_constraintTop_toBottomOf="@id/event_date_text"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <TextView
+            android:id="@+id/joined_count_text"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="Joined → 58"
+            android:textSize="13sp"
+            android:textColor="#666666"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="2dp"
+            app:layout_constraintStart_toEndOf="@id/thumbnail_card"
+            app:layout_constraintTop_toBottomOf="@id/registration_deadline_text"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintBottom_toBottomOf="@id/thumbnail_card" />
+
+        <!-- Admin Action Buttons Row 1 -->
+        <LinearLayout
+            android:id="@+id/actions_row_1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="12dp"
+            android:gravity="start"
+            app:layout_constraintTop_toBottomOf="@id/thumbnail_card"
+            app:layout_constraintStart_toStartOf="parent">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/view_entrants_button"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:text="[View Entrants 👥]"
+                android:textSize="12sp"
+                android:textColor="#000000"
+                app:cornerRadius="8dp"
+                android:backgroundTint="#E0E0E0"
+                android:layout_marginEnd="8dp"
+                style="@style/Widget.Material3.Button.OutlinedButton" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/notifications_button"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:text="[Notifications __]"
+                android:textSize="12sp"
+                android:textColor="#000000"
+                app:cornerRadius="8dp"
+                android:backgroundTint="#E0E0E0"
+                style="@style/Widget.Material3.Button.OutlinedButton" />
+
+        </LinearLayout>
+
+        <!-- Admin Action Buttons Row 2 -->
+        <LinearLayout
+            android:id="@+id/actions_row_2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp"
+            android:gravity="start"
+            app:layout_constraintTop_toBottomOf="@id/actions_row_1"
+            app:layout_constraintStart_toStartOf="parent">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/edit_event_button"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:text="[Edit event ✏️]"
+                android:textSize="12sp"
+                android:textColor="#1976D2"
+                app:cornerRadius="8dp"
+                android:backgroundTint="#E3F2FD"
+                android:layout_marginEnd="8dp"
+                style="@style/Widget.Material3.Button.OutlinedButton" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/cancel_event_button"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:text="[Cancel event ❌]"
+                android:textSize="12sp"
+                android:textColor="#D32F2F"
+                app:cornerRadius="8dp"
+                android:backgroundTint="#FFEBEE"
+                style="@style/Widget.Material3.Button.OutlinedButton" />
+
+        </LinearLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</androidx.cardview.widget.CardView>
+
