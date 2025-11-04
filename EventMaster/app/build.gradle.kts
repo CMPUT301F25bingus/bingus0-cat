@@ -41,6 +41,10 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
-    implementation(platform("com.google.firebase:firebase-bom:34.4.0"))
+    // Firebase platform - handles all versions automatically
+    implementation(platform("com.google.firebase:firebase-bom:33.1.2"))
+
+    // Add only the Firebase SDKs you need
+    implementation("com.google.firebase:firebase-firestore")
     implementation("com.google.firebase:firebase-analytics")
 }
