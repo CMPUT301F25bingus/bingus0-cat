@@ -9,9 +9,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.EventMaster">
 
-        <!-- Make Profile the launcher while you test it -->
+        <!-- Launcher for testing -->
         <activity
-            android:name=".ui.profile.ProfileActivity"
+            android:name=".ui.admin.AdminWelcomeActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
@@ -19,13 +19,25 @@
             </intent-filter>
         </activity>
 
-        <!-- Keep other activities, but WITHOUT launcher filters -->
-        <activity android:name=".ui.profile.EditProfileActivity" />
-        <activity android:name=".ui.admin.AdminWelcomeActivity" />
+        <!-- Admin hub -->
         <activity android:name=".ui.admin.AdminBrowseActivity" />
-        <activity android:name=".ui.admin.profiles.BrowseOrganizersActivity" />
-        <activity android:name=".ui.admin.profiles.BrowseEntrantsActivity" />
-        <activity android:name=".ui.admin.profiles.AdminProfileDetailActivity" />
-    </application>
 
+        <!-- Lists (Up → AdminBrowseActivity) -->
+        <activity
+            android:name=".ui.admin.profiles.BrowseOrganizersActivity"
+            android:parentActivityName=".ui.admin.AdminBrowseActivity" />
+        <activity
+            android:name=".ui.admin.profiles.BrowseEntrantsActivity"
+            android:parentActivityName=".ui.admin.AdminBrowseActivity" />
+
+        <!-- Detail (Up → BrowseOrganizersActivity) -->
+        <activity
+            android:name=".ui.admin.profiles.AdminProfileDetailActivity"
+            android:parentActivityName=".ui.admin.profiles.BrowseOrganizersActivity" />
+
+        <!-- (Optional) Entrant profile flows you already had -->
+        <activity android:name=".ui.profile.ProfileActivity" />
+        <activity android:name=".ui.profile.EditProfileActivity" />
+
+    </application>
 </manifest>

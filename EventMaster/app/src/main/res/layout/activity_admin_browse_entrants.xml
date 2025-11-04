@@ -14,8 +14,7 @@
         app:title="Browse profiles"
         app:titleTextColor="@android:color/black"
         app:navigationIcon="@drawable/ic_arrow_back"
-        app:navigationIconTint="@android:color/black"
-        app:elevation="0dp" />
+        app:navigationIconTint="@android:color/black"/>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvProfiles"
@@ -23,7 +22,7 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         android:padding="16dp"
-        android:clipToPadding="false" />
+        android:clipToPadding="false"/>
 
     <TextView
         android:id="@+id/tvViewMore"
@@ -31,7 +30,6 @@
         android:layout_height="wrap_content"
         android:text="View more"
         android:gravity="center"
-        android:padding="14dp"
-        android:textColor="@android:color/white"
-        android:textStyle="bold"/>
+        android:padding="16dp"
+        android:textColor="@android:color/white"/>
 </LinearLayout>

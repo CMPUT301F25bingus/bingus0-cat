@@ -1,83 +1,151 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/profile_bg">
 
-    <com.google.android.material.appbar.MaterialToolbar
-        android:id="@+id/toolbar"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:background="@color/profile_nav"
-        app:title="Organizer profile"
-        app:titleTextColor="@android:color/black"
-        app:navigationIcon="@drawable/ic_arrow_back"
-        app:navigationIconTint="@android:color/black"
-        app:elevation="0dp" />
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
 
-    <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:fillViewport="true">
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:background="@color/profile_nav"
+            app:title="Organizer profile"
+            app:titleTextColor="@android:color/black"
+            app:navigationIcon="@drawable/ic_arrow_back"
+            app:navigationIconTint="@android:color/black"/>
 
-        <LinearLayout
+        <!-- Header card -->
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="16dp">
+            android:layout_margin="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="2dp">
 
-            <TextView android:text="Name" android:textStyle="bold"
-                android:layout_width="wrap_content" android:layout_height="wrap_content"/>
-            <TextView android:id="@+id/tvName"
-                android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:textSize="16sp" android:layout_marginBottom="12dp"/>
-
-            <TextView android:text="Email" android:textStyle="bold"
-                android:layout_width="wrap_content" android:layout_height="wrap_content"/>
-            <TextView android:id="@+id/tvEmail"
-                android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:textSize="16sp" android:layout_marginBottom="12dp"/>
-
-            <TextView android:text="Phone" android:textStyle="bold"
-                android:layout_width="wrap_content" android:layout_height="wrap_content"/>
-            <TextView android:id="@+id/tvPhone"
-                android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:textSize="16sp" android:layout_marginBottom="12dp"/>
-
-            <TextView android:text="Status" android:textStyle="bold"
-                android:layout_width="wrap_content" android:layout_height="wrap_content"/>
-            <TextView android:id="@+id/tvState"
-                android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:textSize="15sp" android:layout_marginBottom="16dp"/>
-
-            <Button
-                android:id="@+id/btnBan"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:text="Ban organizer"/>
-
-            <TextView
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Events organized"
-                android:textStyle="bold"
-                android:textSize="16sp"
-                android:layout_marginTop="24dp"
-                android:layout_marginBottom="8dp"/>
+                android:orientation="horizontal"
+                android:padding="14dp"
+                android:gravity="center_vertical">
+
+                <ImageView
+                    android:layout_width="52dp"
+                    android:layout_height="52dp"
+                    android:src="@drawable/ic_avatar_placeholder"
+                    android:contentDescription="@string/app_name"/>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:text="Name"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_secondary_dark"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+
+                    <TextView
+                        android:id="@+id/tvName"
+                        android:textSize="16sp"
+                        android:textColor="@color/text_primary_dark"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"/>
+
+                    <TextView
+                        android:text="Email"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_secondary_dark"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+
+                    <TextView
+                        android:id="@+id/tvEmail"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"/>
+
+                    <TextView
+                        android:text="Phone"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_secondary_dark"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+
+                    <TextView
+                        android:id="@+id/tvPhone"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+
+                    <TextView
+                        android:id="@+id/tvState"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Active"
+                        android:textSize="15sp"
+                        android:layout_marginBottom="8dp"/>
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Ban/Unban -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnBan"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginBottom="12dp"
+            android:text="Ban organizer"
+            android:textColor="@android:color/white"
+            app:cornerRadius="14dp"
+            app:backgroundTint="@color/btn_danger"/>
+
+        <!-- Section: Events organized -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Events organized:"
+            android:textStyle="bold"
+            android:textColor="@android:color/black"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"/>
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="1dp">
 
             <TextView
+                android:id="@+id/placeholderEvents"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="(No events wired yet)"/>
+                android:text="(No events wired yet)"
+                android:padding="14dp"
+                android:textColor="@color/text_secondary_dark"/>
+        </com.google.android.material.card.MaterialCardView>
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="View notification logs"
-                android:layout_marginTop="24dp"/>
-        </LinearLayout>
-    </ScrollView>
-</LinearLayout>
+        <TextView
+            android:id="@+id/placeholderLogs"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="View notification logs"
+            android:textStyle="bold"
+            android:padding="16dp"
+            android:textColor="@android:color/black"/>
+    </LinearLayout>
+</ScrollView>
