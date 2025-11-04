@@ -4,30 +4,44 @@ import android.os.Bundle;
 import android.widget.Button;
 import android.widget.TextView;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.eventmaster.R;
+import com.example.eventmaster.data.api.EventReadService;
+import com.example.eventmaster.data.firestore.EventReadServiceFs;
 import com.example.eventmaster.data.firestore.ProfileRepositoryFs;
 import com.example.eventmaster.model.Profile;
-import com.google.android.material.appbar.MaterialToolbar;
 
 public class AdminProfileDetailActivity extends AppCompatActivity {
 
     private final ProfileRepositoryFs repo = new ProfileRepositoryFs();
+    private final EventReadService eventRead = new EventReadServiceFs();
+
     private String profileId;
+
+    // header fields
     private TextView tvName, tvEmail, tvPhone, tvState;
     private Button btnBan;
 
-    @Override protected void onCreate(Bundle b){
-        super.onCreate(b);
-        setContentView(R.layout.activity_admin_profile_detail);
+    // events section
+    private RecyclerView rvEvents;
+    private OrganizerEventsAdapter eventsAdapter;
 
-        MaterialToolbar tb = findViewById(R.id.toolbar);
-        tb.setNavigationOnClickListener(v -> finish());
+    @Override
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_admin_profile_detail);
 
         profileId = getIntent().getStringExtra("profileId");
 
+        // Back
+        findViewById(R.id.btnBack).setOnClickListener(v -> finish());
+
+        // Header views
         tvName  = findViewById(R.id.tvName);
         tvEmail = findViewById(R.id.tvEmail);
         tvPhone = findViewById(R.id.tvPhone);
@@ -35,15 +49,26 @@ public class AdminProfileDetailActivity extends AppCompatActivity {
         btnBan  = findViewById(R.id.btnBan);
 
         btnBan.setOnClickListener(v -> toggleBan());
+
+        // Events list
+        rvEvents = findViewById(R.id.rvEvents);
+        rvEvents.setLayoutManager(new LinearLayoutManager(this));
+        eventsAdapter = new OrganizerEventsAdapter();
+        rvEvents.setAdapter(eventsAdapter);
     }
 
-    @Override protected void onResume(){ super.onResume(); load(); }
-
-    private void load(){
-        repo.get(profileId, this::bind, e -> tvName.setText("Error loading profile"));
+    @Override
+    protected void onResume() {
+        super.onResume();
+        loadProfile();
+        loadEvents();
     }
 
-    private void bind(Profile p){
+    private void loadProfile() {
+        repo.get(profileId, this::bindProfile, e -> tvName.setText("Error loading profile"));
+    }
+
+    private void bindProfile(Profile p) {
         tvName.setText(ns(p.getName()));
         tvEmail.setText(ns(p.getEmail()));
         tvPhone.setText(ns(p.getPhone()));
@@ -52,7 +77,7 @@ public class AdminProfileDetailActivity extends AppCompatActivity {
         btnBan.setText(banned ? "Unban organizer" : "Ban organizer");
     }
 
-    private void toggleBan(){
+    private void toggleBan() {
         repo.get(profileId, p -> {
             boolean next = !p.getBanned();
             new AlertDialog.Builder(this)
@@ -60,10 +85,18 @@ public class AdminProfileDetailActivity extends AppCompatActivity {
                     .setMessage((next ? "Ban " : "Unban ") + ns(p.getName()) + "?")
                     .setNegativeButton("Cancel", null)
                     .setPositiveButton(next ? "Ban" : "Unban",
-                            (d, w) -> repo.setBanned(profileId, next, v -> load(), err -> {}))
+                            (d, w) -> repo.setBanned(profileId, next, v -> loadProfile(), err -> {}))
                     .show();
         }, e -> {});
     }
 
-    private String ns(String s){ return (s == null || s.trim().isEmpty()) ? "—" : s; }
+    private void loadEvents() {
+        eventRead.listByOrganizer(profileId)
+                .addOnSuccessListener(events -> eventsAdapter.replace(events))
+                .addOnFailureListener(e -> eventsAdapter.replace(new java.util.ArrayList<>()));
+    }
+
+    private String ns(String s) {
+        return (s == null || s.trim().isEmpty()) ? "—" : s;
+    }
 }
