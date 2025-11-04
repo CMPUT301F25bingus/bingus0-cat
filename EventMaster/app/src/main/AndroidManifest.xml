@@ -20,6 +20,20 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        
+        <!-- Organizer Activities -->
+        <activity
+            android:name=".ui.organizer.SelectedEntrantsActivity"
+            android:exported="false"
+            android:label="Selected Entrants"
+            android:parentActivityName=".MainActivity" />
+        
+        <!-- Entrant Activities -->
+        <activity
+            android:name=".ui.entrant.EntrantNotificationsActivity"
+            android:exported="false"
+            android:label="Notifications"
+            android:parentActivityName=".MainActivity" />
     </application>
 
 </manifest>
