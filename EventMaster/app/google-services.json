@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "843364541813",
-    "project_id": "symmetric-flare-476704-t1",
-    "storage_bucket": "symmetric-flare-476704-t1.firebasestorage.app"
+    "project_number": "820101830297",
+    "project_id": "test-fe482",
+    "storage_bucket": "test-fe482.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:843364541813:android:82503027aef8b3129b1f3c",
+        "mobilesdk_app_id": "1:820101830297:android:5022c3b4403a953ad3ca08",
         "android_client_info": {
           "package_name": "com.example.eventmaster"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDrvYwmunWQpt9LL5DKvKBPJbm8wV-wdm8"
+          "current_key": "AIzaSyA2eXPKBgcsb-8OaqwkPpwx2bF74xsLrbM"
         }
       ],
       "services": {
@@ -27,3 +27,5 @@
   ],
   "configuration_version": "1"
 }
+
+
