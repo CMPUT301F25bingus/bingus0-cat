@@ -58,6 +58,20 @@ public class EventDetailsFragment extends Fragment {
     private TextView inviteStatusText;
     private Button acceptBtn, declineBtn;
 
+    void setEventRepositoryForTest(EventRepository repo) {
+        this.eventRepository = repo;
+    }
+    void setWaitingListRepoForTest(WaitingListRepository repo) {
+        this.waitingListRepository = repo;
+    }
+    void setInvitationServiceForTest(InvitationService svc){
+        this.invitationService = svc;
+    }
+    void setUserIdForTest(String userId) {
+        this.userId = userId;
+    }
+
+
     public static EventDetailsFragment newInstance(String eventId, String userId) {
         EventDetailsFragment f = new EventDetailsFragment();
         Bundle b = new Bundle();

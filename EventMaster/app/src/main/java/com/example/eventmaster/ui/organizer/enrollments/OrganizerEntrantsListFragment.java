@@ -28,6 +28,11 @@ public class OrganizerEntrantsListFragment extends Fragment {
     private ProgressBar progress;
     private TextView empty, header;
 
+    void setRegistrationRepoForTest(RegistrationRepository repo) {
+        this.repo = repo;
+    }
+
+
     public static OrganizerEntrantsListFragment newInstance(String eventId, String status, String title) {
         OrganizerEntrantsListFragment f = new OrganizerEntrantsListFragment();
         Bundle b = new Bundle();
