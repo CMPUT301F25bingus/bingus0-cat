@@ -62,16 +62,6 @@
                 android:textSize="12sp"
                 android:layout_marginTop="4dp" />
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnCancel"
-                android:layout_width="110dp"
-                android:layout_height="36dp"
-                android:text="✖ Cancel"
-                android:textAllCaps="false"
-                android:textColor="@android:color/white"
-                app:cornerRadius="18dp"
-                app:backgroundTint="#FF6B6B"
-                android:layout_marginTop="8dp"/>
         </LinearLayout>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>
