@@ -2,17 +2,23 @@
  * QRManagerFs
  *
  * Role:
- *  - Generates a QR code bitmap for a given payload and uploads it to Firebase Storage.
+ *  - Generates and uploads QR code bitmaps for events to Firebase Storage.
+ *
+ * Design Pattern:
+ *  - Implements Data Access / Utility layer in MVC architecture.
  *
  * Storage Path:
- *  - events/{eventId}/qr.png  (PNG, public read; write requires Firebase Auth)
+ *  - events/{eventId}/qr.png (PNG; public read, write requires Firebase Auth)
  *
  * Rendering:
  *  - Uses ZXing (QRCodeWriter) to render a square QR bitmap in-memory.
  *
  * Contract:
- *  - generateAndUpload(eventId, payload) -> Task<String> with public download URL.
- *  - renderLocal(payload, sizePx) -> Bitmap for local preview or tests.
+ *  - generateAndUpload(eventId, payload) → Task<String> with download URL.
+ *  - renderLocal(payload, sizePx) → Bitmap for local preview/testing.
+ *
+ * Outstanding Issues:
+ *  - None known.
  */
 
 package com.example.eventmaster.data.firestore;
@@ -34,14 +40,20 @@ import java.nio.charset.StandardCharsets;
 import java.util.EnumMap;
 import java.util.Map;
 
+/**
+ * Firebase Storage implementation of {@link QRManager}.
+ * Handles QR code generation and upload for event documents.
+ */
 public class QRManagerFs implements QRManager {
+
     private final StorageReference root = FirebaseStorage.getInstance().getReference();
 
     /**
-     * Renders a QR and uploads it as PNG to Firebase Storage; resolves to the public URL.
-     * @param eventId Firestore event identifier used to build the storage path
-     * @param payload string encoded into the QR (e.g., deep link to the event)
-     * @return Task<String> resolving to the uploaded PNG's download URL
+     * Generates a QR bitmap from a payload and uploads it to Firebase Storage.
+     *
+     * @param eventId Firestore event ID used for storage path naming
+     * @param payload string encoded into the QR (e.g., event deep link)
+     * @return {@link Task} resolving to the uploaded PNG's public download URL
      */
     @Override
     public Task<String> generateAndUpload(String eventId, String payload) {
@@ -63,6 +75,14 @@ public class QRManagerFs implements QRManager {
         }
     }
 
+    /**
+     * Renders a QR code bitmap locally for a given payload.
+     *
+     * @param payload text content to encode in the QR
+     * @param sizePx output bitmap size in pixels
+     * @return generated {@link Bitmap}
+     * @throws Exception if QR generation fails
+     */
     @Override
     public Bitmap renderLocal(String payload, int sizePx) throws Exception {
         QRCodeWriter writer = new QRCodeWriter();

@@ -33,7 +33,6 @@
                     app:title="Manage Events"
                     app:titleTextColor="@android:color/white" />
 
-
                 <!-- SEARCH + FILTER -->
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -81,17 +80,6 @@
                     android:clipToPadding="false"
                     android:paddingBottom="12dp" />
 
-                <!-- VIEW CANCELLED BUTTON -->
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnViewCancelled"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="View all cancelled events"
-                    android:textAllCaps="false"
-                    android:textColor="@android:color/white"
-                    android:layout_marginTop="16dp"
-                    app:cornerRadius="14dp"
-                    app:backgroundTint="#FF6B6B" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
     </FrameLayout>

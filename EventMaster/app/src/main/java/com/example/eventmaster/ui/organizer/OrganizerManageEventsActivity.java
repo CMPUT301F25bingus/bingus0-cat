@@ -10,7 +10,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.eventmaster.R;
 import com.google.android.material.appbar.MaterialToolbar;
-import com.google.android.material.button.MaterialButton;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
@@ -19,6 +18,20 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * OrganizerManageEventsActivity
+ *
+ * Role:
+ *  - Displays a list of events created by the currently signed-in organizer.
+ *  - Uses RecyclerView with EventAdapter to render event cards.
+ *  - Queries Firestore for events where organizerId == current user.
+ *
+ * Design Pattern:
+ *  - Controller/View in MVC architecture.
+ *
+ * Outstanding Issues:
+ *  - Future: add edit/delete functionality for events.
+ */
 public class OrganizerManageEventsActivity extends AppCompatActivity {
 
     private RecyclerView recyclerEvents;
@@ -30,7 +43,7 @@ public class OrganizerManageEventsActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_organizer_manage_events);
 
-        // ---------- TOP BAR ----------
+        // --- Toolbar setup ---
         MaterialToolbar topBar = findViewById(R.id.topBar);
         setSupportActionBar(topBar);
 
@@ -39,26 +52,20 @@ public class OrganizerManageEventsActivity extends AppCompatActivity {
             getSupportActionBar().setTitle("Manage Events");
         }
 
-        // handle back arrow click
         topBar.setNavigationOnClickListener(v -> onBackPressed());
 
-        // ---------- UI COMPONENTS ----------
+        // --- RecyclerView setup ---
         recyclerEvents = findViewById(R.id.recyclerEvents);
         recyclerEvents.setLayoutManager(new LinearLayoutManager(this));
         adapter = new EventAdapter(eventList);
         recyclerEvents.setAdapter(adapter);
 
-        MaterialButton btnViewCancelled = findViewById(R.id.btnViewCancelled);
-        btnViewCancelled.setOnClickListener(v ->
-                Toast.makeText(this, "View cancelled events not yet implemented.", Toast.LENGTH_SHORT).show()
-        );
-
-        // ---------- FIREBASE ----------
+        // --- Load events from Firestore ---
         loadOrganizerEvents();
     }
 
     /**
-     * Fetches events belonging to the currently signed-in organizer.
+     * Loads all events belonging to the currently signed-in organizer from Firestore.
      */
     private void loadOrganizerEvents() {
         String organizerId = FirebaseAuth.getInstance().getCurrentUser() != null
