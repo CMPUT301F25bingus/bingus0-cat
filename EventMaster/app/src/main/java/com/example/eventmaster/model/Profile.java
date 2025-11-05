@@ -1,37 +1,51 @@
 package com.example.eventmaster.model;
 
 /**
- * Represents a user profile in the Event Lottery System.
- * Contains personal information and notification preferences.
+ * Represents a user profile in the EventMaster application.
+ * Contains personal information for entrants including contact details.
+ * 
+ * Used for identifying users, sending notifications, and displaying user information.
  */
 public class Profile {
-    private String userId;
-    private String deviceId;
-    private String name;
-    private String email;
-    private String phoneNumber; // Optional
-    private boolean notificationsEnabled;
-    private String role; // "entrant", "organizer", "admin"
+    private String userId;           // Unique device-based identifier
+    private String name;             // Full name of the user
+    private String email;            // Email address (required)
+    private String phoneNumber;      // Phone number (optional)
+    private String profileImageUrl;  // URL to profile picture (optional)
+    private String fcmToken;         // Firebase Cloud Messaging token for notifications
+    private boolean notificationsEnabled; // Opt-in/out for notifications
 
-    // No-arg constructor required for Firestore
+    /**
+     * Default constructor required for Firebase deserialization.
+     */
     public Profile() {
+        this.notificationsEnabled = true; // Default to enabled
     }
 
     /**
-     * Creates a new user profile.
-     *
-     * @param userId   Unique identifier for the user
-     * @param deviceId Device identifier
-     * @param name     User's full name
-     * @param email    User's email address
+     * Creates a new Profile with required fields.
+     * 
+     * @param userId Unique identifier for the user (typically device ID)
+     * @param name Full name of the user
+     * @param email Email address
      */
-    public Profile(String userId, String deviceId, String name, String email) {
+    public Profile(String userId, String name, String email) {
         this.userId = userId;
-        this.deviceId = deviceId;
         this.name = name;
         this.email = email;
         this.notificationsEnabled = true;
-        this.role = "entrant";
+    }
+
+    /**
+     * Full constructor with all fields.
+     */
+    public Profile(String userId, String name, String email, String phoneNumber, String profileImageUrl) {
+        this.userId = userId;
+        this.name = name;
+        this.email = email;
+        this.phoneNumber = phoneNumber;
+        this.profileImageUrl = profileImageUrl;
+        this.notificationsEnabled = true;
     }
 
     // Getters and Setters
@@ -42,14 +56,6 @@ public class Profile {
 
     public void setUserId(String userId) {
         this.userId = userId;
-    }
-
-    public String getDeviceId() {
-        return deviceId;
-    }
-
-    public void setDeviceId(String deviceId) {
-        this.deviceId = deviceId;
     }
 
     public String getName() {
@@ -76,19 +82,27 @@ public class Profile {
         this.phoneNumber = phoneNumber;
     }
 
+    public String getProfileImageUrl() {
+        return profileImageUrl;
+    }
+
+    public void setProfileImageUrl(String profileImageUrl) {
+        this.profileImageUrl = profileImageUrl;
+    }
+
+    public String getFcmToken() {
+        return fcmToken;
+    }
+
+    public void setFcmToken(String fcmToken) {
+        this.fcmToken = fcmToken;
+    }
+
     public boolean isNotificationsEnabled() {
         return notificationsEnabled;
     }
 
     public void setNotificationsEnabled(boolean notificationsEnabled) {
         this.notificationsEnabled = notificationsEnabled;
-    }
-
-    public String getRole() {
-        return role;
-    }
-
-    public void setRole(String role) {
-        this.role = role;
     }
 }

@@ -80,7 +80,7 @@ public class EventListAdapter extends RecyclerView.Adapter<EventListAdapter.Even
     @Override
     public EventViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.item_event_card, parent, false);
+                .inflate(R.layout.item_event_card_entrant, parent, false);
         return new EventViewHolder(view);
     }
 

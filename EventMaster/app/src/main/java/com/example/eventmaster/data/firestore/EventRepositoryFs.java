@@ -1,61 +1,62 @@
 package com.example.eventmaster.data.firestore;
 
+import androidx.annotation.NonNull;
+
 import com.example.eventmaster.data.api.EventRepository;
 import com.example.eventmaster.model.Event;
-import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.android.gms.tasks.Task;
+import com.google.android.gms.tasks.Tasks;
+import com.google.firebase.Timestamp;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
-/**
- * Firestore implementation of EventRepository.
- * Handles Firestore operations related to Events.
- */
 public class EventRepositoryFs implements EventRepository {
 
-    private final FirebaseFirestore db;
-    private static final String COLLECTION_NAME = "events";
+    private final FirebaseFirestore db = FirebaseFirestore.getInstance();
 
-    public EventRepositoryFs() {
-        this.db = FirebaseFirestore.getInstance();
+    private Map<String, Object> toMap(@NonNull Event e) {
+        Map<String, Object> m = new HashMap<>();
+        m.put("title", e.getTitle());
+        m.put("description", e.getDescription());
+        m.put("location", e.getLocation());
+        m.put("registrationOpen", e.getRegistrationOpen());
+        m.put("registrationClose", e.getRegistrationClose());
+        m.put("posterUrl", e.getPosterUrl());
+        m.put("qrUrl", e.getQrUrl());
+        m.put("status", e.getStatus());
+        m.put("updatedAt", Timestamp.now());
+        return m;
     }
 
     @Override
-    public void getAllEvents(OnEventListListener listener) {
-        db.collection(COLLECTION_NAME)
-                .get()
-                .addOnSuccessListener(query -> {
-                    List<Event> events = new ArrayList<>();
-                    for (QueryDocumentSnapshot doc : query) {
-                        Event event = doc.toObject(Event.class);
-                        event.setEventId(doc.getId()); // Ensure ID is set
-                        events.add(event);
-                    }
-                    listener.onSuccess(events);
-                })
-                .addOnFailureListener(listener::onFailure);
+    public Task<String> create(Event e) {
+        String err = e.validate();
+        if (err != null) return Tasks.forException(new IllegalArgumentException(err));
+
+        Map<String, Object> data = toMap(e);
+        data.put("createdAt", Timestamp.now());
+
+        DocumentReference ref = db.collection("events").document();
+        return ref.set(data).continueWith(task -> {
+            if (!task.isSuccessful()) throw task.getException();
+            return ref.getId();
+        });
     }
 
     @Override
-    public void getEventById(String eventId, OnEventListener listener) {
-        db.collection(COLLECTION_NAME)
-                .document(eventId)
-                .get()
-                .addOnSuccessListener(documentSnapshot -> {
-                    if (documentSnapshot.exists()) {
-                        Event event = documentSnapshot.toObject(Event.class);
-                        if (event != null) {
-                            event.setEventId(documentSnapshot.getId());
-                            listener.onSuccess(event);
-                        } else {
-                            listener.onFailure(new Exception("Failed to parse event data"));
-                        }
-                    } else {
-                        listener.onFailure(new Exception("Event not found"));
-                    }
-                })
-                .addOnFailureListener(listener::onFailure);
+    public Task<Void> update(String eventId, Map<String, Object> fields) {
+        fields.put("updatedAt", Timestamp.now());
+        return db.collection("events").document(eventId).update(fields);
+    }
+
+    @Override
+    public Task<Void> publish(String eventId) {
+        Map<String, Object> fields = new HashMap<>();
+        fields.put("status", "PUBLISHED");
+        fields.put("publishedAt", Timestamp.now());
+        return update(eventId, fields);
     }
 }

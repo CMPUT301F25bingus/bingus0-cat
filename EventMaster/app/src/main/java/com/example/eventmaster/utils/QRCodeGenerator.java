@@ -30,7 +30,7 @@ public class QRCodeGenerator {
         try {
             // Create QR code writer
             QRCodeWriter qrCodeWriter = new QRCodeWriter();
-            
+
             // Encode the text into a BitMatrix
             BitMatrix bitMatrix = qrCodeWriter.encode(
                     text,
@@ -41,7 +41,7 @@ public class QRCodeGenerator {
 
             // Convert BitMatrix to Bitmap
             Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565);
-            
+
             for (int x = 0; x < width; x++) {
                 for (int y = 0; y < height; y++) {
                     // Set pixel color based on BitMatrix value
@@ -67,4 +67,3 @@ public class QRCodeGenerator {
         return generateQRCode(text, 512, 512);
     }
 }
-
