@@ -1,5 +1,6 @@
 package com.example.eventmaster.data.firestore;
 
+<<<<<<< HEAD
 import androidx.annotation.NonNull;
 
 import com.example.eventmaster.data.api.InvitationService;
@@ -157,4 +158,7 @@ public class InvitationServiceFs implements InvitationService {
     }
 
 
+=======
+public class InvitationServiceFs {
+>>>>>>> dev
 }
