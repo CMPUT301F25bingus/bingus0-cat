@@ -2,68 +2,88 @@ package com.example.eventmaster.model;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+
 import com.google.firebase.Timestamp;
+
+import java.util.Date;
 import java.util.Objects;
 
 /**
- * Event
+ * Unified Event model for the Event Lottery System.
  *
- * Role:
- *  - Represents an event document stored in Firestore under /events/{eventId}.
- *  - Contains metadata such as title, description, location, registration window, and media URLs.
+ * - Firestore doc path: /events/{id}
+ * - Canonical fields use consistent names.
+ * - Alias getters/setters are provided to preserve API compatibility
+ *   with older code (e.g., getTitle()/getName(), getEventId()/getId()).
  *
- * Design Pattern:
- *  - Model class (POJO) used within the MVC architecture.
- *
- * Outstanding Issues:
- *  - None known.
+ * NOTE: Firestore does not store the document ID by default; callers
+ *       should setId(doc.getId()) after reading.
  */
 public class Event {
 
-    // --- Fields ---
-    private String id; // Firestore document ID (not stored as field)
-    private String title;
+    // ---- Canonical Fields ----
+    private String id;                 // Firestore doc ID (not stored as field)
+    private String name;               // aka "title"
     private String description;
     private String location;
-    private Timestamp registrationOpen;
-    private Timestamp registrationClose;
+
+    // When the actual event occurs (optional)
+    private Timestamp eventDate;
+
+    // Registration window
+    private Timestamp registrationOpen;    // aka registrationStartDate
+    private Timestamp registrationClose;   // aka registrationEndDate
+
+    // Media / links
     private String posterUrl;
     private String qrUrl;
-    private String status = "DRAFT";
 
-    /** Default empty constructor required by Firestore for deserialization. */
+    // Organizer
+    private String organizerId;
+    private String organizerName;
+
+    // Constraints / options
+    private int capacity;                   // 0 means unspecified
+    private @Nullable Integer waitingListLimit; // null = unlimited
+    private boolean geolocationRequired;
+    private double price;                   // 0.0 means free
+
+    // Lifecycle
+    private String status = "DRAFT";        // DRAFT | PUBLISHED | CLOSED, etc.
+
+    /** Empty constructor required by Firestore. */
     @SuppressWarnings("unused")
     public Event() {}
 
-    /**
-     * Constructs a new Event object with core fields.
-     *
-     * @param title event title (required)
-     * @param description optional event description
-     * @param location optional event location
-     * @param registrationOpen registration start timestamp
-     * @param registrationClose registration end timestamp
-     */
-    public Event(@NonNull String title,
+    /** Convenience constructor for common fields. */
+    public Event(@NonNull String name,
                  @Nullable String description,
                  @Nullable String location,
+                 @Nullable Timestamp eventDate,
                  @NonNull Timestamp registrationOpen,
-                 @NonNull Timestamp registrationClose) {
-        this.title = title;
+                 @NonNull Timestamp registrationClose,
+                 @Nullable String organizerId,
+                 @Nullable String organizerName,
+                 int capacity,
+                 double price) {
+        this.name = name;
         this.description = description;
         this.location = location;
+        this.eventDate = eventDate;
         this.registrationOpen = registrationOpen;
         this.registrationClose = registrationClose;
+        this.organizerId = organizerId;
+        this.organizerName = organizerName;
+        this.capacity = capacity;
+        this.price = price;
     }
 
-    /**
-     * Validates the event’s required fields.
-     *
-     * @return {@code null} if valid, otherwise an error message.
-     */
+    // ---------- Validation ----------
+
+    /** @return null if valid, otherwise an error message. */
     @Nullable
     public String validate() {
-        if (title == null || title.trim().isEmpty()) return "Title is required.";
+        if (name == null || name.trim().isEmpty()) return "Event name/title is required.";
         if (registrationOpen == null) return "Registration open time is required.";
         if (registrationClose == null) return "Registration close time is required.";
         if (registrationOpen.compareTo(registrationClose) > 0)
@@ -71,83 +91,120 @@ public class Event {
         return null;
     }
 
-    // --- Getters and Setters ---
+    // ---------- Canonical Getters/Setters ----------
 
-    /** @return Firestore document ID. */
     @Nullable public String getId() { return id; }
-    /** @param id sets the Firestore document ID. */
     public void setId(@Nullable String id) { this.id = id; }
 
-    /** @return event title. */
-    @NonNull public String getTitle() { return title; }
-    /** @param title sets the event title. */
-    public void setTitle(@NonNull String title) { this.title = title; }
+    @NonNull public String getName() { return name == null ? "" : name; }
+    public void setName(@NonNull String name) { this.name = name; }
 
-    /** @return optional description. */
     @Nullable public String getDescription() { return description; }
-    /** @param description sets event description. */
     public void setDescription(@Nullable String description) { this.description = description; }
 
-    /** @return event location. */
     @Nullable public String getLocation() { return location; }
-    /** @param location sets event location. */
     public void setLocation(@Nullable String location) { this.location = location; }
 
-    /** @return registration open timestamp. */
+    @Nullable public Timestamp getEventDateTimestamp() { return eventDate; }
+    public void setEventDateTimestamp(@Nullable Timestamp eventDate) { this.eventDate = eventDate; }
+
+    @Nullable public Date getEventDate() { return eventDate != null ? eventDate.toDate() : null; }
+    public void setEventDate(@Nullable Date eventDate) {
+        this.eventDate = (eventDate != null) ? new Timestamp(eventDate) : null;
+    }
+
     @NonNull public Timestamp getRegistrationOpen() { return registrationOpen; }
-    /** @param registrationOpen sets registration start. */
     public void setRegistrationOpen(@NonNull Timestamp registrationOpen) { this.registrationOpen = registrationOpen; }
 
-    /** @return registration close timestamp. */
     @NonNull public Timestamp getRegistrationClose() { return registrationClose; }
-    /** @param registrationClose sets registration end. */
     public void setRegistrationClose(@NonNull Timestamp registrationClose) { this.registrationClose = registrationClose; }
 
-    /** @return poster image URL. */
+    @Nullable public Date getRegistrationStartDate() {
+        return registrationOpen != null ? registrationOpen.toDate() : null;
+    }
+    public void setRegistrationStartDate(@Nullable Date d) {
+        this.registrationOpen = (d != null) ? new Timestamp(d) : null;
+    }
+    @Nullable public Timestamp getRegistrationStartDateTimestamp() { return registrationOpen; }
+    public void setRegistrationStartDateTimestamp(@Nullable Timestamp ts) { this.registrationOpen = ts; }
+
+    @Nullable public Date getRegistrationEndDate() {
+        return registrationClose != null ? registrationClose.toDate() : null;
+    }
+    public void setRegistrationEndDate(@Nullable Date d) {
+        this.registrationClose = (d != null) ? new Timestamp(d) : null;
+    }
+    @Nullable public Timestamp getRegistrationEndDateTimestamp() { return registrationClose; }
+    public void setRegistrationEndDateTimestamp(@Nullable Timestamp ts) { this.registrationClose = ts; }
+
     @Nullable public String getPosterUrl() { return posterUrl; }
-    /** @param posterUrl sets poster image URL. */
     public void setPosterUrl(@Nullable String posterUrl) { this.posterUrl = posterUrl; }
 
-    /** @return QR code image URL. */
     @Nullable public String getQrUrl() { return qrUrl; }
-    /** @param qrUrl sets QR code image URL. */
     public void setQrUrl(@Nullable String qrUrl) { this.qrUrl = qrUrl; }
 
-    /** @return event status (e.g., “DRAFT”, “PUBLISHED”). */
-    @NonNull public String getStatus() { return status; }
-    /** @param status sets current event status. */
+    @Nullable public String getOrganizerId() { return organizerId; }
+    public void setOrganizerId(@Nullable String organizerId) { this.organizerId = organizerId; }
+
+    @Nullable public String getOrganizerName() { return organizerName; }
+    public void setOrganizerName(@Nullable String organizerName) { this.organizerName = organizerName; }
+
+    public int getCapacity() { return capacity; }
+    public void setCapacity(int capacity) { this.capacity = capacity; }
+
+    @Nullable public Integer getWaitingListLimit() { return waitingListLimit; }
+    public void setWaitingListLimit(@Nullable Integer waitingListLimit) { this.waitingListLimit = waitingListLimit; }
+
+    public boolean isGeolocationRequired() { return geolocationRequired; }
+    public void setGeolocationRequired(boolean geolocationRequired) { this.geolocationRequired = geolocationRequired; }
+
+    public double getPrice() { return price; }
+    public void setPrice(double price) { this.price = price; }
+
+    @NonNull public String getStatus() { return status == null ? "DRAFT" : status; }
     public void setStatus(@NonNull String status) { this.status = status; }
 
-    // --- Equality and Hashing ---
+    // ---------- Alias API (back-compat with both branches) ----------
 
-    /**
-     * Compares events by field values (ignores {@code id}).
-     *
-     * @param o object to compare
-     * @return true if both events have equal values
-     */
+    // eventId <-> id
+    @Nullable public String getEventId() { return getId(); }
+    public void setEventId(@Nullable String eventId) { setId(eventId); }
+
+    // title <-> name
+    @NonNull public String getTitle() { return getName(); }
+    public void setTitle(@NonNull String title) { setName(title); }
+
+    // registrationOpen/Close already covered above via Start/End alias
+
+    // ---------- Equality / Hashing (ignores id) ----------
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof Event)) return false;
         Event e = (Event) o;
-        return Objects.equals(title, e.title) &&
+        return capacity == e.capacity &&
+                geolocationRequired == e.geolocationRequired &&
+                Double.compare(e.price, price) == 0 &&
+                Objects.equals(name, e.name) &&
                 Objects.equals(description, e.description) &&
                 Objects.equals(location, e.location) &&
+                Objects.equals(eventDate, e.eventDate) &&
                 Objects.equals(registrationOpen, e.registrationOpen) &&
                 Objects.equals(registrationClose, e.registrationClose) &&
                 Objects.equals(posterUrl, e.posterUrl) &&
                 Objects.equals(qrUrl, e.qrUrl) &&
+                Objects.equals(organizerId, e.organizerId) &&
+                Objects.equals(organizerName, e.organizerName) &&
+                Objects.equals(waitingListLimit, e.waitingListLimit) &&
                 Objects.equals(status, e.status);
     }
 
-    /**
-     * Generates a hash code for this Event.
-     *
-     * @return integer hash code
-     */
     @Override
     public int hashCode() {
-        return Objects.hash(title, description, location, registrationOpen, registrationClose, posterUrl, qrUrl, status);
+        return Objects.hash(name, description, location, eventDate,
+                registrationOpen, registrationClose, posterUrl, qrUrl,
+                organizerId, organizerName, capacity, waitingListLimit,
+                geolocationRequired, price, status);
     }
 }
