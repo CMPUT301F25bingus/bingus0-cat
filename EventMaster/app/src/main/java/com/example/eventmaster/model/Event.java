@@ -78,20 +78,132 @@ public class Event {
         this.price = price;
     }
 
+    /** Overload: with Dates, without eventId. */
+    public Event(@NonNull String name,
+                 @Nullable String description,
+                 @Nullable String location,
+                 @Nullable Date eventDate,
+                 @NonNull Date registrationStartDate,
+                 @NonNull Date registrationEndDate,
+                 @Nullable String organizerId,
+                 @Nullable String organizerName,
+                 int capacity,
+                 double price) {
+        this(
+                name,
+                description,
+                location,
+                eventDate != null ? new com.google.firebase.Timestamp(eventDate) : null,
+                new com.google.firebase.Timestamp(registrationStartDate),
+                new com.google.firebase.Timestamp(registrationEndDate),
+                organizerId,
+                organizerName,
+                capacity,
+                price
+        );
+    }
+
+    /** Overload: with Timestamps, includes eventId (sets doc id). */
+    public Event(@Nullable String eventId,
+                 @NonNull String name,
+                 @Nullable String description,
+                 @Nullable String location,
+                 @Nullable com.google.firebase.Timestamp eventDate,
+                 @NonNull com.google.firebase.Timestamp registrationOpen,
+                 @NonNull com.google.firebase.Timestamp registrationClose,
+                 @Nullable String organizerId,
+                 @Nullable String organizerName,
+                 int capacity,
+                 double price) {
+        this(name, description, location, eventDate, registrationOpen, registrationClose,
+                organizerId, organizerName, capacity, price);
+        this.id = eventId; // also satisfies getEventId()/setEventId() callers
+    }
+
+    /** Overload: with Dates, includes eventId (matches your TestDataHelper). */
+    public Event(@Nullable String eventId,
+                 @NonNull String name,
+                 @Nullable String description,
+                 @Nullable String location,
+                 @Nullable Date eventDate,
+                 @NonNull Date registrationStartDate,
+                 @NonNull Date registrationEndDate,
+                 @Nullable String organizerId,
+                 @Nullable String organizerName,
+                 int capacity,
+                 double price) {
+        this(
+                eventId,
+                name,
+                description,
+                location,
+                eventDate != null ? new com.google.firebase.Timestamp(eventDate) : null,
+                new com.google.firebase.Timestamp(registrationStartDate),
+                new com.google.firebase.Timestamp(registrationEndDate),
+                organizerId,
+                organizerName,
+                capacity,
+                price
+        );
+    }
+
+    // --- Short convenience overloads used by tests ---
+
+    /** Minimal ctor (Timestamp-based): name/desc/location + reg window only. */
+    public Event(@NonNull String name,
+                 @Nullable String description,
+                 @Nullable String location,
+                 @NonNull Timestamp registrationOpen,
+                 @NonNull Timestamp registrationClose) {
+        this(name, description, location,
+                /*eventDate*/ null,
+                registrationOpen, registrationClose,
+                /*organizerId*/ null, /*organizerName*/ null,
+                /*capacity*/ 0, /*price*/ 0.0);
+    }
+
+    /** Minimal ctor (Date-based): name/desc/location + reg window only. */
+    public Event(@NonNull String name,
+                 @Nullable String description,
+                 @Nullable String location,
+                 @NonNull Date registrationStartDate,
+                 @NonNull Date registrationEndDate) {
+        this(name, description, location,
+                /*eventDate*/ (Timestamp) null,
+                new Timestamp(registrationStartDate),
+                new Timestamp(registrationEndDate),
+                /*organizerId*/ null, /*organizerName*/ null,
+                /*capacity*/ 0, /*price*/ 0.0);
+    }
+
+
+
     // ---------- Validation ----------
 
     /** @return null if valid, otherwise an error message. */
     @Nullable
     public String validate() {
-        if (name == null || name.trim().isEmpty()) return "Event name/title is required.";
-        if (registrationOpen == null) return "Registration open time is required.";
-        if (registrationClose == null) return "Registration close time is required.";
-        if (registrationOpen.compareTo(registrationClose) > 0)
+        if (name == null || name.trim().isEmpty()) {
+            // test looks for "Title"
+            return "Title is required.";
+        }
+        if (registrationOpen == null) {
+            // test looks for "open"
+            return "Registration open time is required.";
+        }
+        if (registrationClose == null) {
+            // test looks for "close"
+            return "Registration close time is required.";
+        }
+        if (registrationOpen.compareTo(registrationClose) > 0) {
+            // test checks for "before" or "equal" in the message
             return "Registration open time must be before or equal to close time.";
+        }
         return null;
     }
 
-    // ---------- Canonical Getters/Setters ----------
+
+    //Getters and Setters:
 
     @Nullable public String getId() { return id; }
     public void setId(@Nullable String id) { this.id = id; }
