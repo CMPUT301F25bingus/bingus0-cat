@@ -1,5 +1,3 @@
-import org.gradle.kotlin.dsl.androidTestImplementation
-
 plugins {
     alias(libs.plugins.android.application)
     id("com.google.gms.google-services")
@@ -40,28 +38,9 @@ dependencies {
     implementation(libs.material)
     implementation(libs.activity)
     implementation(libs.constraintlayout)
-    implementation(libs.firebase.storage)
-    implementation(libs.firebase.firestore)
-    implementation(libs.firebase.auth)
-    implementation(libs.espresso.intents)
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
     implementation(platform("com.google.firebase:firebase-bom:34.4.0"))
     implementation("com.google.firebase:firebase-analytics")
-    implementation("com.google.zxing:core:3.5.3")
-    implementation("com.google.firebase:firebase-auth")
-    implementation("com.google.firebase:firebase-firestore")
-    implementation("com.google.firebase:firebase-storage")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
-    androidTestImplementation("androidx.test.espresso:espresso-intents:3.6.1")
-    androidTestImplementation("androidx.test.espresso:espresso-contrib:3.6.1") // PickerActions
-    androidTestImplementation("androidx.test.ext:junit:1.2.1")
-
-    // --- Firestore + FirebaseUI + Glide ---
-    implementation("com.firebaseui:firebase-ui-firestore:8.0.2")
-    implementation("com.github.bumptech.glide:glide:4.16.0")
-    annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
-
-    testImplementation("org.robolectric:robolectric:4.12.1")
 }
