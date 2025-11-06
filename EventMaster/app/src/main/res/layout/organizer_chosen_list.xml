@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="#A5D6D3">
+
+    <TextView
+        android:id="@+id/btnBack"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="← Back to Waiting List"
+        android:textColor="#000000"
+        android:textSize="15sp"
+        android:background="#E0F2F1"
+        android:padding="16dp"
+        android:gravity="start|center_vertical"
+        android:clickable="true"
+        android:focusable="true" />
+
+    <TextView
+        android:id="@+id/btnTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Chosen Entrants"
+        android:textStyle="bold"
+        android:textColor="#000000"
+        android:textSize="16sp"
+        android:background="#5DB1A1"
+        android:padding="16dp"
+        android:gravity="center"
+        android:layout_marginTop="12dp" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerViewChosenList"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginTop="12dp" />
+
+    <TextView
+        android:id="@+id/textTotalChosen"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Total chosen entrants: 0"
+        android:layout_marginTop="8dp"
+        android:textStyle="bold"
+        android:textColor="#000" />
+</LinearLayout>

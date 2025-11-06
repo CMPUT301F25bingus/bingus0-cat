@@ -4,7 +4,6 @@ import com.example.eventmaster.model.WaitingListEntry;
 
 /**
  * Interface for managing event waiting lists.
- * Handles operations like joining, leaving, and querying waiting lists.
  */
 public interface WaitingListRepository {
 
@@ -41,27 +40,41 @@ public interface WaitingListRepository {
      */
     void isUserInWaitingList(String eventId, String userId, OnCheckListener listener);
 
+    // ==== Organizer-specific additions ====
+
     /**
-     * Callback interface for waiting list operations.
+     * Loads all waiting list entries for an event (Organizer use).
      */
+    void getWaitingList(String eventId, OnListLoadedListener listener);
+
+    /**
+     * Loads all chosen list entries for an event (Organizer use).
+     */
+    void getChosenList(String eventId, OnListLoadedListener listener);
+
+    /**
+     * Runs a lottery that moves random entrants from "waiting" to "chosen".
+     */
+    void runLottery(String eventId, int numberToSelect, OnWaitingListOperationListener listener);
+
+    // ==== Common Callback Interfaces ====
     interface OnWaitingListOperationListener {
         void onSuccess();
         void onFailure(Exception e);
     }
 
-    /**
-     * Callback interface for count operations.
-     */
     interface OnCountListener {
         void onSuccess(int count);
         void onFailure(Exception e);
     }
 
-    /**
-     * Callback interface for check operations.
-     */
     interface OnCheckListener {
         void onSuccess(boolean exists);
+        void onFailure(Exception e);
+    }
+
+    interface OnListLoadedListener {
+        void onSuccess(java.util.List<WaitingListEntry> list);
         void onFailure(Exception e);
     }
 }
