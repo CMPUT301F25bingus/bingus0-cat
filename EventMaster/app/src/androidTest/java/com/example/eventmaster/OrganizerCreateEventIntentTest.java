@@ -42,14 +42,15 @@ public class OrganizerCreateEventIntentTest {
     /** ✅ US 02.01.01 - Verify all form elements are visible */
     @Test
     public void testUIElementsVisible() {
-        onView(withId(R.id.editTitle)).check(matches(isDisplayed()));
-        onView(withId(R.id.editDescription)).check(matches(isDisplayed()));
-        onView(withId(R.id.editLocation)).check(matches(isDisplayed()));
-        onView(withId(R.id.btnPickPoster)).check(matches(isDisplayed()));
-        onView(withId(R.id.tvRegOpen)).check(matches(isDisplayed()));
-        onView(withId(R.id.tvRegClose)).check(matches(isDisplayed()));
-        onView(withId(R.id.cbGenerateQr)).check(matches(isDisplayed()));
-        onView(withId(R.id.btnPublish)).check(matches(isDisplayed()));
+        onView(withId(R.id.editTitle)).perform(scrollTo()).check(matches(isDisplayed()));
+        onView(withId(R.id.editDescription)).perform(scrollTo()).check(matches(isDisplayed()));
+        onView(withId(R.id.editLocation)).perform(scrollTo()).check(matches(isDisplayed()));
+        onView(withId(R.id.btnPickPoster)).perform(scrollTo()).check(matches(isDisplayed()));
+        onView(withId(R.id.tvRegOpen)).perform(scrollTo()).check(matches(isDisplayed()));
+        onView(withId(R.id.tvRegClose)).perform(scrollTo()).check(matches(isDisplayed()));
+        onView(withId(R.id.cbGenerateQr)).perform(scrollTo()).check(matches(isDisplayed()));
+        onView(withId(R.id.btnPublish)).perform(scrollTo()).check(matches(isDisplayed()));
+
     }
 
     /** ✅ Validation test - should show error if title missing */

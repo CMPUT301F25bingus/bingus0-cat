@@ -16,6 +16,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import static androidx.test.espresso.Espresso.onView;
+import static androidx.test.espresso.action.ViewActions.scrollTo;
 import static androidx.test.espresso.assertion.ViewAssertions.matches;
 import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
@@ -51,10 +52,10 @@ public class EventDetailsActivityTest {
         ActivityScenario<EventDetailsActivity> scenario = ActivityScenario.launch(intent);
 
         // Verify UI elements are displayed
-        onView(withId(R.id.event_name_text)).check(matches(isDisplayed()));
-        onView(withId(R.id.event_organizer_text)).check(matches(isDisplayed()));
-        onView(withId(R.id.event_description_text)).check(matches(isDisplayed()));
-        onView(withId(R.id.join_waiting_list_button)).check(matches(isDisplayed()));
+        onView(withId(R.id.event_name_text)).perform(scrollTo()).check(matches(isDisplayed()));
+        onView(withId(R.id.event_organizer_text)).perform(scrollTo()).check(matches(isDisplayed()));
+        onView(withId(R.id.event_description_text)).perform(scrollTo()).check(matches(isDisplayed()));
+        onView(withId(R.id.join_waiting_list_button)).perform(scrollTo()).check(matches(isDisplayed()));
 
         scenario.close();
     }
@@ -68,7 +69,7 @@ public class EventDetailsActivityTest {
         ActivityScenario<EventDetailsActivity> scenario = ActivityScenario.launch(intent);
 
         // Verify the join button is present (US 01.06.02)
-        onView(withId(R.id.join_waiting_list_button)).check(matches(isDisplayed()));
+        onView(withId(R.id.join_waiting_list_button)).perform(scrollTo()).check(matches(isDisplayed()));
 
         scenario.close();
     }
