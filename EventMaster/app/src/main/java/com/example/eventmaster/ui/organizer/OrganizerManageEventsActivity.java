@@ -9,6 +9,7 @@ import android.view.View;
 
 import com.example.eventmaster.R;
 import com.example.eventmaster.ui.organizer.EventAdapter;
+import androidx.activity.OnBackPressedCallback;
 import com.example.eventmaster.ui.organizer.enrollments.OrganizerEntrantsHubFragment;
 
 import java.util.ArrayList;
@@ -41,6 +42,39 @@ public class OrganizerManageEventsActivity extends AppCompatActivity {
         // Optional: keep the overlay visibility in sync with back stack
         getSupportFragmentManager().addOnBackStackChangedListener(this::syncOverlayVisibility);
 
+
+        // Use the dispatcher for back gestures / system back
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override public void handleOnBackPressed() {
+                if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
+                    getSupportFragmentManager().popBackStack();
+                    // overlay visibility will auto-sync via your listener
+                } else {
+                    // No fragments on stack → let the activity finish as normal
+                    setEnabled(false); // hand control back to system for this press
+                    OrganizerManageEventsActivity.super.onBackPressed();
+                }
+            }
+        });
+
+        // TEMP: fake data so tapping works
+        events.add(new java.util.HashMap<String, Object>() {{
+            put("eventId", "test_event_1");
+            put("title", "Swimming Lessons for Beginners");
+            put("location", "Local Recreation Centre Pool");
+            put("regStart", null);
+            put("regEnd", null);
+            put("posterUrl", null);
+        }});
+        events.add(new java.util.HashMap<String, Object>() {{
+            put("eventId", "test_event_3");
+            put("title", "Interpretive Dance - Safety Basics");
+            put("location", "Downtown Dance Studio");
+            put("regStart", null);
+            put("regEnd", null);
+            put("posterUrl", null);
+        }});
+        adapter.notifyDataSetChanged();
         // TODO: load events -> update 'events' + adapter.notifyDataSetChanged()
     }
 
@@ -66,14 +100,4 @@ public class OrganizerManageEventsActivity extends AppCompatActivity {
         overlayContainer.setVisibility(hasStack ? View.VISIBLE : View.GONE);
     }
 
-    @Override
-    public void onBackPressed() {
-        FragmentManager fm = getSupportFragmentManager();
-        if (fm.getBackStackEntryCount() > 0) {
-            fm.popBackStack();
-            // overlay visibility will auto-sync via listener
-        } else {
-            super.onBackPressed();
-        }
-    }
 }
