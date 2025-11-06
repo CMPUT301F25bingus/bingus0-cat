@@ -11,6 +11,10 @@ import com.example.eventmaster.R;
 import com.example.eventmaster.data.firestore.ProfileRepositoryFs;
 import com.example.eventmaster.model.Profile;
 
+/**
+ * Edit Profile screen: lets a user update name, email, and phone.
+ * Uses ProfileRepositoryFs (Firestore) to load and upsert the profile.
+ */
 public class EditProfileActivity extends AppCompatActivity {
     private final ProfileRepositoryFs repo = new ProfileRepositoryFs();
     private String profileId;

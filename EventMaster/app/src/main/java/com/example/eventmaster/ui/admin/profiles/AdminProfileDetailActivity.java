@@ -16,6 +16,15 @@ import com.example.eventmaster.data.firestore.EventReadServiceFs;
 import com.example.eventmaster.data.firestore.ProfileRepositoryFs;
 import com.example.eventmaster.model.Profile;
 
+/**
+ * Admin screen listing organizers (live Firestore stream).
+ * Taps open AdminProfileDetailActivity.
+ *
+ * Responsibilities:
+ * Loads organizer profile (name/email/phone/banned state)
+ * Allows admin to ban/unban the organizer with confirmation.
+ * Lists events owned by the organizer via {@link EventReadService}.
+ */
 public class AdminProfileDetailActivity extends AppCompatActivity {
 
     private final ProfileRepositoryFs repo = new ProfileRepositoryFs();

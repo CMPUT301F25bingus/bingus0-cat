@@ -10,6 +10,11 @@ import com.example.eventmaster.ui.admin.profiles.BrowseEntrantsActivity;
 import com.example.eventmaster.ui.admin.profiles.BrowseOrganizersActivity;
 import com.google.android.material.button.MaterialButton;
 
+/**
+ * Admin "hub" screen that shows the four admin actions.
+ * Only "Browse organizers" and "Browse profiles" are wired.
+ * The other two show a placeholder toast.
+ */
 public class AdminBrowseActivity extends AppCompatActivity {
     @Override protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

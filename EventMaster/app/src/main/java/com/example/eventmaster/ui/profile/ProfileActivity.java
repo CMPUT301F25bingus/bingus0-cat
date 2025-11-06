@@ -1,4 +1,3 @@
-// app/src/main/java/com/example/eventmaster/ui/profile/ProfileActivity.java
 package com.example.eventmaster.ui.profile;
 
 import android.content.Intent;
@@ -38,7 +37,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Layout must provide:
  *  - TextViews: tvName, tvEmail, tvPhone, tvBanned
  *  - Buttons:   btnEdit, btnDelete
- *  - RecyclerView (optional): rvHistory
  */
 public class ProfileActivity extends AppCompatActivity {
 
@@ -55,7 +53,7 @@ public class ProfileActivity extends AppCompatActivity {
     private TextView tvName, tvEmail, tvPhone, tvBanned;
     private Button btnEdit, btnDelete;
 
-    // History list (optional in layout)
+    // History list
     private RecyclerView rvHistory;
     private HistoryAdapter historyAdapter;
 
@@ -83,7 +81,7 @@ public class ProfileActivity extends AppCompatActivity {
 
         btnDelete.setOnClickListener(v -> confirmDelete());
 
-        // History list (present only if your layout includes it)
+        // History list
         rvHistory = findViewById(R.id.rvHistory);
         if (rvHistory != null) {
             rvHistory.setLayoutManager(new LinearLayoutManager(this));
@@ -99,7 +97,7 @@ public class ProfileActivity extends AppCompatActivity {
         loadHistory();
     }
 
-    // -------- Profile load / delete --------
+    // Profile load / delete
 
     private void loadProfile() {
         profileRepo.get(currentId, p -> {
@@ -122,7 +120,7 @@ public class ProfileActivity extends AppCompatActivity {
                 .show();
     }
 
-    // -------- History --------
+    // History
 
     private void loadHistory() {
         if (rvHistory == null || historyAdapter == null) return;
@@ -131,7 +129,7 @@ public class ProfileActivity extends AppCompatActivity {
 
         regSvc.listByEntrant(currentId)
                 .addOnSuccessListener(regs -> {
-                    // ✅ never reassign a captured var; create a final alias
+
                     final List<Registration> regsFinal =
                             (regs == null) ? new ArrayList<>() : new ArrayList<>(regs);
 
@@ -160,7 +158,6 @@ public class ProfileActivity extends AppCompatActivity {
                         return;
                     }
 
-                    // ✅ use AtomicInteger (or int[]), not a plain int
                     final AtomicInteger done = new AtomicInteger(0);
                     final int total = eventIds.size();
 
@@ -197,7 +194,7 @@ public class ProfileActivity extends AppCompatActivity {
         historyAdapter.replace(rows);
     }
 
-    // -------- utils --------
+    // utils
     private String ns(String s) {
         return (s == null || s.trim().isEmpty()) ? "—" : s;
     }

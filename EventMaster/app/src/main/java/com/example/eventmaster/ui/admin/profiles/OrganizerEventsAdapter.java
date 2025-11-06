@@ -14,6 +14,14 @@ import com.example.eventmaster.model.Event;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * RecyclerView adapter that renders the list of events owned by an organizer
+ * on the AdminProfileDetail screen.
+ *
+ * Layout contract (res/layout/item_organizer_event_row.xml):
+ *  - @id/tvTitle  : TextView for the event title
+ *  - @id/tvVenue  : TextView for a short "Venue — {location}" line (optional)
+ */
 class OrganizerEventsAdapter extends RecyclerView.Adapter<OrganizerEventsAdapter.VH> {
 
     private final List<Event> data = new ArrayList<>();

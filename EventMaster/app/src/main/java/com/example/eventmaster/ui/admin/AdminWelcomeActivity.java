@@ -8,6 +8,10 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.eventmaster.R;
 import com.google.android.material.button.MaterialButton;
 
+/**
+ * Simple welcome screen for Admin flow.
+ * Shows a "Continue" button that navigates to the AdminBrowseActivity hub.
+ */
 public class AdminWelcomeActivity extends AppCompatActivity {
     @Override protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

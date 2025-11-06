@@ -16,6 +16,20 @@ import com.example.eventmaster.model.Profile;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * RecyclerView adapter for rendering Entrant profiles in the Admin "Browse profiles" screen.
+ *
+ * Responsibilities:
+ *  - Binds name/email/phone and shows a "Remove" action per row.
+ *  - Exposes callbacks for row open and remove so the Activity can decide behaviors.
+ *
+ * Layout contract (res/layout/item_admin_entrant_row.xml):
+ *  - @id/imgAvatar  (ImageView) optional avatar
+ *  - @id/tvName     (TextView)
+ *  - @id/tvEmail    (TextView)
+ *  - @id/tvPhone    (TextView)
+ *  - @id/btnRemove  (TextView or Button acting as a delete control)
+ */
 public class EntrantAdapter extends RecyclerView.Adapter<EntrantAdapter.VH> {
 
     public interface OnRowOpen { void onOpen(Profile p); }

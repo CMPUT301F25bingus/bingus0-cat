@@ -15,18 +15,37 @@ import com.example.eventmaster.model.Profile;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * RecyclerView adapter for the admin "Browse organizers/profiles" list.
+ *
+ * Responsibilities:
+ * Bind {@link Profile} items into {@code item_admin_profile_row} rows.
+ * Expose a simple row-click callback to open a detail screen.
+ *
+ */
 public class AdminProfileAdapter extends RecyclerView.Adapter<AdminProfileAdapter.VH> {
 
+    /** Row click contract used by the hosting Activity/Fragment. */
     public interface OnRowClick { void onOpen(Profile p); }
 
     private final List<Profile> data = new ArrayList<>();
     private final OnRowClick onRowClick;
 
+    /**
+     * Create the adapter.
+     *
+     * @param initial   optional initial data set (may be {@code null})
+     * @param onRowClick callback invoked when a row is tapped (may be {@code null})
+     */
     public AdminProfileAdapter(List<Profile> initial, OnRowClick onRowClick) {
         if (initial != null) data.addAll(initial);
         this.onRowClick = onRowClick;
     }
 
+    /**
+     * Replace the entire adapter dataset.
+     * @param items new list of profiles (may be {@code null} to clear)
+     */
     public void replace(List<Profile> items) {
         data.clear();
         if (items != null) data.addAll(items);
@@ -54,6 +73,7 @@ public class AdminProfileAdapter extends RecyclerView.Adapter<AdminProfileAdapte
 
     @Override public int getItemCount() { return data.size(); }
 
+    /** Row view holder for {@code item_admin_profile_row}. */
     static class VH extends RecyclerView.ViewHolder {
         ImageView imgAvatar, btnOpen;
         TextView tvName, tvEmail, tvPhone;

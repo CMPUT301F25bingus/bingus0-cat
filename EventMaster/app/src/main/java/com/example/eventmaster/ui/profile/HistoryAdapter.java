@@ -1,4 +1,3 @@
-// app/src/main/java/com/example/eventmaster/ui/profile/HistoryAdapter.java
 package com.example.eventmaster.ui.profile;
 
 import android.view.LayoutInflater;
@@ -18,6 +17,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+/**
+ * Renders the "Event history" rows on Profile screen.
+ * Expects layout item_profile_history_row with ids: tvTitle, tvStatusChip, tvDate.
+ * Uses chip drawables: chip_history_active, chip_history_cancelled, chip_history_not_selected.
+ */
 class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.VH> {
 
     static class Row {
@@ -50,7 +54,6 @@ class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.VH> {
                 ? "—" : row.eventTitle;
         h.tvTitle.setText(title);
 
-        // Status -> label + chip color
         RegistrationStatus st = row.reg.getStatus();
         if (st == RegistrationStatus.ACTIVE) {
             h.tvStatusChip.setText("Selected");

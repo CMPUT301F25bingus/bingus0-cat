@@ -15,6 +15,10 @@ import com.google.firebase.firestore.ListenerRegistration;
 
 import java.util.ArrayList;
 
+/**
+ * Admin screen listing organizers (live Firestore stream).
+ * Taps open AdminProfileDetailActivity.
+ */
 public class BrowseOrganizersActivity extends AppCompatActivity {
 
     private AdminProfileAdapter adapter;
@@ -25,7 +29,6 @@ public class BrowseOrganizersActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_admin_browse_organizers);
 
-        // Up arrow -> finish()
         MaterialToolbar tb = findViewById(R.id.toolbar);
         tb.setNavigationOnClickListener(v -> finish());
 
