@@ -18,7 +18,10 @@ import com.example.eventmaster.data.api.EventRepository;
 import com.example.eventmaster.data.api.WaitingListRepository;
 import com.example.eventmaster.data.firestore.EventRepositoryFs;
 import com.example.eventmaster.data.firestore.WaitingListRepositoryFs;
+import com.example.eventmaster.data.firestore.InvitationServiceFs;
+import com.example.eventmaster.data.firestore.RegistrationServiceFs;
 import com.example.eventmaster.model.Event;
+import com.example.eventmaster.model.Invitation;
 import com.example.eventmaster.model.WaitingListEntry;
 import com.example.eventmaster.utils.DeviceUtils;
 import com.example.eventmaster.utils.QRCodeGenerator;
@@ -31,7 +34,11 @@ import java.util.UUID;
 
 /**
  * Fragment displaying event details and allowing users to join the waiting list.
- * Implements US 01.06.01 (View event details) and US 01.06.02 (Sign up from event details).
+ * Implements:
+ *  - US 01.06.01 View event details
+ *  - US 01.06.02 Sign up from event details
+ *  - US 01.05.02 Accept invitation
+ *  - US 01.05.03 Decline invitation
  */
 public class EventDetailsFragment extends Fragment {
 
@@ -39,6 +46,10 @@ public class EventDetailsFragment extends Fragment {
 
     private EventRepository eventRepository;
     private WaitingListRepository waitingListRepository;
+
+    // Added services for Owner D
+    private InvitationServiceFs invitationService;
+    private RegistrationServiceFs registrationService;
 
     private String eventId;
     private Event currentEvent;
@@ -60,12 +71,13 @@ public class EventDetailsFragment extends Fragment {
     private TextView waitingListCountText;
     private MaterialButton joinButton;
 
-    /**
-     * Factory method to create a new instance of this fragment.
-     *
-     * @param eventId The event ID to display
-     * @return A new instance of EventDetailsFragment
-     */
+    // Invitation include (container + inner views)
+    private View inviteInclude;                 // <include layout="@layout/include_invitation_actions">
+    private TextView inviteStatusText;         // @id/invite_status_text (chip)
+    private MaterialButton btnAccept;          // @id/btnAccept
+    private MaterialButton btnDecline;         // @id/btnDecline
+
+    /** Factory method */
     public static EventDetailsFragment newInstance(String eventId) {
         EventDetailsFragment fragment = new EventDetailsFragment();
         Bundle args = new Bundle();
@@ -84,6 +96,10 @@ public class EventDetailsFragment extends Fragment {
         // Initialize repositories
         eventRepository = new EventRepositoryFs();
         waitingListRepository = new WaitingListRepositoryFs();
+
+        // Owner D services
+        invitationService   = new InvitationServiceFs();
+        registrationService = new RegistrationServiceFs();
 
         // Get device-based user ID (US 01.07.01)
         userId = DeviceUtils.getDeviceId(requireContext());
@@ -111,28 +127,39 @@ public class EventDetailsFragment extends Fragment {
         waitingListCountText = view.findViewById(R.id.waiting_list_count_text);
         joinButton = view.findViewById(R.id.join_waiting_list_button);
 
+        // Invitation include + inner controls
+        inviteInclude    = view.findViewById(R.id.invitation_include);
+        inviteStatusText = view.findViewById(R.id.invite_status_text);
+        btnAccept        = view.findViewById(R.id.btnAccept);
+        btnDecline       = view.findViewById(R.id.btnDecline);
+
+        // Default states while loading
+        inviteInclude.setVisibility(View.GONE);
+        joinButton.setVisibility(View.GONE);
+
         // Set click listeners
         backButton.setOnClickListener(v -> requireActivity().onBackPressed());
         favoriteIcon.setOnClickListener(v -> handleFavoriteClick());
         joinButton.setOnClickListener(v -> handleJoinWaitingList());
 
-        // Load event details
+        // Load event details (poster/qr/etc.)
         loadEventDetails();
+
+        // Decide which CTA to show: invitation include vs join button
+        decideInviteOrJoin();
 
         return view;
     }
 
-    /**
-     * Loads event details from Firestore and displays them.
-     */
+    /** Loads event details from Firestore and displays them. */
     private void loadEventDetails() {
         eventRepository.getEventById(eventId, new EventRepository.OnEventListener() {
             @Override
             public void onSuccess(Event event) {
                 currentEvent = event;
                 displayEventDetails(event);
-                checkIfUserInWaitingList();
                 loadWaitingListCount();
+                // (Do not call checkIfUserInWaitingList() here—only show join after we know no invite)
             }
 
             @Override
@@ -143,72 +170,142 @@ public class EventDetailsFragment extends Fragment {
         });
     }
 
-    /**
-     * Displays event details in the UI.
-     *
-     * @param event The event to display
-     */
+    /** Decide which CTA to show. If invited → show include; else → show join button. */
+    private void decideInviteOrJoin() {
+        invitationService.getMyInvitation(eventId, userId, inv -> {
+            if (inv != null) {
+                // There is an invitation (any status)
+                showInvitationInclude(inv);
+            } else {
+                // No invitation → allow joining (respect your existing waiting-list logic)
+                showJoinButtonWithState();
+            }
+        }, err -> {
+            // On error, fall back to join
+            showJoinButtonWithState();
+        });
+    }
+
+    /** Shows the invitation include and wires Accept/Decline. */
+    private void showInvitationInclude(@NonNull Invitation inv) {
+        inviteInclude.setVisibility(View.VISIBLE);
+        joinButton.setVisibility(View.GONE);
+
+        String status = String.valueOf(inv.getStatus());
+        switch (status) {
+            case "PENDING":
+                inviteStatusText.setVisibility(View.GONE);
+                btnAccept.setEnabled(true);
+                btnDecline.setEnabled(true);
+
+                btnAccept.setOnClickListener(v -> {
+                    setInviteButtonsEnabled(false);
+                    invitationService.accept(inv.getId(), eventId, userId, ok -> {
+                        registrationService.enroll(eventId, userId, r -> {
+                            inviteStatusText.setText("You're enrolled 🎉");
+                            inviteStatusText.setVisibility(View.VISIBLE);
+                        }, e -> {
+                            toast(e.getMessage());
+                            setInviteButtonsEnabled(true);
+                        });
+                    }, e -> {
+                        toast(e.getMessage());
+                        setInviteButtonsEnabled(true);
+                    });
+                });
+
+                btnDecline.setOnClickListener(v -> {
+                    setInviteButtonsEnabled(false);
+                    invitationService.decline(inv.getId(), eventId, userId, ok -> {
+                        inviteStatusText.setText("Invitation declined");
+                        inviteStatusText.setVisibility(View.VISIBLE);
+                    }, e -> {
+                        toast(e.getMessage());
+                        setInviteButtonsEnabled(true);
+                    });
+                });
+                break;
+
+            case "ACCEPTED":
+                inviteStatusText.setText("You're enrolled 🎉");
+                inviteStatusText.setVisibility(View.VISIBLE);
+                btnAccept.setEnabled(false);
+                btnDecline.setEnabled(false);
+                break;
+
+            default: // DECLINED
+                inviteStatusText.setText("Invitation declined");
+                inviteStatusText.setVisibility(View.VISIBLE);
+                btnAccept.setEnabled(false);
+                btnDecline.setEnabled(false);
+                break;
+        }
+    }
+
+    /** Shows the Join button and reuses your existing state checks to enable/disable it. */
+    private void showJoinButtonWithState() {
+        inviteInclude.setVisibility(View.GONE);
+        joinButton.setVisibility(View.VISIBLE);
+        // Now apply your current "already joined?" logic
+        checkIfUserInWaitingList();
+    }
+
+    private void setInviteButtonsEnabled(boolean enabled) {
+        btnAccept.setEnabled(enabled);
+        btnDecline.setEnabled(enabled);
+    }
+
+    /** Displays event details in the UI. */
     private void displayEventDetails(Event event) {
         eventNameText.setText(event.getName() != null ? event.getName() : "Unnamed Event");
         organizerText.setText("Hosted by: " + (event.getOrganizerName() != null ? event.getOrganizerName() : "Unknown"));
         locationText.setText(event.getLocation() != null ? event.getLocation() : "Location TBA");
-        
-        // Format price without decimals if it's a whole number
+
+        // Price
         if (event.getPrice() % 1 == 0) {
             priceText.setText(String.format(Locale.getDefault(), "$%.0f", event.getPrice()));
         } else {
             priceText.setText(String.format(Locale.getDefault(), "$%.2f", event.getPrice()));
         }
-        
+
         capacityText.setText(String.valueOf(event.getCapacity()));
         descriptionText.setText(event.getDescription() != null ? event.getDescription() : "No description available");
 
-        // Format dates for the bottom section with null checks
+        // Dates
         SimpleDateFormat shortDateFormat = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault());
         SimpleDateFormat eventDateFormat = new SimpleDateFormat("MMM dd - MMM, yyyy", Locale.getDefault());
-        
-        // Registration date (shown with calendar icon)
+
         if (event.getRegistrationEndDate() != null) {
             registrationDateText.setText(shortDateFormat.format(event.getRegistrationEndDate()));
         } else {
             registrationDateText.setText("TBA");
         }
-        
-        // Event date/duration (shown with clock icon)
+
         if (event.getEventDate() != null) {
             eventDateText.setText(eventDateFormat.format(event.getEventDate()));
         } else {
             eventDateText.setText("TBA");
         }
 
-        // TODO: Load poster image if posterUrl is available
-        // For now, you can use an image loading library like Glide or Picasso
+        // TODO: Load poster image if posterUrl exists (Glide/Picasso)
 
-        // Generate and display QR code for this event
+        // Generate QR code for deep link / sharing
         generateQRCode();
     }
 
-    /**
-     * Generates and displays the QR code for this event.
-     * The QR code contains the event ID so others can scan and view/join the event.
-     */
+    /** Generates and displays the QR code for this event. */
     private void generateQRCode() {
-        if (eventId == null || eventId.isEmpty()) {
-            return;
-        }
+        if (eventId == null || eventId.isEmpty()) return;
 
-        // Generate QR code on background thread to avoid blocking UI
         new Thread(() -> {
             final Bitmap qrCodeBitmap = QRCodeGenerator.generateQRCode(eventId, 400, 400);
-            
-            // Update UI on main thread
             if (getActivity() != null) {
                 getActivity().runOnUiThread(() -> {
                     if (qrCodeBitmap != null) {
                         qrCodeImage.setImageBitmap(qrCodeBitmap);
                     } else {
                         qrCodeImage.setVisibility(View.GONE);
-                        Toast.makeText(requireContext(), "Failed to generate QR code", 
+                        Toast.makeText(requireContext(), "Failed to generate QR code",
                                 Toast.LENGTH_SHORT).show();
                     }
                 });
@@ -216,9 +313,7 @@ public class EventDetailsFragment extends Fragment {
         }).start();
     }
 
-    /**
-     * Loads the count of people on the waiting list.
-     */
+    /** Loads the count of people on the waiting list. */
     private void loadWaitingListCount() {
         waitingListRepository.getWaitingListCount(eventId, new WaitingListRepository.OnCountListener() {
             @Override
@@ -234,19 +329,12 @@ public class EventDetailsFragment extends Fragment {
         });
     }
 
-    /**
-     * Handles the favorite icon click.
-     * TODO: Implement favorite functionality (save to user's favorites).
-     */
+    /** Favorite placeholder */
     private void handleFavoriteClick() {
-        // Toggle favorite state (visual feedback)
-        // You can implement actual favorite saving logic here
         Toast.makeText(requireContext(), "Favorite feature coming soon!", Toast.LENGTH_SHORT).show();
     }
 
-    /**
-     * Checks if the current user is already in the waiting list.
-     */
+    /** Checks if the current user is already in the waiting list (kept from your original logic). */
     private void checkIfUserInWaitingList() {
         waitingListRepository.isUserInWaitingList(eventId, userId,
                 new WaitingListRepository.OnCheckListener() {
@@ -265,27 +353,24 @@ public class EventDetailsFragment extends Fragment {
                     public void onFailure(Exception e) {
                         // If check fails, enable button by default
                         joinButton.setEnabled(true);
+                        joinButton.setText("Join Waiting List");
                     }
                 });
     }
 
-    /**
-     * Handles the join waiting list button click.
-     * Implements US 01.06.02 - Sign up from event details.
-     */
+    /** Handles the join waiting list button click. */
     private void handleJoinWaitingList() {
         if (currentEvent == null) {
             Toast.makeText(requireContext(), "Event data not loaded", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // Check if registration dates are available
+        // Check registration window
         if (currentEvent.getRegistrationStartDate() == null || currentEvent.getRegistrationEndDate() == null) {
             Toast.makeText(requireContext(), "Registration dates not available yet", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // Check if registration is open
         Date now = new Date();
         if (now.before(currentEvent.getRegistrationStartDate())) {
             Toast.makeText(requireContext(), "Registration hasn't opened yet", Toast.LENGTH_SHORT).show();
@@ -299,10 +384,7 @@ public class EventDetailsFragment extends Fragment {
         // Create waiting list entry
         String entryId = UUID.randomUUID().toString();
         WaitingListEntry entry = new WaitingListEntry(entryId, eventId, userId, new Date());
-
-        // TODO: If geolocation is required, get location and set it on the entry
-        // entry.setLatitude(latitude);
-        // entry.setLongitude(longitude);
+        // Optional: set geolocation here if required
 
         // Disable button while processing
         joinButton.setEnabled(false);
@@ -328,5 +410,8 @@ public class EventDetailsFragment extends Fragment {
                     }
                 });
     }
-}
 
+    private void toast(String msg) {
+        Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show();
+    }
+}

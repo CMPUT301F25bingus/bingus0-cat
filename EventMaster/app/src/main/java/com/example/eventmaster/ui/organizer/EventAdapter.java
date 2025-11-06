@@ -3,7 +3,6 @@ package com.example.eventmaster.ui.organizer;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
@@ -25,20 +24,24 @@ import java.util.Map;
  * Design Pattern:
  *  - Adapter pattern; bridges event data and RecyclerView layout.
  *
- * Outstanding Issues:
- *  - Future: add support for edit/delete event buttons.
+ * Notes:
+ *  - Now supports item click via OnEventClickListener to open Entrants Hub.
  */
 public class EventAdapter extends RecyclerView.Adapter<EventAdapter.ViewHolder> {
 
-    private final List<Map<String, Object>> events;
+    public interface OnEventClickListener {
+        void onEventClick(@NonNull String eventId);
+    }
 
-    /**
-     * Creates an EventAdapter with the given list of event data.
-     *
-     * @param events list of maps containing event fields (title, location, etc.)
-     */
+    private final List<Map<String, Object>> events;
+    private OnEventClickListener clickListener;
+
     public EventAdapter(List<Map<String, Object>> events) {
         this.events = events;
+    }
+
+    public void setOnEventClickListener(OnEventClickListener l) {
+        this.clickListener = l;
     }
 
     @NonNull
@@ -68,7 +71,7 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.ViewHolder> 
                 java.text.SimpleDateFormat sdf =
                         new java.text.SimpleDateFormat("MMM d, yyyy", java.util.Locale.getDefault());
                 formattedDates = "From " + sdf.format(start.toDate()) + " to " + sdf.format(end.toDate());
-            } catch (Exception ex) {
+            } catch (Exception ignored) {
                 formattedDates = "Invalid date";
             }
         }
@@ -84,6 +87,16 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.ViewHolder> 
         } else {
             holder.imgPoster.setImageResource(R.drawable.ic_launcher_background);
         }
+
+        // Click → hand off the eventId (robustly extract from map)
+        holder.itemView.setOnClickListener(v -> {
+            if (clickListener != null) {
+                String eventId = extractEventId(e);
+                if (eventId != null && !eventId.isEmpty()) {
+                    clickListener.onEventClick(eventId);
+                }
+            }
+        });
     }
 
     @Override
@@ -91,20 +104,25 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.ViewHolder> 
         return events.size();
     }
 
-    /**
-     * ViewHolder for caching UI components of each event card.
-     */
+    /** Try common keys your codebase might use for the Firestore doc id. */
+    private String extractEventId(Map<String, Object> e) {
+        Object id = e.get("id");
+        if (id == null) id = e.get("eventId");
+        if (id == null) id = e.get("docId");
+        return id == null ? null : String.valueOf(id);
+    }
+
+    /** ViewHolder for caching UI components of each event card. */
     public static class ViewHolder extends RecyclerView.ViewHolder {
         TextView txtTitle, txtLocation, txtDate;
         ImageView imgPoster;
-        Button btnCancel;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
-            txtTitle = itemView.findViewById(R.id.txtEventTitle);
+            txtTitle    = itemView.findViewById(R.id.txtEventTitle);
             txtLocation = itemView.findViewById(R.id.txtEventLocation);
-            txtDate = itemView.findViewById(R.id.txtEventDates);
-            imgPoster = itemView.findViewById(R.id.imgEventPoster);
+            txtDate     = itemView.findViewById(R.id.txtEventDates);
+            imgPoster   = itemView.findViewById(R.id.imgEventPoster);
         }
     }
 }

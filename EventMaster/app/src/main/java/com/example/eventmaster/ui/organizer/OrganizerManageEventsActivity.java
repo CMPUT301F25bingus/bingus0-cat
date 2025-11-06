@@ -1,99 +1,79 @@
 package com.example.eventmaster.ui.organizer;
 
-import android.os.Bundle;
-import android.widget.Toast;
-
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.fragment.app.FragmentManager;
+import android.os.Bundle;
+import android.view.View;
 
 import com.example.eventmaster.R;
-import com.google.android.material.appbar.MaterialToolbar;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.example.eventmaster.ui.organizer.EventAdapter;
+import com.example.eventmaster.ui.organizer.enrollments.OrganizerEntrantsHubFragment;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-/**
- * OrganizerManageEventsActivity
- *
- * Role:
- *  - Displays a list of events created by the currently signed-in organizer.
- *  - Uses RecyclerView with EventAdapter to render event cards.
- *  - Queries Firestore for events where organizerId == current user.
- *
- * Design Pattern:
- *  - Controller/View in MVC architecture.
- *
- * Outstanding Issues:
- *  - Future: add edit/delete functionality for events.
- */
 public class OrganizerManageEventsActivity extends AppCompatActivity {
 
-    private RecyclerView recyclerEvents;
+    private RecyclerView recycler;
     private EventAdapter adapter;
-    private final List<Map<String, Object>> eventList = new ArrayList<>();
+    private List<Map<String, Object>> events = new ArrayList<>();
+
+    private View overlayContainer;
 
     @Override
-    protected void onCreate(@Nullable Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_organizer_manage_events);
 
-        // --- Toolbar setup ---
-        MaterialToolbar topBar = findViewById(R.id.topBar);
-        setSupportActionBar(topBar);
+        overlayContainer = findViewById(R.id.fragment_container);
+        recycler = findViewById(R.id.recyclerEvents);
+        recycler.setLayoutManager(new LinearLayoutManager(this));
 
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-            getSupportActionBar().setTitle("Manage Events");
-        }
+        adapter = new EventAdapter(events);
+        recycler.setAdapter(adapter);
 
-        topBar.setNavigationOnClickListener(v -> onBackPressed());
+        // 🔗 When an event is tapped, open the Entrants Hub
+        adapter.setOnEventClickListener(this::openEntrantsHub);
 
-        // --- RecyclerView setup ---
-        recyclerEvents = findViewById(R.id.recyclerEvents);
-        recyclerEvents.setLayoutManager(new LinearLayoutManager(this));
-        adapter = new EventAdapter(eventList);
-        recyclerEvents.setAdapter(adapter);
+        // Optional: keep the overlay visibility in sync with back stack
+        getSupportFragmentManager().addOnBackStackChangedListener(this::syncOverlayVisibility);
 
-        // --- Load events from Firestore ---
-        loadOrganizerEvents();
+        // TODO: load events -> update 'events' + adapter.notifyDataSetChanged()
     }
 
-    /**
-     * Loads all events belonging to the currently signed-in organizer from Firestore.
-     */
-    private void loadOrganizerEvents() {
-        String organizerId = FirebaseAuth.getInstance().getCurrentUser() != null
-                ? FirebaseAuth.getInstance().getCurrentUser().getUid()
-                : null;
+    private void openEntrantsHub(String eventId) {
+        overlayContainer.setVisibility(View.VISIBLE);
 
-        if (organizerId == null) {
-            Toast.makeText(this, "No organizer signed in.", Toast.LENGTH_SHORT).show();
-            return;
+        OrganizerEntrantsHubFragment hub = OrganizerEntrantsHubFragment.newInstance(eventId);
+        getSupportFragmentManager()
+                .beginTransaction()
+                .setCustomAnimations(
+                        android.R.anim.slide_in_left,  // enter
+                        android.R.anim.fade_out,       // exit
+                        android.R.anim.fade_in,        // popEnter
+                        android.R.anim.slide_out_right // popExit
+                )
+                .replace(R.id.fragment_container, hub)
+                .addToBackStack("hub")
+                .commit();
+    }
+
+    private void syncOverlayVisibility() {
+        boolean hasStack = getSupportFragmentManager().getBackStackEntryCount() > 0;
+        overlayContainer.setVisibility(hasStack ? View.VISIBLE : View.GONE);
+    }
+
+    @Override
+    public void onBackPressed() {
+        FragmentManager fm = getSupportFragmentManager();
+        if (fm.getBackStackEntryCount() > 0) {
+            fm.popBackStack();
+            // overlay visibility will auto-sync via listener
+        } else {
+            super.onBackPressed();
         }
-
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
-        db.collection("events")
-                .whereEqualTo("organizerId", organizerId)
-                .get()
-                .addOnSuccessListener(query -> {
-                    eventList.clear();
-                    for (QueryDocumentSnapshot doc : query) {
-                        eventList.add(doc.getData());
-                    }
-                    adapter.notifyDataSetChanged();
-
-                    if (eventList.isEmpty()) {
-                        Toast.makeText(this, "No events found.", Toast.LENGTH_SHORT).show();
-                    }
-                })
-                .addOnFailureListener(e ->
-                        Toast.makeText(this, "Error loading events: " + e.getMessage(), Toast.LENGTH_SHORT).show()
-                );
     }
 }

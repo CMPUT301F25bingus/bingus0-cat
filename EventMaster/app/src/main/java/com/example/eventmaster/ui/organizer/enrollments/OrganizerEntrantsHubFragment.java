@@ -11,8 +11,9 @@ import androidx.fragment.app.Fragment;
 
 import com.example.eventmaster.R;
 
-public class OrganizerEntrantsHubFragment  extends Fragment {
-    private static final String ARG_EVENT_ID = "eventId";
+public class OrganizerEntrantsHubFragment extends Fragment {
+
+    public static final String ARG_EVENT_ID = "eventId";
 
     public static OrganizerEntrantsHubFragment newInstance(String eventId) {
         OrganizerEntrantsHubFragment f = new OrganizerEntrantsHubFragment();
@@ -22,30 +23,38 @@ public class OrganizerEntrantsHubFragment  extends Fragment {
         return f;
     }
 
-    @Nullable
-    @Override
-    public View onCreateView(@NonNull LayoutInflater inf, @Nullable ViewGroup c, @Nullable Bundle s) {
-        return inf.inflate(R.layout.fragment_org_entrants_hub, c, false);
+    private String eventId;
+
+    @Nullable @Override
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        View v = inflater.inflate(R.layout.fragment_org_entrants_hub, container, false);
+        eventId = requireArguments().getString(ARG_EVENT_ID);
+
+        View btnSelected  = v.findViewById(R.id.btnFinal);
+        View btnCancelled = v.findViewById(R.id.btnCancelled);
+
+        btnSelected.setOnClickListener(x ->
+                openList("ACTIVE", getString(R.string.selected_entrants)));
+
+        btnCancelled.setOnClickListener(x ->
+                openList("CANCELLED_ANY", getString(R.string.cancelled_entrants)));
+
+        return v;
     }
 
-    @Override public void onViewCreated(@NonNull View v, @Nullable Bundle s) {
-        String eventId = getArguments() != null ? getArguments().getString(ARG_EVENT_ID) : null;
-        if (eventId == null) { requireActivity().onBackPressed(); return; }
+    private void openList(String status, String title) {
+        OrganizerEntrantsListFragment frag =
+                OrganizerEntrantsListFragment.newInstance(eventId, status, title);
 
-        v.findViewById(R.id.btnFinal).setOnClickListener(x ->
-                openList(eventId, "ACTIVE", getString(R.string.selected_entrants)));
-
-        v.findViewById(R.id.btnCancelled).setOnClickListener(x ->
-                openList(eventId, "CANCELLED", getString(R.string.cancelled_entrants)));
-
-        // Waitlist button can be added later (different data source)
-    }
-
-    private void openList(String eventId, String status, String title) {
-        Fragment f = OrganizerEntrantsListFragment.newInstance(eventId, status, title);
-        requireActivity().getSupportFragmentManager().beginTransaction()
-                .replace(R.id.main_container, f)
+        int containerId = resolveContainerId();
+        requireActivity().getSupportFragmentManager()
+                .beginTransaction()
+                .replace(containerId, frag)
                 .addToBackStack(null)
                 .commit();
+    }
+
+    private int resolveContainerId() {
+        return R.id.fragment_container;
     }
 }

@@ -10,31 +10,31 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.eventmaster.R;
+import com.example.eventmaster.data.firestore.InvitationServiceFs;
+import com.example.eventmaster.data.firestore.RegistrationServiceFs;
 import com.example.eventmaster.model.Invitation;
 
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Simple adapter for the Entrant's pending invitations list.
- * Exposes Accept / Decline callbacks to the hosting Fragment.
- */
 public class InvitationListAdapter extends RecyclerView.Adapter<InvitationListAdapter.VH> {
 
-    public interface Click { void onClick(Invitation inv); }
-
-    private final Click onAccept;
-    private final Click onDecline;
-    private final List<Invitation> data = new ArrayList<>();
-
-    public InvitationListAdapter(Click onAccept, Click onDecline) {
-        this.onAccept = onAccept;
-        this.onDecline = onDecline;
+    public interface CurrentUserProvider {
+        String getUserId();
     }
 
-    public void submitList(List<Invitation> list) {
+    private final List<Invitation> data = new ArrayList<>();
+    private final InvitationServiceFs invitationService = new InvitationServiceFs();
+    private final RegistrationServiceFs registrationService = new RegistrationServiceFs();
+    private final CurrentUserProvider userProvider;
+
+    public InvitationListAdapter(CurrentUserProvider provider) {
+        this.userProvider = provider;
+    }
+
+    public void submitList(List<Invitation> items) {
         data.clear();
-        if (list != null) data.addAll(list);
+        if (items != null) data.addAll(items);
         notifyDataSetChanged();
     }
 
@@ -48,28 +48,61 @@ public class InvitationListAdapter extends RecyclerView.Adapter<InvitationListAd
     @Override
     public void onBindViewHolder(@NonNull VH h, int position) {
         Invitation inv = data.get(position);
+        h.title.setText("Invitation");
+        h.subtitle.setText("Event: " + inv.getEventId());
 
-        // Title/subtitle — adjust to your Event model later if you want more info
-        h.title.setText("Invitation • Event " + inv.getEventId());
-        h.subtitle.setText("For entrant: " + inv.getEntrantId());
+        // enable/disable by status
+        boolean pending = "PENDING".equals(String.valueOf(inv.getStatus()));
+        h.accept.setEnabled(pending);
+        h.decline.setEnabled(pending);
 
-        h.btnAccept.setOnClickListener(v -> onAccept.onClick(inv));
-        h.btnDecline.setOnClickListener(v -> onDecline.onClick(inv));
+        h.accept.setOnClickListener(v -> {
+            h.setBusy(true);
+            invitationService.accept(inv.getId(), inv.getEventId(), userProvider.getUserId(),
+                    ok -> registrationService.enroll(inv.getEventId(), userProvider.getUserId(),
+                            r -> {
+                                h.subtitle.setText("Accepted ✅");
+                                h.setBusy(false);
+                            },
+                            err -> {
+                                h.subtitle.setText(err.getMessage());
+                                h.setBusy(false);
+                            }),
+                    err -> {
+                        h.subtitle.setText(err.getMessage());
+                        h.setBusy(false);
+                    });
+        });
+
+        h.decline.setOnClickListener(v -> {
+            h.setBusy(true);
+            invitationService.decline(inv.getId(), inv.getEventId(), userProvider.getUserId(),
+                    ok -> {
+                        h.subtitle.setText("Declined ❌");
+                        h.setBusy(false);
+                    },
+                    err -> {
+                        h.subtitle.setText(err.getMessage());
+                        h.setBusy(false);
+                    });
+        });
     }
 
-    @Override
-    public int getItemCount() { return data.size(); }
+    @Override public int getItemCount() { return data.size(); }
 
     static class VH extends RecyclerView.ViewHolder {
         TextView title, subtitle;
-        Button btnAccept, btnDecline;
-
+        Button accept, decline;
         VH(@NonNull View v) {
             super(v);
-            title = v.findViewById(R.id.invTitle);
-            subtitle = v.findViewById(R.id.invSubtitle);
-            btnAccept = v.findViewById(R.id.btnAccept);
-            btnDecline = v.findViewById(R.id.btnDecline);
+            title   = v.findViewById(R.id.invTitle);
+            subtitle= v.findViewById(R.id.invSubtitle);
+            accept  = v.findViewById(R.id.btnAccept);
+            decline = v.findViewById(R.id.btnDecline);
+        }
+        void setBusy(boolean busy) {
+            accept.setEnabled(!busy);
+            decline.setEnabled(!busy);
         }
     }
 }

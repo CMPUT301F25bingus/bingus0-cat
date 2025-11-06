@@ -1,7 +1,5 @@
-package com.example.eventmaster;
+package com.example.eventmaster.model;
 
-import com.example.eventmaster.model.Registration;
-import com.example.eventmaster.model.RegistrationStatus;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
