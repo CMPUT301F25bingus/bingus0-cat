@@ -1,3 +1,5 @@
+import org.gradle.kotlin.dsl.androidTestImplementation
+
 plugins {
     alias(libs.plugins.android.application)
     id("com.google.gms.google-services")
@@ -30,6 +32,10 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
 }
 
 dependencies {
@@ -56,4 +62,8 @@ dependencies {
     implementation("com.google.firebase:firebase-auth")
     testImplementation("org.robolectric:robolectric:4.12.1")   // provides RobolectricTestRunner
     testImplementation("androidx.test:core:1.6.1")             // if you use ApplicationProvider, etc.
+    testImplementation("androidx.fragment:fragment-testing:1.8.3")
+    testImplementation("com.google.android.material:material:1.12.0")
+    androidTestImplementation("androidx.test.espresso:espresso-contrib:3.5.1")
+
 }
