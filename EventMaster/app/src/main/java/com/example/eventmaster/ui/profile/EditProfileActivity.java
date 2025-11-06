@@ -39,11 +39,19 @@ public class EditProfileActivity extends AppCompatActivity {
         }, e -> {});
 
         btnSave.setOnClickListener(v -> {
-            Profile p = new Profile(profileId,
+            Profile p = new Profile(
+                    profileId,
                     etName.getText().toString().trim(),
                     etEmail.getText().toString().trim(),
-                    etPhone.getText().toString().trim());
-            repo.upsert(profileId, p, x -> finish(), err -> {});
+                    etPhone.getText().toString().trim()
+            );
+
+            repo.upsert(p)
+                    .addOnSuccessListener(x -> finish())
+                    .addOnFailureListener(err -> {
+                        // TODO: show a Snackbar/Toast
+                        // Snackbar.make(findViewById(android.R.id.content), "Failed to save: " + err.getMessage(), Snackbar.LENGTH_LONG).show();
+                    });
         });
     }
 }

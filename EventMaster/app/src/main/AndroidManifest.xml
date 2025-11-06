@@ -1,43 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Camera permission for QR code scanning -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <application
         android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.EventMaster">
-
-        <!-- Launcher for testing -->
         <activity
-            android:name=".ui.admin.AdminWelcomeActivity"
+            android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.LAUNCHER"/>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <!-- Admin hub -->
-        <activity android:name=".ui.admin.AdminBrowseActivity" />
-
-        <!-- Lists (Up → AdminBrowseActivity) -->
         <activity
-            android:name=".ui.admin.profiles.BrowseOrganizersActivity"
-            android:parentActivityName=".ui.admin.AdminBrowseActivity" />
+            android:name=".ui.entrant.EventDetailsActivity"
+            android:exported="false" />
         <activity
-            android:name=".ui.admin.profiles.BrowseEntrantsActivity"
-            android:parentActivityName=".ui.admin.AdminBrowseActivity" />
-
-        <!-- Detail (Up → BrowseOrganizersActivity) -->
+            android:name=".ui.entrant.EventListActivity"
+            android:exported="false" />
         <activity
-            android:name=".ui.admin.profiles.AdminProfileDetailActivity"
-            android:parentActivityName=".ui.admin.profiles.BrowseOrganizersActivity" />
-
-        <!-- (Optional) Entrant profile flows you already had -->
-        <activity android:name=".ui.profile.ProfileActivity" />
-        <activity android:name=".ui.profile.EditProfileActivity" />
-
+            android:name=".ui.admin.AdminEventListActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.qr.QRScannerActivity"
+            android:screenOrientation="portrait"
+            android:exported="false" />
     </application>
+
 </manifest>
