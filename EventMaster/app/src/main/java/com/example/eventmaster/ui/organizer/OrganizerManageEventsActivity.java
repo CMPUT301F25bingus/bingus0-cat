@@ -20,6 +20,24 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Activity that allows an organizer to view and manage their created events.
+ * Displays a list of events owned by the currently logged-in organizer. When
+ * an event is selected, the app opens the {@link OrganizerEntrantsHubFragment}
+ * as an overlay, where the organizer can view entrants grouped by their
+ * registration status (e.g., active, cancelled).
+ *
+ *
+ * This screen fulfills the following user stories:
+ *  US 02.06.02: View cancelled entrants
+ *  US 02.06.03: View final enrolled list
+ *  US 02.02.01: View the list of entrants who joined my event waiting list --> todo
+ *
+ * Once authentication and event tracking are implemented, this class will
+ * connect to Firestore via {@link EventRepositoryFs} to dynamically load
+ * events owned by the logged-in organizer.
+ */
+
 public class OrganizerManageEventsActivity extends AppCompatActivity {
 
     private RecyclerView recycler;
@@ -114,6 +132,12 @@ public class OrganizerManageEventsActivity extends AppCompatActivity {
 //        });
 //    }
 
+
+    /**
+     * Handles back navigation:
+     * If an entrant-related fragment is open, pops it from the back stack.
+     * If no fragments are open, returns to {@link OrganizerHomeActivity}.
+     */
     private void handleBackToHomeOrPop() {
         FragmentManager fm = getSupportFragmentManager();
         if (fm.getBackStackEntryCount() > 0) {
@@ -127,6 +151,13 @@ public class OrganizerManageEventsActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Opens the {@link OrganizerEntrantsHubFragment} overlay for the selected event.
+     * This fragment allows organizers to view entrants categorized by their
+     * registration status (e.g., active, cancelled).
+     *
+     * @param eventId the unique ID of the selected event
+     */
     private void openEntrantsHub(String eventId) {
         overlayContainer.setVisibility(View.VISIBLE);
 
@@ -144,6 +175,14 @@ public class OrganizerManageEventsActivity extends AppCompatActivity {
                 .commit();
     }
 
+
+    /**
+     * Updates the visibility of the overlay container based on whether
+     * there are fragments on the back stack.
+     *
+     * If no fragments are visible, the overlay is hidden to reveal
+     * the event list beneath.
+     */
     private void syncOverlayVisibility() {
         boolean hasStack = getSupportFragmentManager().getBackStackEntryCount() > 0;
         overlayContainer.setVisibility(hasStack ? View.VISIBLE : View.GONE);

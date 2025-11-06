@@ -12,10 +12,26 @@ import androidx.fragment.app.Fragment;
 import com.example.eventmaster.R;
 import com.google.android.material.appbar.MaterialToolbar;
 
+/**
+ * Fragment that serves as the hub for viewing entrants of a specific event.
+ * Provides two navigation options for the organizer:
+ *  Selected Entrants — Entrants who were successfully enrolled in the event (US 02.06.03: View final enrolled list)
+ *  Cancelled Entrants — Entrants whose registrations were cancelled -(US 02.06.02: View cancelled entrants)
+ * Each option opens a {@link OrganizerEntrantsListFragment} displaying entrants
+ * filtered by their registration status.
+ *
+ * */
+
 public class OrganizerEntrantsHubFragment extends Fragment {
 
     public static final String ARG_EVENT_ID = "eventId";
 
+    /**
+     * Factory method for creating a new instance of {@link OrganizerEntrantsHubFragment}.
+     *
+     * @param eventId The ID of the event whose entrants are being viewed.
+     * @return A configured instance of this fragment with the provided arguments.
+     */
     public static OrganizerEntrantsHubFragment newInstance(String eventId) {
         OrganizerEntrantsHubFragment f = new OrganizerEntrantsHubFragment();
         Bundle b = new Bundle();
@@ -25,6 +41,16 @@ public class OrganizerEntrantsHubFragment extends Fragment {
     }
 
     private String eventId;
+
+
+    /**
+     * Inflates the layout and initializes buttons for viewing selected and cancelled entrants.
+     *
+     * @param inflater  LayoutInflater used to inflate the view.
+     * @param container Parent container view.
+     * @param savedInstanceState Saved instance state (if any).
+     * @return The inflated fragment view.
+     */
 
     @Nullable @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -66,6 +92,12 @@ public class OrganizerEntrantsHubFragment extends Fragment {
         );
     }
 
+    /**
+     * Opens a list fragment filtered by entrant status.
+     *
+     * @param status Registration status to filter by ("ACTIVE" or "CANCELLED_ANY").
+     * @param title  Title for the next screen.
+     */
     private void openList(String status, String title) {
         OrganizerEntrantsListFragment frag =
                 OrganizerEntrantsListFragment.newInstance(eventId, status, title);
@@ -78,6 +110,12 @@ public class OrganizerEntrantsHubFragment extends Fragment {
                 .commit();
     }
 
+
+    /**
+     * Resolves the container view ID where the next fragment will be placed.
+     *
+     * @return The resource ID of the container frame layout.
+     */
     private int resolveContainerId() {
         return R.id.fragment_container;
     }

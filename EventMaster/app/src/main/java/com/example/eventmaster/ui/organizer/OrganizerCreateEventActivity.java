@@ -135,6 +135,16 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
         });
 
         btnPublish.setOnClickListener(v -> publishEvent());
+
+        //for Testing:
+        boolean testMode = getIntent().getBooleanExtra("TEST_MODE", false);
+        if (!testMode) {
+            FirebaseAuth.getInstance().signInAnonymously()
+                    .addOnSuccessListener(r -> {})
+                    .addOnFailureListener(e ->
+                            Toast.makeText(this, "Auth failed: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+        }
+
     }
 
     /**

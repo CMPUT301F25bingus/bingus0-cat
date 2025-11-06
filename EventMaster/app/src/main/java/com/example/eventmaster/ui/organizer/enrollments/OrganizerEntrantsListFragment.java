@@ -31,6 +31,13 @@ public class OrganizerEntrantsListFragment extends Fragment {
     private static final String ARG_STATUS   = "status";   // "ACTIVE" or "CANCELLED_ANY"
     private static final String ARG_TITLE    = "title";
 
+    /**
+     * Creates a new instance of the list fragment for a given event and status filter.
+     * @param eventId ID of the event whose entrants are to be listed.
+     * @param status  Registration status filter ("ACTIVE" or "CANCELLED_ANY").
+     * @param title   Title to display in the header bar.
+     * @return A configured fragment instance.
+     */
     public static OrganizerEntrantsListFragment newInstance(@NonNull String eventId,
                                                             @NonNull String status,
                                                             @NonNull String title) {
@@ -118,6 +125,13 @@ public class OrganizerEntrantsListFragment extends Fragment {
         );
     }
 
+
+    /**
+     * Loads entrant data from Firestore via {@link RegistrationServiceFs}.
+     * Displays loading indicator during data retrieval and handles both
+     * success and error cases.
+     */
+
     private void load() {
         if (eventId == null || status == null) {
             showLoading(false);
@@ -136,6 +150,11 @@ public class OrganizerEntrantsListFragment extends Fragment {
         }
     }
 
+    /**
+     * Binds the list of {@link Registration} objects into UI rows.
+     *
+     * @param regs The list of registration entries from Firestore.
+     */
     private void bindRegs(@Nullable List<Registration> regs) {
         showLoading(false);
 
@@ -162,17 +181,30 @@ public class OrganizerEntrantsListFragment extends Fragment {
         empty.setVisibility(View.GONE);
     }
 
+
+    /**
+     * Displays an error message when data loading fails.
+     *
+     * @param t The exception or error thrown by the Firestore call.
+     */
     private void onError(@NonNull Throwable t) {
         showLoading(false);
         showEmpty(t.getMessage() != null ? t.getMessage() : "Failed to load entrants");
     }
 
+    /** Toggles the loading spinner and main list visibility. */
     private void showLoading(boolean show) {
         progress.setVisibility(show ? View.VISIBLE : View.GONE);
         recycler.setVisibility(show ? View.INVISIBLE : View.VISIBLE);
         empty.setVisibility(View.GONE);
     }
 
+
+    /**
+     * Shows an empty message when there are no entrants or an error occurred.
+     *
+     * @param msg Message text to display.
+     */
     private void showEmpty(@NonNull String msg) {
         empty.setText(msg);
         empty.setVisibility(View.VISIBLE);
