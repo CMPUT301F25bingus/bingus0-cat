@@ -16,6 +16,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.eventmaster.R;
 import com.example.eventmaster.data.firestore.RegistrationServiceFs;
 import com.example.eventmaster.model.Registration;
+import com.google.android.material.appbar.MaterialToolbar;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -91,6 +92,30 @@ public class OrganizerEntrantsListFragment extends Fragment {
 
         load();
         return v;
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View v, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(v, savedInstanceState);
+
+        // wire the toolbar back
+        MaterialToolbar topBar = v.findViewById(R.id.topBar);
+        if (topBar != null) {
+            // Tap on toolbar back → go back to the hub
+            topBar.setNavigationOnClickListener(
+                    click -> getParentFragmentManager().popBackStack()
+            );
+        }
+
+        // Also support hardware back/gestures here
+        requireActivity().getOnBackPressedDispatcher().addCallback(
+                getViewLifecycleOwner(),
+                new androidx.activity.OnBackPressedCallback(true) {
+                    @Override public void handleOnBackPressed() {
+                        getParentFragmentManager().popBackStack();
+                    }
+                }
+        );
     }
 
     private void load() {

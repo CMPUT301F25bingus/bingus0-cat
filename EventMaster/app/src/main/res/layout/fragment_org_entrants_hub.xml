@@ -1,74 +1,100 @@
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:orientation="vertical"
-    android:padding="16dp"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/backgroundColor"
-    >
+    android:fillViewport="true">
 
-
-    <com.google.android.material.appbar.MaterialToolbar
-        android:id="@+id/topBar"
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="#C4E0DF"
-        android:theme="@style/ThemeOverlay.Material3.ActionBar"
-        android:titleTextColor="@android:color/white"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:navigationIcon="@drawable/outline_arrow_back_24"
-        app:title="         Back Manage Event" />
+        android:layout_height="match_parent"
+        android:padding="12dp">
 
-    <TextView
-        android:layout_width="234dp"
-        android:layout_height="42dp"
-        android:layout_marginTop="20dp"
-        android:background="#158482"
-        android:text="View Entrants"
-        android:textAlignment="center"
-        android:textColor="@color/black"
-        android:textSize="30sp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.498"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/topBar" />
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:cardCornerRadius="16dp"
+            app:cardUseCompatPadding="true"
+            app:cardBackgroundColor="#5EC1B6">
 
-    <TextView
-        android:id="@+id/Select"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:layout_marginBottom="4dp"
-        android:text="Select one of the following: "
-        android:textColor="@color/black"
-        android:textSize="15sp"
-        android:textStyle="bold"
-        app:layout_constraintBottom_toTopOf="@+id/btnFinal"
-        app:layout_constraintStart_toStartOf="parent" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
 
-    <Button
-        android:id="@+id/btnFinal"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="96dp"
-        android:backgroundTint="#CDEAD2"
-        android:text="@string/selected_entrants"
-        android:textColor="@color/black"
-        app:layout_constraintTop_toBottomOf="@+id/topBar"
-        tools:layout_editor_absoluteX="16dp" />
+                <!-- TOP BAR -->
+                <com.google.android.material.appbar.MaterialToolbar
+                    android:id="@+id/topBar"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@android:color/transparent"
+                    app:navigationIcon="?attr/homeAsUpIndicator"
+                    app:title="Back Manage Event"
+                    app:titleTextColor="@android:color/white" />
 
-    <Button
-        android:id="@+id/btnCancelled"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="36dp"
-        android:backgroundTint="#F6D4C7"
-        android:textColor="@color/black"
-        android:text="@string/cancelled_entrants"
-        app:layout_constraintTop_toBottomOf="@+id/btnFinal"
-        tools:layout_editor_absoluteX="16dp" />
+                <!-- PAGE TITLE -->
+                <TextView
+                    android:id="@+id/titleViewEntrants"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:gravity="center"
+                    android:text="View Entrants"
+                    android:textSize="26sp"
+                    android:textColor="@android:color/black"
+                    android:textStyle="bold"
+                    android:background="#158482"
+                    android:padding="8dp"
+                    android:layout_marginBottom="16dp"
+                    android:backgroundTintMode="src_atop"
+                    android:backgroundTint="#158482" />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+                <!-- SUBTITLE -->
+                <TextView
+                    android:id="@+id/Select"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Select one of the following:"
+                    android:textStyle="bold"
+                    android:textSize="15sp"
+                    android:textColor="@android:color/black"
+                    android:layout_marginBottom="12dp" />
+
+                <!-- SELECTED ENTRANTS BUTTON -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnFinal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Selected Entrants ✅"
+                    android:textAllCaps="false"
+                    android:textColor="@android:color/black"
+                    android:layout_marginBottom="16dp"
+                    app:cornerRadius="25dp"
+                    app:backgroundTint="#CDEAD2"
+                    app:strokeColor="#22000000"
+                    app:strokeWidth="1dp" />
+
+                <!-- CANCELLED ENTRANTS BUTTON -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCancelled"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Cancelled Entrants ❌"
+                    android:textAllCaps="false"
+                    android:textColor="@android:color/black"
+                    app:cornerRadius="25dp"
+                    app:backgroundTint="#F6D4C7"
+                    app:strokeColor="#22000000"
+                    app:strokeWidth="1dp" />
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <FrameLayout
+            android:id="@+id/fragment_container"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone" />
+    </FrameLayout>
+</ScrollView>

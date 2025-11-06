@@ -10,6 +10,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.example.eventmaster.R;
+import com.google.android.material.appbar.MaterialToolbar;
 
 public class OrganizerEntrantsHubFragment extends Fragment {
 
@@ -40,6 +41,29 @@ public class OrganizerEntrantsHubFragment extends Fragment {
                 openList("CANCELLED_ANY", getString(R.string.cancelled_entrants)));
 
         return v;
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View v, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(v, savedInstanceState);
+
+        MaterialToolbar topBar = v.findViewById(R.id.topBar);
+        if (topBar != null) {
+            // Tap on toolbar back → pop just this fragment
+            topBar.setNavigationOnClickListener(
+                    click -> getParentFragmentManager().popBackStack()
+            );
+        }
+
+        // Also handle system back gestures while this fragment is visible
+        requireActivity().getOnBackPressedDispatcher().addCallback(
+                getViewLifecycleOwner(),
+                new androidx.activity.OnBackPressedCallback(true) {
+                    @Override public void handleOnBackPressed() {
+                        getParentFragmentManager().popBackStack();
+                    }
+                }
+        );
     }
 
     private void openList(String status, String title) {

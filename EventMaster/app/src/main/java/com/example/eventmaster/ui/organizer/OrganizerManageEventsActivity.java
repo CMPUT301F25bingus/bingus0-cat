@@ -4,13 +4,17 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.fragment.app.FragmentManager;
+
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 
 import com.example.eventmaster.R;
+import com.example.eventmaster.data.firestore.EventRepositoryFs;
 import com.example.eventmaster.ui.organizer.EventAdapter;
 import androidx.activity.OnBackPressedCallback;
 import com.example.eventmaster.ui.organizer.enrollments.OrganizerEntrantsHubFragment;
+import com.google.android.material.appbar.MaterialToolbar;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,11 +27,23 @@ public class OrganizerManageEventsActivity extends AppCompatActivity {
     private List<Map<String, Object>> events = new ArrayList<>();
 
     private View overlayContainer;
+    private EventRepositoryFs eventRepo;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_organizer_manage_events);
+
+        MaterialToolbar topBar = findViewById(R.id.topBar);
+        if (topBar != null) {
+            setSupportActionBar(topBar);
+            // (Optional) ensure an up arrow shows even if theme doesn’t provide it:
+            if (getSupportActionBar() != null) {
+                getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            }
+            topBar.setNavigationOnClickListener(v -> handleBackToHomeOrPop());
+        }
 
         overlayContainer = findViewById(R.id.fragment_container);
         recycler = findViewById(R.id.recyclerEvents);
@@ -39,21 +55,18 @@ public class OrganizerManageEventsActivity extends AppCompatActivity {
         // 🔗 When an event is tapped, open the Entrants Hub
         adapter.setOnEventClickListener(this::openEntrantsHub);
 
-        // Optional: keep the overlay visibility in sync with back stack
+        //keep the overlay visibility in sync with back stack
         getSupportFragmentManager().addOnBackStackChangedListener(this::syncOverlayVisibility);
 
+        // Sync overlay visibility with back stack
+        getSupportFragmentManager().addOnBackStackChangedListener(this::syncOverlayVisibility);
 
         // Use the dispatcher for back gestures / system back
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
-            @Override public void handleOnBackPressed() {
-                if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
-                    getSupportFragmentManager().popBackStack();
-                    // overlay visibility will auto-sync via your listener
-                } else {
-                    // No fragments on stack → let the activity finish as normal
-                    setEnabled(false); // hand control back to system for this press
-                    OrganizerManageEventsActivity.super.onBackPressed();
-                }
+            @Override
+            public void handleOnBackPressed() {
+//                handleBackToHomeOrPop();
+//            }
             }
         });
 
@@ -74,8 +87,44 @@ public class OrganizerManageEventsActivity extends AppCompatActivity {
             put("regEnd", null);
             put("posterUrl", null);
         }});
+        //to be used when auth/track phone is implemented.
+//        loadEvents();
         adapter.notifyDataSetChanged();
-        // TODO: load events -> update 'events' + adapter.notifyDataSetChanged()
+    }
+
+        //TODO: after auth is implemneted we can do this...
+//    private void loadEvents() {
+//        View progress = findViewById(R.id.progress);           // add to XML (small spinner)
+//        View empty = findViewById(R.id.emptyView);             // add to XML (“No events yet”)
+//        if (progress != null) progress.setVisibility(View.VISIBLE);
+//        if (empty != null) empty.setVisibility(View.GONE);
+//
+//        eventRepo.listByOrganizer(result -> {
+//            events.clear();
+//            events.addAll(result);
+//            adapter.notifyDataSetChanged();
+//            if (progress != null) progress.setVisibility(View.GONE);
+//            if (empty != null) empty.setVisibility(result.isEmpty() ? View.VISIBLE : View.GONE);
+//        }, err -> {
+//            if (progress != null) progress.setVisibility(View.GONE);
+//            if (empty != null) {
+//                ((android.widget.TextView) empty).setText("Failed to load: " + err.getMessage());
+//                empty.setVisibility(View.VISIBLE);
+//            }
+//        });
+//    }
+
+    private void handleBackToHomeOrPop() {
+        FragmentManager fm = getSupportFragmentManager();
+        if (fm.getBackStackEntryCount() > 0) {
+            fm.popBackStack();
+        } else {
+            // No fragments visible → go to OrganizerHomeActivity
+            Intent intent = new Intent(this, OrganizerHomeActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            startActivity(intent);
+            finish();
+        }
     }
 
     private void openEntrantsHub(String eventId) {

@@ -81,6 +81,22 @@
                     android:paddingBottom="12dp" />
 
             </LinearLayout>
+            <ProgressBar
+                android:id="@+id/progress"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_gravity="center"
+                android:visibility="gone"/>
+
+            <TextView
+                android:id="@+id/emptyView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="No events yet"
+                android:textSize="16sp"
+                android:textColor="@android:color/black"
+                android:layout_gravity="center"
+                android:visibility="gone"/>
         </com.google.android.material.card.MaterialCardView>
         <FrameLayout
             android:id="@+id/fragment_container"
