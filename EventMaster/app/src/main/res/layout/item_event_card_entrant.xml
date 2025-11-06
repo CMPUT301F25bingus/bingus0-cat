@@ -1,148 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<<<<<<< HEAD
-<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout_marginBottom="16dp"
-    app:cardCornerRadius="16dp"
-    app:cardElevation="4dp"
-    app:cardBackgroundColor="#FFFFFF">
-
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:padding="16dp">
-
-        <!-- Event Thumbnail -->
-        <androidx.cardview.widget.CardView
-            android:id="@+id/thumbnail_card"
-            android:layout_width="100dp"
-            android:layout_height="100dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="0dp"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
-
-            <ImageView
-                android:id="@+id/event_thumbnail"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:scaleType="centerCrop"
-                android:background="#CCCCCC"
-                android:contentDescription="Event thumbnail" />
-
-        </androidx.cardview.widget.CardView>
-
-        <!-- Event Name -->
-        <TextView
-            android:id="@+id/event_name"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:text="Swimming Lessons for Kids"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:textColor="#000000"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="8dp"
-            android:maxLines="2"
-            android:ellipsize="end"
-            app:layout_constraintStart_toEndOf="@id/thumbnail_card"
-            app:layout_constraintTop_toTopOf="@id/thumbnail_card"
-            app:layout_constraintEnd_toStartOf="@id/qr_code_image" />
-
-        <!-- Join/Leave Button -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/join_button"
-            android:layout_width="0dp"
-            android:layout_height="48dp"
-            android:text="Join Waiting List"
-            android:textSize="14sp"
-            android:textColor="#FFFFFF"
-            app:cornerRadius="12dp"
-            app:backgroundTint="#3D8B87"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginEnd="8dp"
-            app:layout_constraintStart_toEndOf="@id/thumbnail_card"
-            app:layout_constraintTop_toBottomOf="@id/event_name"
-            app:layout_constraintEnd_toStartOf="@id/qr_code_image"
-            app:layout_constraintBottom_toBottomOf="@id/thumbnail_card" />
-
-        <!-- QR Code -->
-        <ImageView
-            android:id="@+id/qr_code_image"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:src="@android:drawable/ic_menu_gallery"
-            android:background="#000000"
-            android:contentDescription="QR Code"
-            android:layout_marginTop="8dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <TextView
-            android:id="@+id/qr_label"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="SCAN ME"
-            android:textSize="8sp"
-            android:textStyle="bold"
-            android:textColor="#000000"
-            app:layout_constraintStart_toStartOf="@id/qr_code_image"
-            app:layout_constraintEnd_toEndOf="@id/qr_code_image"
-            app:layout_constraintTop_toBottomOf="@id/qr_code_image"
-            android:layout_marginTop="2dp" />
-
-        <!-- Event Info Row -->
-        <LinearLayout
-            android:id="@+id/info_row"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginTop="12dp"
-            android:gravity="start"
-            app:layout_constraintTop_toBottomOf="@id/thumbnail_card"
-            app:layout_constraintStart_toStartOf="parent">
-
-            <!-- Register By -->
-            <TextView
-                android:id="@+id/register_by_text"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Register by: Dec 15"
-                android:textSize="13sp"
-                android:textColor="#666666"
-                android:layout_marginEnd="16dp" />
-
-            <!-- Capacity -->
-            <TextView
-                android:id="@+id/capacity_text"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Cap: 20"
-                android:textSize="13sp"
-                android:textColor="#666666"
-                android:layout_marginEnd="16dp" />
-
-            <!-- Joined Count -->
-            <TextView
-                android:id="@+id/joined_text"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Joined: 58"
-                android:textSize="13sp"
-                android:textColor="#666666" />
-
-        </LinearLayout>
-
-    </androidx.constraintlayout.widget.ConstraintLayout>
-
-</androidx.cardview.widget.CardView>
-
-
-
-=======
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -151,8 +7,8 @@
     app:cardCornerRadius="16dp"
     app:cardUseCompatPadding="true"
     app:cardElevation="4dp"
-    android:backgroundTint="@android:color/white"
-    android:padding="8dp">
+    app:cardBackgroundColor="@android:color/white"
+    android:padding="12dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -165,32 +21,32 @@
             android:id="@+id/imgEventPoster"
             android:layout_width="90dp"
             android:layout_height="90dp"
-            android:layout_marginEnd="10dp"
+            android:layout_marginEnd="12dp"
             android:scaleType="centerCrop"
             android:contentDescription="Event poster" />
 
-
-        <!-- Text info -->
+        <!-- Info column -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:orientation="vertical"
-            android:paddingEnd="8dp">
+            android:orientation="vertical">
 
+            <!-- Title -->
             <TextView
                 android:id="@+id/txtEventTitle"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textStyle="bold"
                 android:textColor="#000000"
                 android:textSize="16sp"
-                android:maxLines="1"
+                android:maxLines="2"
                 android:ellipsize="end" />
 
+            <!-- Location / dates -->
             <TextView
                 android:id="@+id/txtEventLocation"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textColor="#555555"
                 android:textSize="13sp"
@@ -200,23 +56,55 @@
 
             <TextView
                 android:id="@+id/txtEventDates"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textColor="#666666"
                 android:textSize="12sp"
-                android:layout_marginTop="4dp" />
+                android:layout_marginTop="2dp" />
 
+            <!-- Info row that your adapter expects -->
+            <LinearLayout
+                android:id="@+id/info_row"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="6dp">
+
+                <TextView
+                    android:id="@+id/register_by_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="12sp"
+                    android:textColor="#666666"
+                    android:layout_marginEnd="12dp" />
+
+                <TextView
+                    android:id="@+id/capacity_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="12sp"
+                    android:textColor="#666666"
+                    android:layout_marginEnd="12dp" />
+
+                <TextView
+                    android:id="@+id/joined_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="12sp"
+                    android:textColor="#666666" />
+            </LinearLayout>
+
+            <!-- Join/Leave button with the legacy ID -->
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnCancel"
-                android:layout_width="110dp"
+                android:id="@+id/join_button"
+                android:layout_width="wrap_content"
                 android:layout_height="36dp"
-                android:text="✖ Cancel"
+                android:layout_marginTop="8dp"
                 android:textAllCaps="false"
                 android:textColor="@android:color/white"
+                android:text="Join Waiting List"
                 app:cornerRadius="18dp"
-                app:backgroundTint="#FF6B6B"
-                android:layout_marginTop="8dp"/>
+                app:backgroundTint="#3D8B87" />
         </LinearLayout>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>
->>>>>>> fa0cfe61b7510a4ab9e0b8d204e9ace04f4fab6a
