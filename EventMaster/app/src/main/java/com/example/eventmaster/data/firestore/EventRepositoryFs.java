@@ -42,12 +42,20 @@ public class EventRepositoryFs implements EventRepository {
         Map<String, Object> m = new HashMap<>();
 
         // Canonical + compatibility keys
+        // Prefer the model's getName(); mirror to "title" so old code keeps working.
+        // If your model only has getTitle(), ensure Event exposes getName() or adapt here.
         String name = e.getName();
+        if (name == null && e.getTitle() != null) {
+            name = e.getTitle();
+        }
         m.put("name", name);
         m.put("title", name); // keep old code working if it queried "title"
 
+        // Core fields
         putIfNotNull(m, "description", e.getDescription());
         putIfNotNull(m, "location", e.getLocation());
+
+        // Optional event date as Timestamp
         putIfNotNull(m, "eventDate", e.getEventDateTimestamp());
 
         // Registration window
@@ -109,12 +117,14 @@ public class EventRepositoryFs implements EventRepository {
 
     @Override
     public Task<Void> update(@NonNull String eventId, @NonNull Map<String, Object> fields) {
-        // Make sure we don’t allow callers to override audit key silently
+        // Always update audit
         fields.put("updatedAt", Timestamp.now());
-        // Also mirror "name" to "title" if provided for compatibility
+
+        // Mirror "name" to "title" if provided, to preserve older clients
         if (fields.containsKey("name") && fields.get("name") instanceof String) {
             fields.put("title", fields.get("name"));
         }
+
         return db.collection(COLL).document(eventId).update(fields);
     }
 

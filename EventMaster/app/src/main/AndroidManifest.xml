@@ -20,33 +20,55 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.EventMaster">
+
+        <!-- MainActivity: developer test launcher -->
         <activity
-            android:name=".ui.organizer.OrganizerHomeActivity"
+            android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+
+        <!-- Entrant flow -->
+        <activity android:name=".ui.entrant.EventListActivity" android:exported="false"/>
+        <activity android:name=".ui.entrant.EventDetailsActivity" android:exported="false"/>
+
+        <!-- Admin flow -->
+        <activity android:name=".ui.admin.AdminBrowseActivity" android:exported="false"/>
+        <activity android:name=".ui.admin.AdminEventListActivity" android:exported="false"/>
+        <activity android:name=".ui.admin.AdminWelcomeActivity" android:exported="false"/>
+
+        <activity
+            android:name=".ui.admin.profiles.BrowseOrganizersActivity"
+            android:parentActivityName=".ui.admin.AdminBrowseActivity"
+            android:exported="false"/>
+        <activity
+            android:name=".ui.admin.profiles.BrowseEntrantsActivity"
+            android:parentActivityName=".ui.admin.AdminBrowseActivity"
+            android:exported="false"/>
+        <activity
+            android:name=".ui.admin.profiles.AdminProfileDetailActivity"
+            android:parentActivityName=".ui.admin.profiles.BrowseOrganizersActivity"
+            android:exported="false"/>
+
+        <!-- organizer flow   -->
         <activity android:name=".ui.organizer.OrganizerManageEventsActivity" />
         <activity
             android:name=".ui.organizer.OrganizerCreateEventActivity"
             android:exported="false"
             android:label="Create Event" />
-        <activity
-            android:name=".ui.entrant.EventDetailsActivity"
-            android:exported="false" />
-        <activity
-            android:name=".ui.entrant.EventListActivity"
-            android:exported="false" />
-        <activity
-            android:name=".ui.admin.AdminEventListActivity"
-            android:exported="false" />
+
+        <!-- QR scanner -->
         <activity
             android:name=".ui.qr.QRScannerActivity"
             android:screenOrientation="portrait"
-            android:exported="false" />
-    </application>
+            android:exported="false"/>
 
+        <!-- Shared profile screens -->
+        <activity android:name=".ui.profile.ProfileActivity" android:exported="false"/>
+        <activity android:name=".ui.profile.EditProfileActivity" android:exported="false"/>
+
+    </application>
 </manifest>

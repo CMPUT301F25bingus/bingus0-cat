@@ -3,69 +3,101 @@ package com.example.eventmaster.model;
 /**
  * Unified Profile model for EventMaster.
  * Firestore path: /profiles/{userId}
+ *
+ * Back-compat:
+ * - getId()/setId() alias userId
+ * - getPhone()/setPhone() alias phoneNumber
+ * - role defaults to "entrant"
+ * - banned defaults to false, active defaults to true
+ * - notificationsEnabled defaults to true
+ *
+ * MERGED NOTES:
+ * - Kept dev's Boolean fields (null-safe getters) for Firestore friendliness.
+ * - Added your constructors (incl. explicit deviceId and full ctor with phone/profileImageUrl).
+ * - fcmToken retained.
  */
 public class Profile {
-    private String userId;             // primary key (doc id)
-    private String deviceId;           // optional: device-based identifier
-    private String name;               // full name
-    private String email;              // required
-    private String phoneNumber;        // optional
-    private String profileImageUrl;    // optional
-    private String fcmToken;           // optional (for FCM notifications)
-    private boolean notificationsEnabled; // defaults true
-    private String role;               // "entrant" | "organizer" | "admin" (defaults "entrant")
 
-    /** No-arg constructor required for Firestore. */
+    // ---- Canonical / stored fields ----
+    private String userId;                 // Firestore doc id (a.k.a. id)
+    private String deviceId;               // optional
+    private String name;                   // display name
+    private String email;                  // required by most flows
+    private String phoneNumber;            // optional
+    private String profileImageUrl;        // optional
+    private String fcmToken;               // optional (push)
+    private Boolean notificationsEnabled;  // default true
+    private String role;                   // "entrant" | "organizer" | "admin" (default "entrant")
+    private Boolean banned;                // default false
+    private Boolean active;                // default true (soft-delete flag)
+
+    /** No-arg constructor required by Firestore. */
     public Profile() {
         this.notificationsEnabled = true;
         this.role = "entrant";
+        this.banned = false;
+        this.active = true;
     }
 
-    /** Minimal ctor (original 3-arg): deviceId defaults to userId. */
-    public Profile(String userId, String name, String email) {
-        this.userId = userId;
-        this.deviceId = userId; // sensible default if not provided
+    /** Dev convenience ctor (older code): id/name/email/phone; deviceId defaults to id. */
+    public Profile(String id, String name, String email, String phone) {
+        this(); // set defaults
+        this.userId = id;
+        this.deviceId = id;
         this.name = name;
         this.email = email;
-        this.notificationsEnabled = true;
-        this.role = "entrant";
+        this.phoneNumber = phone;
     }
 
-    /** Back-compat ctor (4-arg) used by tests and other branch. */
+    /** Dev convenience ctor including role. */
+    public Profile(String id, String name, String email, String phone, String role) {
+        this(id, name, email, phone);
+        this.role = (role == null ? "entrant" : role);
+    }
+
+    /** Newer-style ctor (no phone), deviceId defaults to userId. */
+    public Profile(String userId, String name, String email) {
+        this();
+        this.userId = userId;
+        this.deviceId = userId;
+        this.name = name;
+        this.email = email;
+    }
+
+    /** YOUR ctor: explicit deviceId. */
     public Profile(String userId, String deviceId, String name, String email) {
+        this();
         this.userId = userId;
         this.deviceId = deviceId;
         this.name = name;
         this.email = email;
-        this.notificationsEnabled = true;
-        this.role = "entrant";
     }
 
-    /** "Full" ctor (from first version), sets deviceId = userId by default. */
+    /** YOUR "full" ctor (no role): sets deviceId = userId by default. */
     public Profile(String userId, String name, String email,
                    String phoneNumber, String profileImageUrl) {
+        this();
         this.userId = userId;
-        this.deviceId = userId; // default
+        this.deviceId = userId;
         this.name = name;
         this.email = email;
         this.phoneNumber = phoneNumber;
         this.profileImageUrl = profileImageUrl;
-        this.notificationsEnabled = true;
-        this.role = "entrant";
     }
 
-    // ----- Getters / Setters -----
+    // ---- Getters/Setters ----
 
+    // Canonical ID
     public String getUserId() { return userId; }
     public void setUserId(String userId) { this.userId = userId; }
 
     public String getDeviceId() { return deviceId; }
     public void setDeviceId(String deviceId) { this.deviceId = deviceId; }
 
-    public String getName() { return name; }
+    public String getName() { return name == null ? "" : name; }
     public void setName(String name) { this.name = name; }
 
-    public String getEmail() { return email; }
+    public String getEmail() { return email == null ? "" : email; }
     public void setEmail(String email) { this.email = email; }
 
     public String getPhoneNumber() { return phoneNumber; }
@@ -77,13 +109,28 @@ public class Profile {
     public String getFcmToken() { return fcmToken; }
     public void setFcmToken(String fcmToken) { this.fcmToken = fcmToken; }
 
-    public boolean isNotificationsEnabled() { return notificationsEnabled; }
-    public void setNotificationsEnabled(boolean notificationsEnabled) { this.notificationsEnabled = notificationsEnabled; }
+    public boolean isNotificationsEnabled() {
+        return notificationsEnabled == null ? true : notificationsEnabled;
+    }
+    public void setNotificationsEnabled(boolean notificationsEnabled) {
+        this.notificationsEnabled = notificationsEnabled;
+    }
 
-    public String getRole() { return role; }
+    public String getRole() { return role == null ? "entrant" : role; }
     public void setRole(String role) { this.role = role; }
 
-    // Optional aliases if any code uses id terminology
+    public boolean getBanned() { return banned == null ? false : banned; }
+    public void setBanned(Boolean banned) { this.banned = banned; }
+
+    public boolean getActive() { return active == null ? true : active; }
+    public void setActive(Boolean active) { this.active = active; }
+
+    // ---- Aliases for back-compat ----
+    /** Alias for userId to support older code. */
     public String getId() { return getUserId(); }
     public void setId(String id) { setUserId(id); }
+
+    /** Alias for phoneNumber to support older code. */
+    public String getPhone() { return getPhoneNumber(); }
+    public void setPhone(String phone) { setPhoneNumber(phone); }
 }

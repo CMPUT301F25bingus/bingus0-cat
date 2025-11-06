@@ -9,21 +9,20 @@ import java.util.Date;
 import java.util.Objects;
 
 /**
- * Unified Event model for the Event Lottery System.
+ * Unified Event model.
  *
- * - Firestore doc path: /events/{id}
- * - Canonical fields use consistent names.
- * - Alias getters/setters are provided to preserve API compatibility
- *   with older code (e.g., getTitle()/getName(), getEventId()/getId()).
+ * Firestore path: /events/{id}
  *
- * NOTE: Firestore does not store the document ID by default; callers
- *       should setId(doc.getId()) after reading.
+ * Canonical fields use consistent names. Alias getters/setters are provided to
+ * preserve compatibility with older code (e.g., getTitle()/setTitle()).
+ *
+ * Doc ID isn't stored by Firestore; call setId(doc.getId()) after reads.
  */
 public class Event {
 
     // ---- Canonical Fields ----
-    private String id;                 // Firestore doc ID (not stored as field)
-    private String name;               // aka "title"
+    private String id;                    // Firestore doc ID (not stored as field)
+    private String name;                  // aka "title"
     private String description;
     private String location;
 
@@ -31,8 +30,8 @@ public class Event {
     private Timestamp eventDate;
 
     // Registration window
-    private Timestamp registrationOpen;    // aka registrationStartDate
-    private Timestamp registrationClose;   // aka registrationEndDate
+    private Timestamp registrationOpen;   // aka registrationStartDate
+    private Timestamp registrationClose;  // aka registrationEndDate
 
     // Media / links
     private String posterUrl;
@@ -43,19 +42,19 @@ public class Event {
     private String organizerName;
 
     // Constraints / options
-    private int capacity;                   // 0 means unspecified
+    private int capacity;                       // 0 = unspecified
     private @Nullable Integer waitingListLimit; // null = unlimited
     private boolean geolocationRequired;
-    private double price;                   // 0.0 means free
+    private double price;                       // 0.0 = free
 
     // Lifecycle
-    private String status = "DRAFT";        // DRAFT | PUBLISHED | CLOSED, etc.
+    private String status = "DRAFT";            // DRAFT | PUBLISHED | CLOSED ...
 
     /** Empty constructor required by Firestore. */
     @SuppressWarnings("unused")
     public Event() {}
 
-    /** Convenience constructor for common fields. */
+    /** Convenience constructor for common fields (Timestamp-based). */
     public Event(@NonNull String name,
                  @Nullable String description,
                  @Nullable String location,
@@ -78,7 +77,7 @@ public class Event {
         this.price = price;
     }
 
-    /** Overload: with Dates, without eventId. */
+    /** Overload: Dates instead of Timestamps. */
     public Event(@NonNull String name,
                  @Nullable String description,
                  @Nullable String location,
@@ -93,9 +92,9 @@ public class Event {
                 name,
                 description,
                 location,
-                eventDate != null ? new com.google.firebase.Timestamp(eventDate) : null,
-                new com.google.firebase.Timestamp(registrationStartDate),
-                new com.google.firebase.Timestamp(registrationEndDate),
+                eventDate != null ? new Timestamp(eventDate) : null,
+                new Timestamp(registrationStartDate),
+                new Timestamp(registrationEndDate),
                 organizerId,
                 organizerName,
                 capacity,
@@ -103,24 +102,24 @@ public class Event {
         );
     }
 
-    /** Overload: with Timestamps, includes eventId (sets doc id). */
+    /** Overload: includes eventId (Timestamp-based). */
     public Event(@Nullable String eventId,
                  @NonNull String name,
                  @Nullable String description,
                  @Nullable String location,
-                 @Nullable com.google.firebase.Timestamp eventDate,
-                 @NonNull com.google.firebase.Timestamp registrationOpen,
-                 @NonNull com.google.firebase.Timestamp registrationClose,
+                 @Nullable Timestamp eventDate,
+                 @NonNull Timestamp registrationOpen,
+                 @NonNull Timestamp registrationClose,
                  @Nullable String organizerId,
                  @Nullable String organizerName,
                  int capacity,
                  double price) {
         this(name, description, location, eventDate, registrationOpen, registrationClose,
                 organizerId, organizerName, capacity, price);
-        this.id = eventId; // also satisfies getEventId()/setEventId() callers
+        this.id = eventId;
     }
 
-    /** Overload: with Dates, includes eventId (matches your TestDataHelper). */
+    /** Overload: includes eventId (Date-based). */
     public Event(@Nullable String eventId,
                  @NonNull String name,
                  @Nullable String description,
@@ -137,9 +136,9 @@ public class Event {
                 name,
                 description,
                 location,
-                eventDate != null ? new com.google.firebase.Timestamp(eventDate) : null,
-                new com.google.firebase.Timestamp(registrationStartDate),
-                new com.google.firebase.Timestamp(registrationEndDate),
+                eventDate != null ? new Timestamp(eventDate) : null,
+                new Timestamp(registrationStartDate),
+                new Timestamp(registrationEndDate),
                 organizerId,
                 organizerName,
                 capacity,
@@ -147,9 +146,7 @@ public class Event {
         );
     }
 
-    // --- Short convenience overloads used by tests ---
-
-    /** Minimal ctor (Timestamp-based): name/desc/location + reg window only. */
+    /** Minimal ctor used by tests: name/desc/location + reg window only (Timestamp-based). */
     public Event(@NonNull String name,
                  @Nullable String description,
                  @Nullable String location,
@@ -162,7 +159,7 @@ public class Event {
                 /*capacity*/ 0, /*price*/ 0.0);
     }
 
-    /** Minimal ctor (Date-based): name/desc/location + reg window only. */
+    /** Minimal ctor used by tests: name/desc/location + reg window only (Date-based). */
     public Event(@NonNull String name,
                  @Nullable String description,
                  @Nullable String location,
@@ -176,34 +173,27 @@ public class Event {
                 /*capacity*/ 0, /*price*/ 0.0);
     }
 
-
-
     // ---------- Validation ----------
 
     /** @return null if valid, otherwise an error message. */
     @Nullable
     public String validate() {
         if (name == null || name.trim().isEmpty()) {
-            // test looks for "Title"
             return "Title is required.";
         }
         if (registrationOpen == null) {
-            // test looks for "open"
             return "Registration open time is required.";
         }
         if (registrationClose == null) {
-            // test looks for "close"
             return "Registration close time is required.";
         }
         if (registrationOpen.compareTo(registrationClose) > 0) {
-            // test checks for "before" or "equal" in the message
             return "Registration open time must be before or equal to close time.";
         }
         return null;
     }
 
-
-    //Getters and Setters:
+    // ---------- Getters / Setters ----------
 
     @Nullable public String getId() { return id; }
     public void setId(@Nullable String id) { this.id = id; }
@@ -276,7 +266,7 @@ public class Event {
     @NonNull public String getStatus() { return status == null ? "DRAFT" : status; }
     public void setStatus(@NonNull String status) { this.status = status; }
 
-    // ---------- Alias API (back-compat with both branches) ----------
+    // ---------- Alias API (back-compat) ----------
 
     // eventId <-> id
     @Nullable public String getEventId() { return getId(); }
@@ -285,8 +275,6 @@ public class Event {
     // title <-> name
     @NonNull public String getTitle() { return getName(); }
     public void setTitle(@NonNull String title) { setName(title); }
-
-    // registrationOpen/Close already covered above via Start/End alias
 
     // ---------- Equality / Hashing (ignores id) ----------
 

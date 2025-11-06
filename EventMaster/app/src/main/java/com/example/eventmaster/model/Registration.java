@@ -13,9 +13,13 @@ public class Registration {
     private String id;
     private String eventId;
     private String entrantId;
-    private RegistrationStatus status;
+    private RegistrationStatus status; // ACTIVE | CANCELLED_*
     private long createdAtUtc;
     private @Nullable Long cancelledAtUtc;
+
+    public Registration(){
+        this.status = RegistrationStatus.ACTIVE;
+    }
 
     public Registration(@NonNull String eventId, @NonNull String entrantId, long createdAtUtc) {
         this.eventId = eventId;

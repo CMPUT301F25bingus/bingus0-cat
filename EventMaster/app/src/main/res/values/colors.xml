@@ -1,5 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <color name="profile_bg">#67B7AE</color>
+    <color name="profile_nav">#5AAEA5</color>
+    <color name="surface_white">#FFFFFF</color>
+    <color name="text_primary_dark">#111827</color>
+    <color name="text_secondary_dark">#6B7280</color>
+    <color name="btn_teal">#2F7D75</color>
+    <color name="btn_teal_pressed">#296D66</color>
+    <color name="btn_danger">#EF6A64</color>
+    <color name="btn_danger_pressed">#D85A55</color>
+    <color name="btn_neutral">#6B7280</color>
+    <color name="btn_neutral_pressed">#4B5563</color>
+    <color name="profile_button">#2F7C7B</color>
+    <color name="profile_button_pressed">#256B6A</color>
+    <color name="color_prof_primary">#5AB4AC</color>
+    <color name="color_prof_danger">#E24D4D</color>
+    <color name="color_prof_danger_pressed">#C93D3D</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="teal_bg">#5EC1B6</color>        <!-- card teal -->
