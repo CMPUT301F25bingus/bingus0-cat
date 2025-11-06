@@ -2,7 +2,7 @@ package com.example.eventmaster;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -11,6 +11,14 @@ import com.example.eventmaster.data.firestore.WaitingListRepositoryFs;
 import com.example.eventmaster.model.WaitingListEntry;
 import com.example.eventmaster.ui.organizer.waitinglist.WaitingListActivity;
 
+import com.example.eventmaster.ui.entrant.EventDetailsActivity;
+import com.example.eventmaster.utils.TestDataHelper;
+import com.google.android.material.button.MaterialButton;
+
+/**
+ * Main launcher activity for testing.
+ * Provides buttons to seed test data and navigate to event details.
+ */
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "WaitingListDemo";
@@ -20,26 +28,42 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            return insets;
+        });
 
-        repo = new WaitingListRepositoryFs();
+        setupButtons();
+    }
 
-        // Create multiple test entries to match mockup
-        WaitingListEntry entry1 = new WaitingListEntry("entrant001", "Bingus3", "Bingus3@example.com", "+1 (780) 533-4567", "event001", "waiting");
-        WaitingListEntry entry2 = new WaitingListEntry("entrant002", "Bingus4", "Bingus4@example.com", "+1 (780) 533-4567", "event001", "waiting");
-        WaitingListEntry entry3 = new WaitingListEntry("entrant003", "Bingus5", "Bingus5@example.com", "+1 (785) 534-1229", "event001", "waiting");
-        WaitingListEntry entry4 = new WaitingListEntry("entrant004", "Bingus6", "Bingus6@example.com", "+1 (780) 533-4567", "event001", "waiting");
+    private void setupButtons() {
+        MaterialButton viewEventListButton = findViewById(R.id.view_event_list_button);
+        MaterialButton adminBrowseEventsButton = findViewById(R.id.admin_browse_events_button);
+        MaterialButton scanQRButton = findViewById(R.id.scan_qr_button);
 
-        // Add all entries
-        repo.addEntrant("event001", entry1);
-        repo.addEntrant("event001", entry2);
-        repo.addEntrant("event001", entry3);
-        repo.addEntrant("event001", entry4)
-                .addOnSuccessListener(aVoid -> {
-                    Log.d(TAG, "All entrants added");
-                    // Launch the waiting list activity to view it
-                    Intent intent = new Intent(MainActivity.this, WaitingListActivity.class);
-                    startActivity(intent);
-                })
-                .addOnFailureListener(e -> Log.e(TAG, "Failed to add entrants", e));
+        // View Event List (US #8)
+        viewEventListButton.setOnClickListener(v -> openEventList());
+
+        // Admin Browse Events (US #45)
+        adminBrowseEventsButton.setOnClickListener(v -> openAdminEventList());
+
+        // Scan QR Code (US #20)
+        scanQRButton.setOnClickListener(v -> openQRScanner());
+    }
+
+    private void openEventList() {
+        Intent intent = new Intent(this, com.example.eventmaster.ui.entrant.EventListActivity.class);
+        startActivity(intent);
+    }
+
+    private void openAdminEventList() {
+        Intent intent = new Intent(this, com.example.eventmaster.ui.admin.AdminEventListActivity.class);
+        startActivity(intent);
+    }
+
+    private void openQRScanner() {
+        Intent intent = new Intent(this, com.example.eventmaster.ui.qr.QRScannerActivity.class);
+        startActivity(intent);
     }
 }

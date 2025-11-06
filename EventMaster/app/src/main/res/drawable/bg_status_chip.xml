@@ -1,0 +1,4 @@
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="#5BBF7A"/> <!-- green-ish for “Selected / Active” -->
+    <corners android:radius="8dp"/>
+</shape>

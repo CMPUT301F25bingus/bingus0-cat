@@ -2,32 +2,62 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Camera for QR -->
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-feature android:name="android.hardware.camera" android:required="false"/>
+
     <application
         android:allowBackup="true"
-        android:dataExtractionRules="@xml/data_extraction_rules"
-        android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.EventMaster">
+
+        <!-- MainActivity: developer test launcher -->
         <activity
             android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-        
-        <activity
-            android:name=".ui.organizer.waitinglist.WaitingListActivity"
-            android:exported="false" />
-        
-        <activity
-            android:name=".ui.organizer.chosenlist.ChosenListActivity"
-            android:exported="false" />
-    </application>
 
+        <!-- Organizer flow -->
+        <activity android:name=".ui.organizer.waitinglist.WaitingListActivity" android:exported="false" />
+        <activity android:name=".ui.organizer.chosenlist.ChosenListActivity" android:exported="false" />
+
+        <!-- Entrant flow -->
+        <activity android:name=".ui.entrant.EventListActivity" android:exported="false"/>
+        <activity android:name=".ui.entrant.EventDetailsActivity" android:exported="false"/>
+
+        <!-- Admin flow -->
+        <activity android:name=".ui.admin.AdminBrowseActivity" android:exported="false"/>
+        <activity android:name=".ui.admin.AdminEventListActivity" android:exported="false"/>
+        <activity android:name=".ui.admin.AdminWelcomeActivity" android:exported="false"/>
+        <activity
+            android:name=".ui.admin.profiles.BrowseOrganizersActivity"
+            android:parentActivityName=".ui.admin.AdminBrowseActivity"
+            android:exported="false"/>
+        <activity
+            android:name=".ui.admin.profiles.BrowseEntrantsActivity"
+            android:parentActivityName=".ui.admin.AdminBrowseActivity"
+            android:exported="false"/>
+        <activity
+            android:name=".ui.admin.profiles.AdminProfileDetailActivity"
+            android:parentActivityName=".ui.admin.profiles.BrowseOrganizersActivity"
+            android:exported="false"/>
+
+        <!-- QR scanner -->
+        <activity
+            android:name=".ui.qr.QRScannerActivity"
+            android:screenOrientation="portrait"
+            android:exported="false"/>
+
+        <!-- Shared profile screens -->
+        <activity android:name=".ui.profile.ProfileActivity" android:exported="false"/>
+        <activity android:name=".ui.profile.EditProfileActivity" android:exported="false"/>
+
+    </application>
 </manifest>
