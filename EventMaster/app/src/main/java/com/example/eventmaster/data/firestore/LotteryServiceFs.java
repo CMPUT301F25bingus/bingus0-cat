@@ -17,6 +17,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Firestore implementation of LotteryService.
+ * 
+ * Handles the lottery draw process for events:
+ * - Randomly selects entrants from waiting list
+ * - Moves winners to chosen_list
+ * - Creates invitations for winners
+ * - Sends notifications to winners and losers
+ * - Removes all entrants from waiting_list after lottery
+ */
 public class LotteryServiceFs implements LotteryService {
 
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();

@@ -20,6 +20,14 @@ import com.example.eventmaster.model.WaitingListEntry;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Activity displaying the waiting list for an event.
+ * 
+ * Allows organizers to:
+ * - View all entrants in the waiting list
+ * - Run the lottery to select entrants
+ * - See total count of waiting entrants
+ */
 public class WaitingListActivity extends AppCompatActivity {
 
     private static final String TAG = "WaitingListActivity";

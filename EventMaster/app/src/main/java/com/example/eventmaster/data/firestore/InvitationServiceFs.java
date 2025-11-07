@@ -13,6 +13,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
+/**
+ * Firestore service for managing event invitations.
+ * 
+ * Handles invitation lifecycle:
+ * - Retrieving user's invitation for an event
+ * - Accepting invitations (creates ACTIVE registration, removes from chosen_list)
+ * - Declining invitations (creates CANCELLED_BY_ENTRANT registration, removes from chosen_list)
+ */
 public class InvitationServiceFs {
 
     private final FirebaseFirestore db;

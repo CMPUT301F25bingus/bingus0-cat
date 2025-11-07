@@ -7,6 +7,22 @@ import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.Exclude;
 import com.google.firebase.firestore.IgnoreExtraProperties;
 
+/**
+ * Represents an event registration in the EventMaster application.
+ * 
+ * A registration is created when an entrant accepts an invitation or is enrolled in an event.
+ * 
+ * Status values:
+ * - ACTIVE: User is enrolled in the event
+ * - CANCELLED_BY_ENTRANT: User declined or cancelled their registration
+ * - CANCELLED_BY_ORGANIZER: Organizer cancelled the user's registration
+ * 
+ * Firestore Compatibility:
+ * - Includes overloaded setters to handle both Long and Timestamp types
+ * - This allows Firestore's serverTimestamp() to be deserialized correctly
+ * 
+ * Data Structure: events/{eventId}/registrations/{userId}
+ */
 @IgnoreExtraProperties
 
 public class Registration {

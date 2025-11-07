@@ -15,6 +15,12 @@ import com.example.eventmaster.model.WaitingListEntry;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Activity displaying the list of entrants chosen by the lottery.
+ * 
+ * Shows entrants who have been selected but haven't yet responded (accepted/declined).
+ * Once they respond, they move to either Selected (accepted) or Cancelled (declined) lists.
+ */
 public class ChosenListActivity extends AppCompatActivity {
 
     private static final String TAG = "ChosenListActivity";
