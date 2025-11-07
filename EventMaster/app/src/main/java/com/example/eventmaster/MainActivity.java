@@ -41,19 +41,6 @@ public class MainActivity extends AppCompatActivity {
      * Sets up test buttons for navigation and admin functions.
      */
     private void setupButtons() {
-        // Organizer: Selected Entrants button
-        Button organizerButton = findViewById(R.id.test_button_organizer);
-        organizerButton.setOnClickListener(v -> {
-            Intent intent = new Intent(MainActivity.this, SelectedEntrantsActivity.class);
-            startActivity(intent);
-        });
-
-        // Entrant: Notifications button
-        Button entrantButton = findViewById(R.id.test_button_entrant);
-        entrantButton.setOnClickListener(v -> {
-            Intent intent = new Intent(MainActivity.this, EntrantNotificationsActivity.class);
-            startActivity(intent);
-        });
 
         // Existing test buttons
         MaterialButton viewEventListButton = findViewById(R.id.view_event_list_button);
