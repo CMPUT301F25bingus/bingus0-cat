@@ -19,8 +19,6 @@ import com.google.android.material.button.MaterialButton;
  * Design Pattern:
  *  - Controller/View in MVC architecture.
  *
- * Outstanding Issues:
- *  - None known.
  */
 public class OrganizerHomeActivity extends AppCompatActivity {
 

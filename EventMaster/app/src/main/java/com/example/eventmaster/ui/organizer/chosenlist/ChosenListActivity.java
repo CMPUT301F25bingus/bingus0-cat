@@ -13,6 +13,7 @@ import com.example.eventmaster.data.firestore.WaitingListRepositoryFs;
 import com.example.eventmaster.model.WaitingListEntry;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class ChosenListActivity extends AppCompatActivity {
 
@@ -44,13 +45,19 @@ public class ChosenListActivity extends AppCompatActivity {
     }
 
     private void loadChosenList(String eventId) {
-        repo.getChosenList(eventId)
-                .addOnSuccessListener(entries -> {
-                    adapter.updateList(entries);
-                    totalChosenText.setText("Total chosen entrants: " + entries.size());
-                    Log.d(TAG, "Loaded " + entries.size() + " chosen entrants");
-                })
-                .addOnFailureListener(e ->
-                        Log.e(TAG, "Error fetching chosen list", e));
+        repo.getChosenList(eventId, new WaitingListRepositoryFs.OnListLoadedListener() {
+            @Override
+            public void onSuccess(List<WaitingListEntry> entries) {
+                adapter.updateList(entries);
+                totalChosenText.setText("Total chosen entrants: " + entries.size());
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                totalChosenText.setText("Failed to load chosen entrants");
+                Log.e("ChosenList", "Error loading chosen list", e);
+            }
+        });
     }
 }
+

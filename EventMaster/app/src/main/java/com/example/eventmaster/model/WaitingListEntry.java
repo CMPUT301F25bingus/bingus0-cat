@@ -22,6 +22,11 @@ public class WaitingListEntry {
     // Empty constructor required by Firestore
     public WaitingListEntry() {}
 
+    public WaitingListEntry(String entryId, String eventId, String userId, Date joinedDate) {
+        this(entryId, eventId, userId, "Unknown", null, null, joinedDate, "waiting");
+    }
+
+
     // Full constructor
     public WaitingListEntry(String entryId, String eventId, String userId, String entrantName,
                             String email, String phone, Date joinedDate, String status) {

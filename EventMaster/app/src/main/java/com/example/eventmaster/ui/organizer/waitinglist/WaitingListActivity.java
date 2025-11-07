@@ -19,6 +19,7 @@ import com.example.eventmaster.model.WaitingListEntry;
 import com.example.eventmaster.ui.organizer.chosenlist.ChosenListActivity;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class WaitingListActivity extends AppCompatActivity {
 
@@ -72,14 +73,21 @@ public class WaitingListActivity extends AppCompatActivity {
     }
 
     private void loadWaitingList(String eventId) {
-        waitingRepo.getWaitingList(eventId)
-                .addOnSuccessListener(entries -> {
-                    adapter.updateList(entries);
-                    totalCountText.setText("Total waitlisted entrants: " + entries.size());
-                    Log.d(TAG, "Loaded " + entries.size() + " entrants");
-                })
-                .addOnFailureListener(e ->
-                        Log.e(TAG, "Error fetching waiting list", e));
+        waitingRepo.getWaitingList(eventId, new WaitingListRepositoryFs.OnListLoadedListener() {
+            @Override
+            public void onSuccess(List<WaitingListEntry> entries) {
+                adapter.updateList(entries);
+                totalCountText.setText("Total waitlisted entrants: " + entries.size());
+                Log.d(TAG, "Loaded " + entries.size() + " entrants");
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                Log.e(TAG, "Error fetching waiting list", e);
+                Toast.makeText(WaitingListActivity.this,
+                        "Failed to load waiting list", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void runLottery(String eventId, int count) {

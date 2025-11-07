@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#CDE7E4"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="32dp">
+
+    <com.google.android.material.textview.MaterialTextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="EventMaster Roles"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:textColor="@android:color/black"
+        android:layout_marginBottom="24dp" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnAdmin"
+        android:layout_width="220dp"
+        android:layout_height="wrap_content"
+        android:text="Admin Portal"
+        android:textAllCaps="false"
+        android:textColor="@android:color/white"
+        app:cornerRadius="12dp"
+        app:backgroundTint="#15837C"
+        android:layout_marginBottom="16dp" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnOrganizer"
+        android:layout_width="220dp"
+        android:layout_height="wrap_content"
+        android:text="Organizer Portal"
+        android:textAllCaps="false"
+        android:textColor="@android:color/white"
+        app:cornerRadius="12dp"
+        app:backgroundTint="#15837C"
+        android:layout_marginBottom="16dp" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnEntrant"
+        android:layout_width="220dp"
+        android:layout_height="wrap_content"
+        android:text="Entrant Portal"
+        android:textAllCaps="false"
+        android:textColor="@android:color/white"
+        app:cornerRadius="12dp"
+        app:backgroundTint="#15837C" />
+</LinearLayout>

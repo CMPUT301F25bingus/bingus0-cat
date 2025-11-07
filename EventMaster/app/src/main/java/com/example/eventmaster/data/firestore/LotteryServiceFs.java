@@ -58,24 +58,24 @@ public class LotteryServiceFs implements LotteryService {
                             Task<Void> addTask = db.collection("events")
                                     .document(eventId)
                                     .collection("chosen_list")
-                                    .document(e.getEntrantId())
+                                    .document(e.getUserId())
                                     .set(e)
                                     .addOnSuccessListener(aVoid -> 
-                                        Log.d(TAG, "Added " + e.getEntrantId() + " to chosen_list"))
+                                        Log.d(TAG, "Added " + e.getUserId() + " to chosen_list"))
                                     .addOnFailureListener(ex -> 
-                                        Log.e(TAG, "Failed to add " + e.getEntrantId() + " to chosen_list", ex));
+                                        Log.e(TAG, "Failed to add " + e.getUserId() + " to chosen_list", ex));
                             writeTasks.add(addTask);
 
                             // Remove from waiting_list
                             Task<Void> removeTask = db.collection("events")
                                     .document(eventId)
                                     .collection("waiting_list")
-                                    .document(e.getEntrantId())
+                                    .document(e.getUserId())
                                     .delete()
                                     .addOnSuccessListener(aVoid -> 
-                                        Log.d(TAG, "Removed " + e.getEntrantId() + " from waiting_list"))
+                                        Log.d(TAG, "Removed " + e.getUserId() + " from waiting_list"))
                                     .addOnFailureListener(ex -> 
-                                        Log.e(TAG, "Failed to remove " + e.getEntrantId() + " from waiting_list", ex));
+                                        Log.e(TAG, "Failed to remove " + e.getUserId() + " from waiting_list", ex));
                             writeTasks.add(removeTask);
                         }
 
