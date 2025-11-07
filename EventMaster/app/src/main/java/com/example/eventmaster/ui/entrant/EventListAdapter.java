@@ -9,6 +9,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.example.eventmaster.R;
 import com.example.eventmaster.model.Event;
 import com.google.android.material.button.MaterialButton;
@@ -113,13 +114,13 @@ public class EventListAdapter extends RecyclerView.Adapter<EventListAdapter.Even
         }
 
         void bind(Event event, OnEventClickListener listener) {
-            // Title
+            // ---------- Title ----------
             title.setText(safe(event.getName(), "Unnamed Event"));
 
-            // Location
+            // ---------- Location ----------
             location.setText(safe(event.getLocation(), "Location TBA"));
 
-            // Dates (registration period or event date)
+            // ---------- Dates ----------
             if (event.getRegistrationStartDate() != null && event.getRegistrationEndDate() != null) {
                 SimpleDateFormat fmt = new SimpleDateFormat("MMM dd", Locale.getDefault());
                 String text = "Reg: " + fmt.format(event.getRegistrationStartDate())
@@ -131,16 +132,25 @@ public class EventListAdapter extends RecyclerView.Adapter<EventListAdapter.Even
                 registerBy.setText("Register by: TBA");
             }
 
-            // Capacity
+            // ---------- Capacity ----------
             capacity.setText("Cap: " + event.getCapacity());
 
-            // Placeholder joined count (can be wired to real count later)
-            joined.setText("Joined: 0");
+            // ---------- Joined Count ----------
+            joined.setText("Joined: 0"); // TODO: connect to real joined count later
 
-            // Poster: you can load from event.getPosterUrl() with Glide if you have it
-            poster.setImageResource(R.drawable.ic_launcher_background);
+            // ---------- Poster ----------
+            String posterUrl = event.getPosterUrl(); // assuming Event model has getPosterUrl()
+            if (posterUrl != null && !posterUrl.isEmpty()) {
+                Glide.with(itemView.getContext())
+                        .load(posterUrl)
+                        .placeholder(R.drawable.ic_launcher_background)
+                        .centerCrop()
+                        .into(poster);
+            } else {
+                poster.setImageResource(R.drawable.ic_launcher_background);
+            }
 
-            // Clicks
+            // ---------- Clicks ----------
             itemView.setOnClickListener(v -> {
                 if (listener != null) listener.onEventClick(event);
             });
@@ -149,7 +159,7 @@ public class EventListAdapter extends RecyclerView.Adapter<EventListAdapter.Even
                 if (listener != null) listener.onJoinButtonClick(event);
             });
 
-            // For now, QR code click just behaves like open details
+            // Poster click → open event details or QR
             poster.setOnClickListener(v -> {
                 if (listener != null) listener.onQRCodeClick(event);
             });

@@ -1,6 +1,5 @@
 package com.example.eventmaster.ui.entrant;
 
-import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -13,6 +12,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.bumptech.glide.Glide;
 import com.example.eventmaster.R;
 import com.example.eventmaster.data.api.EventRepository;
 import com.example.eventmaster.data.api.WaitingListRepository;
@@ -24,7 +24,6 @@ import com.example.eventmaster.model.Event;
 import com.example.eventmaster.model.Invitation;
 import com.example.eventmaster.model.WaitingListEntry;
 import com.example.eventmaster.utils.DeviceUtils;
-import com.example.eventmaster.utils.QRCodeGenerator;
 import com.google.android.material.button.MaterialButton;
 
 import java.text.SimpleDateFormat;
@@ -46,8 +45,6 @@ public class EventDetailsFragment extends Fragment {
 
     private EventRepository eventRepository;
     private WaitingListRepository waitingListRepository;
-
-    // Added services for Owner D
     private InvitationServiceFs invitationService;
     private RegistrationServiceFs registrationService;
 
@@ -71,14 +68,12 @@ public class EventDetailsFragment extends Fragment {
     private TextView waitingListCountText;
     private MaterialButton joinButton;
 
-    // Invitation include (container + inner views)
-    private View inviteInclude;                 // <include layout="@layout/include_invitation_actions">
-    private TextView inviteStatusText;         // @id/invite_status_text
-    private MaterialButton btnAccept;          // @id/btnAccept
-    private MaterialButton btnDecline;          // @id/btnDecline
+    // Invitation include
+    private View inviteInclude;
+    private TextView inviteStatusText;
+    private MaterialButton btnAccept;
+    private MaterialButton btnDecline;
 
-
-    //Testmode flags (read from hosting Activity's Intent)
     private boolean testMode = false;
     private boolean testForceInvited = false;
 
@@ -94,8 +89,7 @@ public class EventDetailsFragment extends Fragment {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        //for tests:
-        // 1) Prefer fragment arguments
+
         Bundle a = getArguments();
         if (a != null) {
             testMode = a.getBoolean("TEST_MODE", false);
@@ -103,29 +97,16 @@ public class EventDetailsFragment extends Fragment {
             eventId = a.getString(ARG_EVENT_ID);
         }
 
-        // 2) Fallback to Activity intent (if args not set)
         if ((a == null || !a.containsKey("TEST_MODE")) && getActivity() != null && getActivity().getIntent() != null) {
             testMode = getActivity().getIntent().getBooleanExtra("TEST_MODE", false);
             testForceInvited = getActivity().getIntent().getBooleanExtra("TEST_FORCE_INVITED", false);
         }
-        if (eventId == null && getArguments() != null) {
-            eventId = getArguments().getString(ARG_EVENT_ID);
-        }
 
-        //back to main code
-        if (getArguments() != null) {
-            eventId = getArguments().getString(ARG_EVENT_ID);
-        }
-
-        // Initialize repositories
         eventRepository = new EventRepositoryFs();
         waitingListRepository = new WaitingListRepositoryFs();
-
-        // Owner D services
-        invitationService   = new InvitationServiceFs();
+        invitationService = new InvitationServiceFs();
         registrationService = new RegistrationServiceFs();
 
-        // Get device-based user ID (US 01.07.01)
         userId = DeviceUtils.getDeviceId(requireContext());
     }
 
@@ -135,7 +116,7 @@ public class EventDetailsFragment extends Fragment {
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_event_details, container, false);
 
-        // Initialize UI elements
+        // Initialize UI
         posterImage = view.findViewById(R.id.event_poster_image);
         backButton = view.findViewById(R.id.back_button);
         favoriteIcon = view.findViewById(R.id.favorite_icon);
@@ -151,46 +132,28 @@ public class EventDetailsFragment extends Fragment {
         waitingListCountText = view.findViewById(R.id.waiting_list_count_text);
         joinButton = view.findViewById(R.id.join_waiting_list_button);
 
-        // Invitation include + inner controls
-        inviteInclude    = view.findViewById(R.id.invitation_include);
+        inviteInclude = view.findViewById(R.id.invitation_include);
         inviteStatusText = view.findViewById(R.id.invite_status_text);
-        btnAccept        = view.findViewById(R.id.btnAccept);
-        btnDecline       = view.findViewById(R.id.btnDecline);
+        btnAccept = view.findViewById(R.id.btnAccept);
+        btnDecline = view.findViewById(R.id.btnDecline);
 
-        // Default states while loading
         inviteInclude.setVisibility(View.GONE);
         joinButton.setVisibility(View.GONE);
 
-
-        // Test-mode UI override: skip Firestore and just show the right branch
-        if (testMode) {
-            if (testForceInvited) {
-                inviteInclude.setVisibility(View.VISIBLE);
-                joinButton.setVisibility(View.GONE);
-            } else {
-                inviteInclude.setVisibility(View.GONE);
-                joinButton.setVisibility(View.VISIBLE);
-            }
-
-            // In test mode, make clicks no-op except for a Toast so we can assert behavior
-            if (btnAccept != null)  btnAccept.setOnClickListener(v ->
-                    android.widget.Toast.makeText(requireContext(), "Accepted (TEST)", android.widget.Toast.LENGTH_SHORT).show());
-            if (btnDecline != null) btnDecline.setOnClickListener(v ->
-                    android.widget.Toast.makeText(requireContext(), "Declined (TEST)", android.widget.Toast.LENGTH_SHORT).show());
-        }
-
-        // Set click listeners
         backButton.setOnClickListener(v -> requireActivity().onBackPressed());
         favoriteIcon.setOnClickListener(v -> handleFavoriteClick());
         joinButton.setOnClickListener(v -> handleJoinWaitingList());
 
-        // Load event details (poster/qr/etc.)
         loadEventDetails();
 
-        // Decide which CTA to show: invitation include vs join button]
-        // In test mode we already forced the UI above; skip live checks so tests are deterministic.
         if (!testMode) {
             decideInviteOrJoin();
+        } else {
+            if (testForceInvited) {
+                inviteInclude.setVisibility(View.VISIBLE);
+            } else {
+                joinButton.setVisibility(View.VISIBLE);
+            }
         }
 
         return view;
@@ -204,7 +167,6 @@ public class EventDetailsFragment extends Fragment {
                 currentEvent = event;
                 displayEventDetails(event);
                 loadWaitingListCount();
-                // (Do not call checkIfUserInWaitingList() here—only show join after we know no invite)
             }
 
             @Override
@@ -215,23 +177,17 @@ public class EventDetailsFragment extends Fragment {
         });
     }
 
-    /** Decide which CTA to show. If invited → show include; else → show join button. */
+    /** Decides whether to show invitation actions or join button. */
     private void decideInviteOrJoin() {
         invitationService.getMyInvitation(eventId, userId, inv -> {
             if (inv != null) {
-                // There is an invitation (any status)
                 showInvitationInclude(inv);
             } else {
-                // No invitation → allow joining (respect your existing waiting-list logic)
                 showJoinButtonWithState();
             }
-        }, err -> {
-            // On error, fall back to join
-            showJoinButtonWithState();
-        });
+        }, err -> showJoinButtonWithState());
     }
 
-    /** Shows the invitation include and wires Accept/Decline. */
     private void showInvitationInclude(@NonNull Invitation inv) {
         inviteInclude.setVisibility(View.VISIBLE);
         joinButton.setVisibility(View.GONE);
@@ -278,7 +234,7 @@ public class EventDetailsFragment extends Fragment {
                 btnDecline.setEnabled(false);
                 break;
 
-            default: // DECLINED
+            default:
                 inviteStatusText.setText("Invitation declined");
                 inviteStatusText.setVisibility(View.VISIBLE);
                 btnAccept.setEnabled(false);
@@ -287,26 +243,26 @@ public class EventDetailsFragment extends Fragment {
         }
     }
 
-    /** Shows the Join button and reuses your existing state checks to enable/disable it. */
-    private void showJoinButtonWithState() {
-        inviteInclude.setVisibility(View.GONE);
-        joinButton.setVisibility(View.VISIBLE);
-        // Now apply your current "already joined?" logic
-        checkIfUserInWaitingList();
-    }
-
     private void setInviteButtonsEnabled(boolean enabled) {
         btnAccept.setEnabled(enabled);
         btnDecline.setEnabled(enabled);
     }
 
+    private void showJoinButtonWithState() {
+        inviteInclude.setVisibility(View.GONE);
+        joinButton.setVisibility(View.VISIBLE);
+        checkIfUserInWaitingList();
+    }
+
     /** Displays event details in the UI. */
     private void displayEventDetails(Event event) {
         eventNameText.setText(event.getName() != null ? event.getName() : "Unnamed Event");
-        organizerText.setText("Hosted by: " + (event.getOrganizerName() != null ? event.getOrganizerName() : "Unknown"));
+        organizerText.setText("Hosted by: " +
+                (event.getOrganizerName() != null ? event.getOrganizerName() : "Unknown"));
         locationText.setText(event.getLocation() != null ? event.getLocation() : "Location TBA");
+        descriptionText.setText(event.getDescription() != null ? event.getDescription() : "No description available");
 
-        // Price
+        // Price formatting
         if (event.getPrice() % 1 == 0) {
             priceText.setText(String.format(Locale.getDefault(), "$%.0f", event.getPrice()));
         } else {
@@ -314,16 +270,17 @@ public class EventDetailsFragment extends Fragment {
         }
 
         capacityText.setText(String.valueOf(event.getCapacity()));
-        descriptionText.setText(event.getDescription() != null ? event.getDescription() : "No description available");
 
-        // Dates
+        // Date display
         SimpleDateFormat shortDateFormat = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault());
-        SimpleDateFormat eventDateFormat = new SimpleDateFormat("MMM dd - MMM, yyyy", Locale.getDefault());
+        SimpleDateFormat eventDateFormat = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault());
 
-        if (event.getRegistrationEndDate() != null) {
-            registrationDateText.setText(shortDateFormat.format(event.getRegistrationEndDate()));
+        if (event.getRegistrationStartDate() != null && event.getRegistrationEndDate() != null) {
+            String start = shortDateFormat.format(event.getRegistrationStartDate());
+            String end = shortDateFormat.format(event.getRegistrationEndDate());
+            registrationDateText.setText("Registration: " + start + " - " + end);
         } else {
-            registrationDateText.setText("TBA");
+            registrationDateText.setText("Registration: TBA");
         }
 
         if (event.getEventDate() != null) {
@@ -332,39 +289,32 @@ public class EventDetailsFragment extends Fragment {
             eventDateText.setText("TBA");
         }
 
-        // TODO: Load poster image if posterUrl exists (Glide/Picasso)
+        // Poster image
+        if (event.getPosterUrl() != null && !event.getPosterUrl().isEmpty()) {
+            Glide.with(requireContext())
+                    .load(event.getPosterUrl())
+                    .placeholder(R.drawable.ic_launcher_background)
+                    .into(posterImage);
+        } else {
+            posterImage.setImageResource(R.drawable.ic_launcher_background);
+        }
 
-        // Generate QR code for deep link / sharing
-        generateQRCode();
+        // ✅ Load QR image from Firestore (not generate locally)
+        if (event.getQrUrl() != null && !event.getQrUrl().isEmpty()) {
+            Glide.with(requireContext())
+                    .load(event.getQrUrl())
+                    .into(qrCodeImage);
+        } else {
+            qrCodeImage.setVisibility(View.GONE);
+        }
     }
 
-    /** Generates and displays the QR code for this event. */
-    private void generateQRCode() {
-        if (eventId == null || eventId.isEmpty()) return;
-
-        new Thread(() -> {
-            final Bitmap qrCodeBitmap = QRCodeGenerator.generateQRCode(eventId, 400, 400);
-            if (getActivity() != null) {
-                getActivity().runOnUiThread(() -> {
-                    if (qrCodeBitmap != null) {
-                        qrCodeImage.setImageBitmap(qrCodeBitmap);
-                    } else {
-                        qrCodeImage.setVisibility(View.GONE);
-                        Toast.makeText(requireContext(), "Failed to generate QR code",
-                                Toast.LENGTH_SHORT).show();
-                    }
-                });
-            }
-        }).start();
-    }
-
-    /** Loads the count of people on the waiting list. */
+    /** Loads number of people on waiting list. */
     private void loadWaitingListCount() {
         waitingListRepository.getWaitingListCount(eventId, new WaitingListRepository.OnCountListener() {
             @Override
             public void onSuccess(int count) {
-                String countText = count + " People have joined the waiting list";
-                waitingListCountText.setText(countText);
+                waitingListCountText.setText(count + " people have joined the waiting list");
             }
 
             @Override
@@ -374,12 +324,10 @@ public class EventDetailsFragment extends Fragment {
         });
     }
 
-    /** Favorite placeholder */
     private void handleFavoriteClick() {
         Toast.makeText(requireContext(), "Favorite feature coming soon!", Toast.LENGTH_SHORT).show();
     }
 
-    /** Checks if the current user is already in the waiting list (kept from your original logic). */
     private void checkIfUserInWaitingList() {
         waitingListRepository.isUserInWaitingList(eventId, userId,
                 new WaitingListRepository.OnCheckListener() {
@@ -396,21 +344,18 @@ public class EventDetailsFragment extends Fragment {
 
                     @Override
                     public void onFailure(Exception e) {
-                        // If check fails, enable button by default
                         joinButton.setEnabled(true);
                         joinButton.setText("Join Waiting List");
                     }
                 });
     }
 
-    /** Handles the join waiting list button click. */
     private void handleJoinWaitingList() {
         if (currentEvent == null) {
             Toast.makeText(requireContext(), "Event data not loaded", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // Check registration window
         if (currentEvent.getRegistrationStartDate() == null || currentEvent.getRegistrationEndDate() == null) {
             Toast.makeText(requireContext(), "Registration dates not available yet", Toast.LENGTH_SHORT).show();
             return;
@@ -426,34 +371,27 @@ public class EventDetailsFragment extends Fragment {
             return;
         }
 
-        // Create waiting list entry
         String entryId = UUID.randomUUID().toString();
         WaitingListEntry entry = new WaitingListEntry(entryId, eventId, userId, new Date());
-        // Optional: set geolocation here if required
 
-        // Disable button while processing
         joinButton.setEnabled(false);
         joinButton.setText("Joining...");
 
-        // Add to waiting list
-        waitingListRepository.addToWaitingList(entry,
-                new WaitingListRepository.OnWaitingListOperationListener() {
-                    @Override
-                    public void onSuccess() {
-                        Toast.makeText(requireContext(),
-                                "Successfully joined waiting list!", Toast.LENGTH_SHORT).show();
-                        joinButton.setText("Already in Waiting List");
-                        loadWaitingListCount(); // Refresh count
-                    }
+        waitingListRepository.addToWaitingList(entry, new WaitingListRepository.OnWaitingListOperationListener() {
+            @Override
+            public void onSuccess() {
+                Toast.makeText(requireContext(), "Successfully joined waiting list!", Toast.LENGTH_SHORT).show();
+                joinButton.setText("Already in Waiting List");
+                loadWaitingListCount();
+            }
 
-                    @Override
-                    public void onFailure(Exception e) {
-                        Toast.makeText(requireContext(),
-                                "Failed to join: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                        joinButton.setEnabled(true);
-                        joinButton.setText("Join Waiting List");
-                    }
-                });
+            @Override
+            public void onFailure(Exception e) {
+                Toast.makeText(requireContext(), "Failed to join: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                joinButton.setEnabled(true);
+                joinButton.setText("Join Waiting List");
+            }
+        });
     }
 
     private void toast(String msg) {

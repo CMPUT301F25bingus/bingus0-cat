@@ -177,15 +177,21 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
 
         Map<String, Object> base = new HashMap<>();
         base.put("eventId", eventId);
+        // canonical & backward-compatible field names
+        base.put("name", title);
         base.put("title", title);
         base.put("description", desc);
         base.put("location", location);
-        base.put("regStart", regStart);
-        base.put("regEnd", regEnd);
+
+        // use consistent Firestore keys
+        base.put("registrationOpen", regStart);
+        base.put("registrationClose", regEnd);
+
         base.put("organizerId", organizerId);
         base.put("posterUrl", null);
         base.put("qrUrl", null);
         base.put("createdAt", Timestamp.now());
+
 
         doc.set(base).addOnSuccessListener(unused -> {
             if (posterUri != null) {
