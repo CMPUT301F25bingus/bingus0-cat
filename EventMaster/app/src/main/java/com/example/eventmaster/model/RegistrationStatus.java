@@ -3,5 +3,6 @@ package com.example.eventmaster.model;
 public enum RegistrationStatus {
     ACTIVE,
     CANCELLED_BY_ORGANIZER,
-    CANCELLED_BY_ENTRANT
+    CANCELLED_BY_ENTRANT,
+    NOT_SELECTED
 }

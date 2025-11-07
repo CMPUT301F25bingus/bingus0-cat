@@ -62,7 +62,7 @@ class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.VH> {
                 || st == RegistrationStatus.CANCELLED_BY_ENTRANT) {
             h.tvStatusChip.setText("Cancelled");
             h.tvStatusChip.setBackgroundResource(R.drawable.chip_history_cancelled);
-        } else {
+        } else if (st == RegistrationStatus.NOT_SELECTED) {
             h.tvStatusChip.setText("Not Selected");
             h.tvStatusChip.setBackgroundResource(R.drawable.chip_history_not_selected);
         }
