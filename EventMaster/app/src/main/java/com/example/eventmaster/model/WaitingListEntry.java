@@ -70,11 +70,11 @@ public class WaitingListEntry {
     public void setJoinedDate(Date joinedDate) {
         this.joinedDate = joinedDate != null ? new Timestamp(joinedDate) : null;
     }
-    
+
     public Timestamp getJoinedDateTimestamp() {
         return joinedDate;
     }
-    
+
     public void setJoinedDateTimestamp(Timestamp joinedDate) {
         this.joinedDate = joinedDate;
     }

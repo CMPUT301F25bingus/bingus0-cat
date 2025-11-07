@@ -11,7 +11,6 @@ import com.google.firebase.firestore.IgnoreExtraProperties;
 public class Registration {
     @Exclude
     private String id;
-
     private String eventId;
     private String entrantId;
     private RegistrationStatus status; // ACTIVE | CANCELLED_*

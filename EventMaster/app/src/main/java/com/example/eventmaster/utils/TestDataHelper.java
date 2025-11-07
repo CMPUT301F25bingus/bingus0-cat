@@ -7,6 +7,8 @@ import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Helper class to populate Firestore with test data for development and testing.
@@ -48,7 +50,7 @@ public class TestDataHelper {
         Date regEnd = cal.getTime();
 
         Event event = new Event(
-                "test_event_1",
+                "test_event_S",
                 "Swimming Lessons for Beginners",
                 "Learn the basics of swimming in a safe and fun environment. " +
                         "Perfect for adults who want to learn how to swim!",
@@ -154,6 +156,28 @@ public class TestDataHelper {
                 .addOnFailureListener(e ->
                         Log.e(TAG, "Failed to create Dance Class event", e));
     }
+    /** Seeds a test entrant who has already been selected (has a Registration = ACTIVE). */
+    public void createSelectedEntrantForSwimmingEvent(String entrantId) {
+        String eventId = "test_event_1";
+
+        Map<String, Object> registration = new HashMap<>();
+        registration.put("eventId", eventId);
+        registration.put("entrantId", entrantId);
+        registration.put("status", "ACTIVE");
+        registration.put("createdAtUtc", System.currentTimeMillis());
+        registration.put("cancelledAtUtc", null);
+
+        db.collection("events")
+                .document(eventId)
+                .collection("registrations")
+                .document(entrantId)
+                .set(registration)
+                .addOnSuccessListener(a -> Log.d(TAG, "Seeded selected entrant for event"))
+                .addOnFailureListener(e -> Log.e(TAG, "Failed to seed selected entrant", e));
+    }
+
+
+
 }
 
 

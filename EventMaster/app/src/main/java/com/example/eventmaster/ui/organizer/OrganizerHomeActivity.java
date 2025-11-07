@@ -34,12 +34,6 @@ public class OrganizerHomeActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_organizer_home);
 
-        // --- Toolbar setup ---
-        MaterialToolbar topBar = findViewById(R.id.topBar);
-        if (topBar != null) {
-            topBar.setNavigationOnClickListener(v -> onBackPressed());
-        }
-
         // --- Buttons ---
         MaterialButton btnCreate = findViewById(R.id.btnCreateEvents);
         MaterialButton btnManage = findViewById(R.id.btnManageEvents);

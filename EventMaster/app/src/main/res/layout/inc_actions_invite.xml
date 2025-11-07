@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="horizontal" android:gravity="center"
+    android:paddingTop="16dp"
+    android:layout_width="match_parent" android:layout_height="wrap_content">
+
+    <Button
+        android:id="@+id/btnAccept"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:backgroundTint="#036D63"
+        android:text="Accept" />
+
+    <Space android:layout_width="12dp"
+        android:layout_height="0dp"/>
+
+    <Button
+        android:id="@+id/btnDecline"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:backgroundTint="#DB4A4A"
+        android:text="Decline" />
+</LinearLayout>
