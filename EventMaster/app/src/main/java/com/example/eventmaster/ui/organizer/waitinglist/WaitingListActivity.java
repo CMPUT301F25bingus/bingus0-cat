@@ -16,7 +16,6 @@ import com.example.eventmaster.R;
 import com.example.eventmaster.data.firestore.WaitingListRepositoryFs;
 import com.example.eventmaster.data.firestore.LotteryServiceFs;
 import com.example.eventmaster.model.WaitingListEntry;
-import com.example.eventmaster.ui.organizer.chosenlist.ChosenListActivity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,48 +27,53 @@ public class WaitingListActivity extends AppCompatActivity {
     private WaitingListAdapter adapter;
     private TextView totalCountText;
     private TextView drawReplacementText;
-    private TextView viewChosenListText;
+    private TextView btnBack;
 
     private final WaitingListRepositoryFs waitingRepo = new WaitingListRepositoryFs();
     private final LotteryServiceFs lotteryService = new LotteryServiceFs();
 
-    private static final String TEST_EVENT_ID = "event001";
+    private String eventId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.organizer_waiting_list);
 
+        // Get eventId from Intent
+        eventId = getIntent().getStringExtra("eventId");
+        if (eventId == null || eventId.isEmpty()) {
+            Toast.makeText(this, "Error: No event ID provided", Toast.LENGTH_LONG).show();
+            finish();
+            return;
+        }
+
         recyclerView = findViewById(R.id.recyclerViewWaitingList);
         totalCountText = findViewById(R.id.textTotalCount);
         drawReplacementText = findViewById(R.id.textDrawReplacement);
-        viewChosenListText = findViewById(R.id.textViewChosenList);
+        btnBack = findViewById(R.id.btnBack);
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         adapter = new WaitingListAdapter(new ArrayList<>());
         recyclerView.setAdapter(adapter);
 
+        // Back button to return to View Entrants
+        btnBack.setOnClickListener(v -> finish());
+
         // Load waiting list initially
-        loadWaitingList(TEST_EVENT_ID);
+        loadWaitingList(eventId);
 
-        // Navigate to Chosen List
-        viewChosenListText.setOnClickListener(v -> {
-            Intent intent = new Intent(WaitingListActivity.this, ChosenListActivity.class);
-            startActivity(intent);
-        });
-
-        // 🎲 Draw Replacement Click
+        // 🎲 Run Lottery Click
         drawReplacementText.setOnClickListener(v -> {
             Toast.makeText(this, "Running Lottery...", Toast.LENGTH_SHORT).show();
-            runLottery(TEST_EVENT_ID, 3); // pick 3 entrants for now
+            runLottery(eventId, 3); // pick 3 entrants for now
         });
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        // Reload data when returning from chosen list
-        loadWaitingList(TEST_EVENT_ID);
+        // Reload data when returning
+        loadWaitingList(eventId);
     }
 
     private void loadWaitingList(String eventId) {

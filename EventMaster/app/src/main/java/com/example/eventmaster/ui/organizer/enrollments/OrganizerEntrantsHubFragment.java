@@ -1,6 +1,7 @@
 package com.example.eventmaster.ui.organizer.enrollments;
 
 import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -12,6 +13,8 @@ import androidx.fragment.app.Fragment;
 
 import com.example.eventmaster.R;
 import com.example.eventmaster.ui.organizer.SelectedEntrantsActivity;
+import com.example.eventmaster.ui.organizer.waitinglist.WaitingListActivity;
+import com.example.eventmaster.ui.organizer.chosenlist.ChosenListActivity;
 import com.google.android.material.appbar.MaterialToolbar;
 
 /**
@@ -59,8 +62,24 @@ public class OrganizerEntrantsHubFragment extends Fragment {
         View v = inflater.inflate(R.layout.fragment_org_entrants_hub, container, false);
         eventId = requireArguments().getString(ARG_EVENT_ID);
 
-        View btnSelected  = v.findViewById(R.id.btnFinal);
-        View btnCancelled = v.findViewById(R.id.btnCancelled);
+        View btnWaitingList = v.findViewById(R.id.btnWaitingList);
+        View btnChosenList  = v.findViewById(R.id.btnChosenList);
+        View btnSelected    = v.findViewById(R.id.btnFinal);
+        View btnCancelled   = v.findViewById(R.id.btnCancelled);
+
+        // Navigate to Waiting List Activity
+        btnWaitingList.setOnClickListener(x -> {
+            Intent intent = new Intent(requireContext(), WaitingListActivity.class);
+            intent.putExtra("eventId", eventId);
+            startActivity(intent);
+        });
+
+        // Navigate to Chosen List Activity
+        btnChosenList.setOnClickListener(x -> {
+            Intent intent = new Intent(requireContext(), ChosenListActivity.class);
+            intent.putExtra("eventId", eventId);
+            startActivity(intent);
+        });
 
         btnSelected.setOnClickListener(x -> {
             Context context = requireContext();

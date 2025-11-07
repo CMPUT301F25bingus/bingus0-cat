@@ -61,6 +61,34 @@
                     android:textColor="@android:color/black"
                     android:layout_marginBottom="12dp" />
 
+                <!-- WAITING LIST BUTTON -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnWaitingList"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="📋 Waiting List"
+                    android:textAllCaps="false"
+                    android:textColor="@android:color/black"
+                    android:layout_marginBottom="16dp"
+                    app:cornerRadius="25dp"
+                    app:backgroundTint="#D4E4F7"
+                    app:strokeColor="#22000000"
+                    app:strokeWidth="1dp" />
+
+                <!-- CHOSEN LIST BUTTON -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnChosenList"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="🎯 Chosen List"
+                    android:textAllCaps="false"
+                    android:textColor="@android:color/black"
+                    android:layout_marginBottom="16dp"
+                    app:cornerRadius="25dp"
+                    app:backgroundTint="#FFF4D4"
+                    app:strokeColor="#22000000"
+                    app:strokeWidth="1dp" />
+
                 <!-- SELECTED ENTRANTS BUTTON -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnFinal"
