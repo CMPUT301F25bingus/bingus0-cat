@@ -24,6 +24,8 @@ import com.example.eventmaster.data.firestore.EventRepositoryFs;
 import com.example.eventmaster.data.firestore.WaitingListRepositoryFs;
 import com.example.eventmaster.model.Event;
 import com.example.eventmaster.model.WaitingListEntry;
+import com.example.eventmaster.ui.profile.ProfileActivity;
+import com.example.eventmaster.ui.qr.QRScannerActivity;
 import com.example.eventmaster.utils.DeviceUtils;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
@@ -144,7 +146,8 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
                 // Already on search/events screen
                 return true;
             } else if (itemId == R.id.nav_profile) {
-                Toast.makeText(requireContext(), "Profile - Coming soon", Toast.LENGTH_SHORT).show();
+                //Toast.makeText(requireContext(), "Profile - Coming soon", Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(requireContext(), ProfileActivity.class));
                 return true;
             } else if (itemId == R.id.nav_notifications) {
                 Toast.makeText(requireContext(), "Notifications - Coming soon", Toast.LENGTH_SHORT).show();
@@ -152,6 +155,9 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
             } else if (itemId == R.id.nav_remove) {
                 Toast.makeText(requireContext(), "Remove - Coming soon", Toast.LENGTH_SHORT).show();
                 return true;
+            } else if (itemId == R.id.nav_scan_qr){
+                Intent i = new Intent(requireContext(), QRScannerActivity.class);
+                startActivity(i);
             }
             
             return false;
