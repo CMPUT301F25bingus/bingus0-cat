@@ -3,9 +3,26 @@ package com.example.eventmaster.model;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.Exclude;
 import com.google.firebase.firestore.IgnoreExtraProperties;
 
+/**
+ * Represents an event registration in the EventMaster application.
+ * 
+ * A registration is created when an entrant accepts an invitation or is enrolled in an event.
+ * 
+ * Status values:
+ * - ACTIVE: User is enrolled in the event
+ * - CANCELLED_BY_ENTRANT: User declined or cancelled their registration
+ * - CANCELLED_BY_ORGANIZER: Organizer cancelled the user's registration
+ * 
+ * Firestore Compatibility:
+ * - Includes overloaded setters to handle both Long and Timestamp types
+ * - This allows Firestore's serverTimestamp() to be deserialized correctly
+ * 
+ * Data Structure: events/{eventId}/registrations/{userId}
+ */
 @IgnoreExtraProperties
 
 public class Registration {
@@ -68,5 +85,14 @@ public class Registration {
     }
     public void setCancelledAtUtc(@Nullable Long cancelledAtUtc) {
         this.cancelledAtUtc = cancelledAtUtc;
+    }
+    
+    // Firestore compatibility: handle Timestamp objects
+    public void setCancelledAtUtc(@Nullable Timestamp timestamp) {
+        this.cancelledAtUtc = (timestamp != null) ? timestamp.toDate().getTime() : null;
+    }
+    
+    public void setCreatedAtUtc(@Nullable Timestamp timestamp) {
+        this.createdAtUtc = (timestamp != null) ? timestamp.toDate().getTime() : 0L;
     }
 }

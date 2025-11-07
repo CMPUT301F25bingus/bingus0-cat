@@ -28,7 +28,8 @@ public class WaitingListEntryTest {
         assertEquals("entry_001", entry.getEntryId());
         assertEquals("event_001", entry.getEventId());
         assertEquals("user_001", entry.getUserId());
-        assertEquals(joinedDate, entry.getJoinedDate());
+        // Compare timestamp seconds (WaitingListEntry stores as Timestamp internally)
+        assertEquals(joinedDate.getTime() / 1000, entry.getJoinedDate().getSeconds());
     }
 
     @Test
@@ -74,9 +75,9 @@ public class WaitingListEntryTest {
         entry.setUserId("user_002");
         assertEquals("user_002", entry.getUserId());
 
-        Date newDate = new Date();
-        entry.setJoinedDate(newDate);
-        assertEquals(newDate, entry.getJoinedDate());
+        com.google.firebase.Timestamp newTimestamp = com.google.firebase.Timestamp.now();
+        entry.setJoinedDate(newTimestamp);
+        assertEquals(newTimestamp, entry.getJoinedDate());
     }
 
     @Test

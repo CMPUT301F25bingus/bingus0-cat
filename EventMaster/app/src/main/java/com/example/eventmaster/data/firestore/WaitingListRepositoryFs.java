@@ -8,25 +8,58 @@ import java.util.List;
 
 /**
  * Firestore implementation of WaitingListRepository.
+ * 
+ * Data Structure: events/{eventId}/waiting_list/{userId}
+ *                events/{eventId}/chosen_list/{userId}
  */
 public class WaitingListRepositoryFs implements WaitingListRepository {
 
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
-    private static final String COLLECTION_NAME = "waitingList";
 
     @Override
     public void addToWaitingList(WaitingListEntry entry, OnWaitingListOperationListener listener) {
-        db.collection(COLLECTION_NAME)
-                .document(entry.getEntryId())
-                .set(entry)
-                .addOnSuccessListener(aVoid -> listener.onSuccess())
-                .addOnFailureListener(listener::onFailure);
+        try {
+            entry.setStatus("waiting");
+            
+            // Debug logging
+            android.util.Log.d("WaitingListRepo", "Adding to waiting list: " + 
+                    "eventId=" + entry.getEventId() + 
+                    ", userId=" + entry.getUserId() + 
+                    ", status=" + entry.getStatus());
+            
+            db.collection("events")
+                    .document(entry.getEventId())
+                    .collection("waiting_list")
+                    .document(entry.getUserId())
+                    .set(entry)
+                    .addOnSuccessListener(aVoid -> {
+                        android.util.Log.d("WaitingListRepo", "Successfully added to waiting list");
+                        listener.onSuccess();
+                    })
+                    .addOnFailureListener(e -> {
+                        android.util.Log.e("WaitingListRepo", "Failed to add to waiting list", e);
+                        listener.onFailure(e);
+                    });
+        } catch (Exception e) {
+            android.util.Log.e("WaitingListRepo", "Exception while adding to waiting list", e);
+            listener.onFailure(e);
+        }
     }
 
     @Override
     public void removeFromWaitingList(String entryId, OnWaitingListOperationListener listener) {
-        db.collection(COLLECTION_NAME)
-                .document(entryId)
+        listener.onFailure(new Exception("Use removeFromWaitingList(eventId, userId) instead"));
+    }
+
+    /**
+     * Remove user from waiting list using eventId and userId.
+     * This is the preferred method for the nested subcollection structure.
+     */
+    public void removeFromWaitingList(String eventId, String userId, OnWaitingListOperationListener listener) {
+        db.collection("events")
+                .document(eventId)
+                .collection("waiting_list")
+                .document(userId)
                 .delete()
                 .addOnSuccessListener(aVoid -> listener.onSuccess())
                 .addOnFailureListener(listener::onFailure);
@@ -34,9 +67,9 @@ public class WaitingListRepositoryFs implements WaitingListRepository {
 
     @Override
     public void getWaitingListCount(String eventId, OnCountListener listener) {
-        db.collection(COLLECTION_NAME)
-                .whereEqualTo("eventId", eventId)
-                .whereEqualTo("status", "waiting")
+        db.collection("events")
+                .document(eventId)
+                .collection("waiting_list")
                 .get()
                 .addOnSuccessListener(querySnapshot -> listener.onSuccess(querySnapshot.size()))
                 .addOnFailureListener(listener::onFailure);
@@ -44,11 +77,12 @@ public class WaitingListRepositoryFs implements WaitingListRepository {
 
     @Override
     public void isUserInWaitingList(String eventId, String userId, OnCheckListener listener) {
-        db.collection(COLLECTION_NAME)
-                .whereEqualTo("eventId", eventId)
-                .whereEqualTo("userId", userId)
+        db.collection("events")
+                .document(eventId)
+                .collection("waiting_list")
+                .document(userId)
                 .get()
-                .addOnSuccessListener(q -> listener.onSuccess(!q.isEmpty()))
+                .addOnSuccessListener(doc -> listener.onSuccess(doc.exists()))
                 .addOnFailureListener(listener::onFailure);
     }
 
@@ -56,9 +90,9 @@ public class WaitingListRepositoryFs implements WaitingListRepository {
 
     @Override
     public void getWaitingList(String eventId, OnListLoadedListener listener) {
-        db.collection(COLLECTION_NAME)
-                .whereEqualTo("eventId", eventId)
-                .whereEqualTo("status", "waiting")
+        db.collection("events")
+                .document(eventId)
+                .collection("waiting_list")
                 .get()
                 .addOnSuccessListener(q -> listener.onSuccess(q.toObjects(WaitingListEntry.class)))
                 .addOnFailureListener(listener::onFailure);
@@ -66,9 +100,9 @@ public class WaitingListRepositoryFs implements WaitingListRepository {
 
     @Override
     public void getChosenList(String eventId, OnListLoadedListener listener) {
-        db.collection(COLLECTION_NAME)
-                .whereEqualTo("eventId", eventId)
-                .whereEqualTo("status", "chosen")
+        db.collection("events")
+                .document(eventId)
+                .collection("chosen_list")
                 .get()
                 .addOnSuccessListener(q -> listener.onSuccess(q.toObjects(WaitingListEntry.class)))
                 .addOnFailureListener(listener::onFailure);
@@ -76,24 +110,7 @@ public class WaitingListRepositoryFs implements WaitingListRepository {
 
     @Override
     public void runLottery(String eventId, int numberToSelect, OnWaitingListOperationListener listener) {
-        db.collection(COLLECTION_NAME)
-                .whereEqualTo("eventId", eventId)
-                .whereEqualTo("status", "waiting")
-                .get()
-                .addOnSuccessListener(query -> {
-                    List<WaitingListEntry> entries = query.toObjects(WaitingListEntry.class);
-                    if (entries.isEmpty()) {
-                        listener.onFailure(new Exception("No entrants in waiting list."));
-                        return;
-                    }
-                    Collections.shuffle(entries);
-                    List<WaitingListEntry> chosen = entries.subList(0, Math.min(numberToSelect, entries.size()));
-                    for (WaitingListEntry e : chosen) {
-                        e.setStatus("chosen");
-                        db.collection(COLLECTION_NAME).document(e.getEntryId()).set(e);
-                    }
-                    listener.onSuccess();
-                })
-                .addOnFailureListener(listener::onFailure);
+        // Use LotteryServiceFs.drawLottery() instead for complete workflow
+        listener.onFailure(new Exception("Use LotteryServiceFs.drawLottery() instead"));
     }
 }

@@ -55,22 +55,6 @@
         android:textStyle="bold"
         android:textColor="#000" />
 
-    <!-- View Chosen List Button -->
-    <TextView
-        android:id="@+id/textViewChosenList"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="→ View Chosen List"
-        android:textColor="#FFFFFF"
-        android:textSize="15sp"
-        android:textStyle="bold"
-        android:background="#00796B"
-        android:padding="12dp"
-        android:gravity="center"
-        android:layout_marginTop="8dp"
-        android:clickable="true"
-        android:focusable="true" />
-
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -90,7 +74,7 @@
             android:id="@+id/textDrawReplacement"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Draw Replacement"
+            android:text="Run Lottery"
             android:textColor="#00796B"
             android:textStyle="italic"
             android:clickable="true"

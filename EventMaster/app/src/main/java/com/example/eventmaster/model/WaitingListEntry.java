@@ -56,17 +56,6 @@ public class WaitingListEntry {
     public String getUserId() { return userId; }
     public void setUserId(String userId) { this.userId = userId; }
 
-    public void setJoinedDate(Date joinedDate) {
-        this.joinedDate = joinedDate != null ? new Timestamp(joinedDate) : null;
-    }
-
-    public Timestamp getJoinedDateTimestamp() {
-        return joinedDate;
-    }
-
-    public void setJoinedDateTimestamp(Timestamp joinedDate) {
-        this.joinedDate = joinedDate;
-    }
     public String getEntrantName() { return entrantName; }
     public void setEntrantName(String entrantName) { this.entrantName = entrantName; }
 

@@ -1,6 +1,7 @@
 package com.example.eventmaster.ui.entrant;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -25,10 +26,14 @@ import com.example.eventmaster.model.Invitation;
 import com.example.eventmaster.model.WaitingListEntry;
 import com.example.eventmaster.utils.DeviceUtils;
 import com.google.android.material.button.MaterialButton;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.ListenerRegistration;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -41,6 +46,7 @@ import java.util.UUID;
  */
 public class EventDetailsFragment extends Fragment {
 
+    private static final String TAG = "EventDetailsFragment";
     private static final String ARG_EVENT_ID = "event_id";
 
     private EventRepository eventRepository;
@@ -51,6 +57,7 @@ public class EventDetailsFragment extends Fragment {
     private String eventId;
     private Event currentEvent;
     private String userId;
+    private boolean isInWaitingList = false;  // Track if user is in waiting list
 
     // UI Elements
     private ImageView posterImage;
@@ -76,6 +83,9 @@ public class EventDetailsFragment extends Fragment {
 
     private boolean testMode = false;
     private boolean testForceInvited = false;
+    
+    // Firestore listeners for real-time updates
+    private ListenerRegistration invitationListener;
 
     /** Factory method */
     public static EventDetailsFragment newInstance(String eventId) {
@@ -108,6 +118,9 @@ public class EventDetailsFragment extends Fragment {
         registrationService = new RegistrationServiceFs();
 
         userId = DeviceUtils.getDeviceId(requireContext());
+        
+        // Debug logging
+        Log.d(TAG, "onCreate: eventId=" + eventId + ", userId=" + userId);
     }
 
     @Nullable
@@ -142,7 +155,7 @@ public class EventDetailsFragment extends Fragment {
 
         backButton.setOnClickListener(v -> requireActivity().onBackPressed());
         favoriteIcon.setOnClickListener(v -> handleFavoriteClick());
-        joinButton.setOnClickListener(v -> handleJoinWaitingList());
+        joinButton.setOnClickListener(v -> handleJoinOrExitWaitingList());
 
         loadEventDetails();
 
@@ -157,6 +170,16 @@ public class EventDetailsFragment extends Fragment {
         }
 
         return view;
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        // Remove Firestore listeners to prevent memory leaks
+        if (invitationListener != null) {
+            invitationListener.remove();
+            invitationListener = null;
+        }
     }
 
     /** Loads event details from Firestore and displays them. */
@@ -177,15 +200,41 @@ public class EventDetailsFragment extends Fragment {
         });
     }
 
-    /** Decides whether to show invitation actions or join button. */
+    /** Sets up real-time listener for invitation changes */
     private void decideInviteOrJoin() {
-        invitationService.getMyInvitation(eventId, userId, inv -> {
-            if (inv != null) {
-                showInvitationInclude(inv);
-            } else {
-                showJoinButtonWithState();
-            }
-        }, err -> showJoinButtonWithState());
+        // Remove old listener if it exists
+        if (invitationListener != null) {
+            invitationListener.remove();
+        }
+        
+        // Set up real-time listener for invitations
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        invitationListener = db.collection("events")
+                .document(eventId)
+                .collection("invitations")
+                .whereEqualTo("entrantId", userId)
+                .limit(1)
+                .addSnapshotListener((snapshots, error) -> {
+                    if (error != null) {
+                        Log.e(TAG, "Error listening to invitations", error);
+                        showJoinButtonWithState();
+                        return;
+                    }
+                    
+                    if (snapshots != null && !snapshots.isEmpty()) {
+                        Invitation inv = snapshots.getDocuments().get(0).toObject(Invitation.class);
+                        if (inv != null) {
+                            inv.setId(snapshots.getDocuments().get(0).getId());
+                            Log.d(TAG, "📩 Invitation status changed: " + inv.getStatus());
+                            showInvitationInclude(inv);
+                        } else {
+                            showJoinButtonWithState();
+                        }
+                    } else {
+                        // No invitation found
+                        showJoinButtonWithState();
+                    }
+                });
     }
 
     private void showInvitationInclude(@NonNull Invitation inv) {
@@ -333,9 +382,10 @@ public class EventDetailsFragment extends Fragment {
                 new WaitingListRepository.OnCheckListener() {
                     @Override
                     public void onSuccess(boolean exists) {
+                        isInWaitingList = exists;
                         if (exists) {
-                            joinButton.setText("Already in Waiting List");
-                            joinButton.setEnabled(false);
+                            joinButton.setText("Exit Waiting List");
+                            joinButton.setEnabled(true);
                         } else {
                             joinButton.setText("Join Waiting List");
                             joinButton.setEnabled(true);
@@ -344,13 +394,39 @@ public class EventDetailsFragment extends Fragment {
 
                     @Override
                     public void onFailure(Exception e) {
+                        isInWaitingList = false;
                         joinButton.setEnabled(true);
                         joinButton.setText("Join Waiting List");
                     }
                 });
     }
 
+    /**
+     * Handle join or exit based on current state
+     */
+    private void handleJoinOrExitWaitingList() {
+        if (isInWaitingList) {
+            handleExitWaitingList();
+        } else {
+            handleJoinWaitingList();
+        }
+    }
+
+    /**
+     * Handle joining the waiting list
+     */
     private void handleJoinWaitingList() {
+        // Validate eventId and userId first
+        if (eventId == null || eventId.isEmpty()) {
+            Toast.makeText(requireContext(), "Error: Event ID is missing", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        if (userId == null || userId.isEmpty()) {
+            Toast.makeText(requireContext(), "Error: User ID is missing", Toast.LENGTH_LONG).show();
+            return;
+        }
+
         if (currentEvent == null) {
             Toast.makeText(requireContext(), "Event data not loaded", Toast.LENGTH_SHORT).show();
             return;
@@ -373,6 +449,9 @@ public class EventDetailsFragment extends Fragment {
 
         String entryId = UUID.randomUUID().toString();
         WaitingListEntry entry = new WaitingListEntry(entryId, eventId, userId, new Date());
+        
+        Log.d(TAG, "handleJoinWaitingList: Creating entry with entryId=" + entryId + 
+                ", eventId=" + eventId + ", userId=" + userId);
 
         joinButton.setEnabled(false);
         joinButton.setText("Joining...");
@@ -380,18 +459,76 @@ public class EventDetailsFragment extends Fragment {
         waitingListRepository.addToWaitingList(entry, new WaitingListRepository.OnWaitingListOperationListener() {
             @Override
             public void onSuccess() {
+                Log.d(TAG, "Successfully joined waiting list");
                 Toast.makeText(requireContext(), "Successfully joined waiting list!", Toast.LENGTH_SHORT).show();
-                joinButton.setText("Already in Waiting List");
+                isInWaitingList = true;
+                joinButton.setText("Exit Waiting List");
+                joinButton.setEnabled(true);
                 loadWaitingListCount();
+                
+                // Send notification to user
+                sendJoinedWaitingListNotification(eventId, userId);
             }
 
             @Override
             public void onFailure(Exception e) {
-                Toast.makeText(requireContext(), "Failed to join: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                Log.e(TAG, "Failed to join waiting list", e);
+                Toast.makeText(requireContext(), "Failed to join: " + e.getMessage(), Toast.LENGTH_LONG).show();
                 joinButton.setEnabled(true);
                 joinButton.setText("Join Waiting List");
             }
         });
+    }
+
+    /**
+     * Handle exiting the waiting list
+     */
+    private void handleExitWaitingList() {
+        joinButton.setEnabled(false);
+        joinButton.setText("Leaving...");
+
+        // Cast to WaitingListRepositoryFs to access the new remove method
+        if (waitingListRepository instanceof WaitingListRepositoryFs) {
+            WaitingListRepositoryFs repo = (WaitingListRepositoryFs) waitingListRepository;
+            repo.removeFromWaitingList(eventId, userId, new WaitingListRepository.OnWaitingListOperationListener() {
+                @Override
+                public void onSuccess() {
+                    Toast.makeText(requireContext(), "Successfully left waiting list", Toast.LENGTH_SHORT).show();
+                    isInWaitingList = false;
+                    joinButton.setText("Join Waiting List");
+                    joinButton.setEnabled(true);
+                    loadWaitingListCount();
+                }
+
+                @Override
+                public void onFailure(Exception e) {
+                    Toast.makeText(requireContext(), "Failed to leave: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    joinButton.setEnabled(true);
+                    joinButton.setText("Exit Waiting List");
+                }
+            });
+        }
+    }
+
+    /**
+     * Send notification when user joins waiting list
+     */
+    private void sendJoinedWaitingListNotification(String eventId, String userId) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        
+        Map<String, Object> notification = new HashMap<>();
+        notification.put("eventId", eventId);
+        notification.put("recipientId", userId);
+        notification.put("type", "WAITING_LIST_JOINED");
+        notification.put("title", "Joined Waiting List");
+        notification.put("message", "You've successfully joined the waiting list for this event. Good luck!");
+        notification.put("isRead", false);
+        notification.put("createdAt", com.google.firebase.Timestamp.now());
+        
+        db.collection("notifications")
+                .add(notification)
+                .addOnSuccessListener(docRef -> Log.d(TAG, "✅ Sent waiting list notification"))
+                .addOnFailureListener(e -> Log.e(TAG, "❌ Failed to send notification", e));
     }
 
     private void toast(String msg) {
