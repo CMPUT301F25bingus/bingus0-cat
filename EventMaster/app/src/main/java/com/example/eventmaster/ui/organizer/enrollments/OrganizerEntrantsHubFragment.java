@@ -81,11 +81,9 @@ public class OrganizerEntrantsHubFragment extends Fragment {
             startActivity(intent);
         });
 
-        btnSelected.setOnClickListener(x -> {
-            Context context = requireContext();
-            startActivity(SelectedEntrantsActivity.createIntent(context, eventId));
-            getParentFragmentManager().popBackStack();
-        });
+        // Navigate to Selected Entrants (Final List) using real Firestore data
+        btnSelected.setOnClickListener(x ->
+                openList("ACTIVE", getString(R.string.selected_entrants)));
 
         btnCancelled.setOnClickListener(x ->
                 openList("CANCELLED_ANY", getString(R.string.cancelled_entrants)));

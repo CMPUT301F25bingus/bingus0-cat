@@ -76,20 +76,27 @@ public class InvitationServiceFs {
                 .collection("invitations").document(invitationId);
         DocumentReference regRef = db.collection("events").document(eventId)
                 .collection("registrations").document(userId);
+        DocumentReference chosenRef = db.collection("events").document(eventId)
+                .collection("chosen_list").document(userId);
 
         WriteBatch batch = db.batch();
 
+        // 1. Update invitation status
         Map<String, Object> invUpdate = new HashMap<>();
         invUpdate.put("status", accept ? "ACCEPTED" : "DECLINED");
         invUpdate.put("respondedAtUtc", serverTimestamp());
         batch.set(invRef, invUpdate, SetOptions.merge());
 
+        // 2. Create/update registration
         Map<String, Object> reg = new HashMap<>();
         reg.put("eventId", eventId);
         reg.put("entrantId", userId);
         reg.put(accept ? "enrolledAtUtc" : "cancelledAtUtc", serverTimestamp());
         reg.put("status", accept ? "ACTIVE" : "CANCELLED_BY_ENTRANT");
         batch.set(regRef, reg, SetOptions.merge());
+
+        // 3. Remove from chosen_list (they've responded, so no longer "pending")
+        batch.delete(chosenRef);
 
         batch.commit()
                 .addOnSuccessListener(x -> onSuccess.accept(null))

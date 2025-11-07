@@ -136,7 +136,7 @@ public class RegistrationServiceFs implements RegistrationService {
                         existingCreated != null ? existingCreated : now);
                 r.setId(entrantId);
                 r.setStatus(RegistrationStatus.ACTIVE);
-                r.setCancelledAtUtc(null);
+                r.setCancelledAtUtc((Long) null);
                 return r;
             });
         });

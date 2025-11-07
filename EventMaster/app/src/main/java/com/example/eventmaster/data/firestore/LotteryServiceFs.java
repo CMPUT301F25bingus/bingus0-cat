@@ -50,11 +50,13 @@ public class LotteryServiceFs implements LotteryService {
                         Collections.shuffle(entrants);
                         int actualCount = Math.min(numberToSelect, entrants.size());
                         List<WaitingListEntry> chosen = entrants.subList(0, actualCount);
+                        List<WaitingListEntry> notChosen = entrants.subList(actualCount, entrants.size());
 
                         Log.d(TAG, "Lottery selecting " + actualCount + " entrants from " + entrants.size());
 
                         List<Task<Void>> writeTasks = new ArrayList<>();
 
+                        // Process WINNERS
                         for (WaitingListEntry e : chosen) {
                             e.setStatus("selected");
 
@@ -123,7 +125,44 @@ public class LotteryServiceFs implements LotteryService {
                             writeTasks.add(notificationTask);
                         }
 
-                        Log.d(TAG, "Lottery selected " + chosen.size() + " entrants, executing " + writeTasks.size() + " write tasks");
+                        // Process LOSERS (not selected)
+                        for (WaitingListEntry e : notChosen) {
+                            // Remove from waiting_list
+                            Task<Void> removeTask = db.collection("events")
+                                    .document(eventId)
+                                    .collection("waiting_list")
+                                    .document(e.getUserId())
+                                    .delete()
+                                    .addOnSuccessListener(aVoid -> 
+                                        Log.d(TAG, "✅ Removed non-selected " + e.getUserId() + " from waiting_list"))
+                                    .addOnFailureListener(ex -> 
+                                        Log.e(TAG, "❌ Failed to remove " + e.getUserId() + " from waiting_list", ex));
+                            writeTasks.add(removeTask);
+
+                            // Send notification to loser
+                            Map<String, Object> notification = new HashMap<>();
+                            notification.put("eventId", eventId);
+                            notification.put("recipientId", e.getUserId());
+                            notification.put("type", "LOTTERY_NOT_SELECTED");
+                            notification.put("title", "Lottery Results");
+                            notification.put("message", "Thank you for your interest. Unfortunately, you were not selected in this lottery.");
+                            notification.put("isRead", false);
+                            notification.put("createdAt", Timestamp.now());
+
+                            Task<Void> notificationTask = db.collection("notifications")
+                                    .add(notification)
+                                    .continueWith(t -> {
+                                        if (t.isSuccessful()) {
+                                            Log.d(TAG, "🔔 Sent 'not selected' notification to " + e.getUserId());
+                                        } else {
+                                            Log.e(TAG, "❌ Failed to send notification to " + e.getUserId(), t.getException());
+                                        }
+                                        return null;
+                                    });
+                            writeTasks.add(notificationTask);
+                        }
+
+                        Log.d(TAG, "Lottery selected " + chosen.size() + " entrants, not selected " + notChosen.size() + ", executing " + writeTasks.size() + " write tasks");
                         return Tasks.whenAll(writeTasks);
                     } catch (Exception e) {
                         Log.e(TAG, "Exception in lottery operation", e);

@@ -22,13 +22,20 @@ public class ChosenListActivity extends AppCompatActivity {
     private ChosenListAdapter adapter;
     private TextView totalChosenText;
     private final WaitingListRepositoryFs repo = new WaitingListRepositoryFs();
-
-    private static final String TEST_EVENT_ID = "event001";
+    private String eventId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.organizer_chosen_list);
+
+        // Get eventId from Intent
+        eventId = getIntent().getStringExtra("eventId");
+        if (eventId == null || eventId.isEmpty()) {
+            Log.e(TAG, "No eventId provided!");
+            finish();
+            return;
+        }
 
         recyclerView = findViewById(R.id.recyclerViewChosenList);
         totalChosenText = findViewById(R.id.textTotalChosen);
@@ -41,7 +48,7 @@ public class ChosenListActivity extends AppCompatActivity {
         // Back button click listener
         btnBack.setOnClickListener(v -> finish());
 
-        loadChosenList(TEST_EVENT_ID);
+        loadChosenList(eventId);
     }
 
     private void loadChosenList(String eventId) {
