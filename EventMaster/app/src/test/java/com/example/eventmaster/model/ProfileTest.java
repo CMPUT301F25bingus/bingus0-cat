@@ -15,7 +15,9 @@ public class ProfileTest {
 
     @Before
     public void setUp() {
-        profile = new Profile("user_001", "device_123", "John Doe", "john.doe@example.com");
+//        profile = new Profile("user_001", "device_123", "John Doe", "john.doe@example.com");
+        profile = Profile.withDeviceId("user_001", "device_123", "John Doe", "john.doe@example.com");
+
     }
 
     @Test

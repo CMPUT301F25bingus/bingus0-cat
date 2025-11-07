@@ -18,6 +18,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
+import java.util.function.Consumer;
+
+
 /**
  * - Implements RegistrationService (dev)
  * - Keeps dev methods (createFromInvitation, listFinal, listCancelled, listByEntrant, listenByEntrant)
@@ -202,4 +205,125 @@ public class RegistrationServiceFs implements RegistrationService {
         if (r != null) r.setId(d.getId());
         return r;
     }
+
+    // after mergeing branches:
+    // enroll(eventId, entrantId, onSuccess, onError)
+    public void enroll(@NonNull String eventId,
+                       @NonNull String entrantId,
+                       @NonNull Consumer<Registration> onSuccess,
+                       @NonNull Consumer<Throwable> onError) {
+        enroll(eventId, entrantId)
+                .addOnSuccessListener(onSuccess::accept)
+                .addOnFailureListener(onError::accept);
+    }
+
+    // cancel(eventId, entrantId, byOrganizer, onSuccess, onError)
+    public void cancel(@NonNull String eventId,
+                       @NonNull String entrantId,
+                       boolean byOrganizer,
+                       @NonNull Consumer<Void> onSuccess,
+                       @NonNull Consumer<Throwable> onError) {
+        cancel(eventId, entrantId, byOrganizer)
+                .addOnSuccessListener(v -> onSuccess.accept(null))
+                .addOnFailureListener(onError::accept);
+    }
+
+    // cancelIfExists(eventId, entrantId, onSuccess, onError)
+    public void cancelIfExists(@NonNull String eventId,
+                               @NonNull String entrantId,
+                               @NonNull Consumer<Void> onSuccess,
+                               @NonNull Consumer<Throwable> onError) {
+        cancelIfExists(eventId, entrantId)
+                .addOnSuccessListener(v -> onSuccess.accept(null))
+                .addOnFailureListener(onError::accept);
+    }
+
+    // listCancelled(eventId, onSuccess, onError)
+    public void listCancelled(@NonNull String eventId,
+                              @NonNull Consumer<java.util.List<Registration>> onSuccess,
+                              @NonNull Consumer<Throwable> onError) {
+        listCancelled(eventId)
+                .addOnSuccessListener(onSuccess::accept)
+                .addOnFailureListener(onError::accept);
+    }
+
+    // listByStatus(eventId, status, onSuccess, onError)
+    public void listByStatus(@NonNull String eventId,
+                             @NonNull String status,
+                             @NonNull Consumer<java.util.List<Registration>> onSuccess,
+                             @NonNull Consumer<Throwable> onError) {
+        listByStatus(eventId, status)
+                .addOnSuccessListener(onSuccess::accept)
+                .addOnFailureListener(onError::accept);
+    }
+
+    // Optional: listFinal(eventId, onSuccess, onError)
+    public void listFinal(@NonNull String eventId,
+                          @NonNull Consumer<java.util.List<Registration>> onSuccess,
+                          @NonNull Consumer<Throwable> onError) {
+        listFinal(eventId)
+                .addOnSuccessListener(onSuccess::accept)
+                .addOnFailureListener(onError::accept);
+    }
+
+
+    // ---------- Test helpers: mapping round-trip ----------
+    public static java.util.Map<String, Object> toMap(
+            String eventId,
+            String entrantId,
+            com.example.eventmaster.model.RegistrationStatus status,
+            long createdAtUtc,
+            java.lang.Long cancelledAtUtc
+    ) {
+        java.util.Map<String, Object> data = new java.util.HashMap<>();
+        data.put("eventId", eventId);
+        data.put("entrantId", entrantId);
+        data.put("status", status.name());
+        data.put("createdAtUtc", createdAtUtc);
+        data.put("cancelledAtUtc", cancelledAtUtc);
+        return data;
+    }
+
+    public static com.example.eventmaster.model.Registration fromMap(
+            String docId,
+            java.util.Map<String, Object> m
+    ) {
+        String eventId   = (String) m.get("eventId");
+        String entrantId = (String) m.get("entrantId");
+        Long created     = (m.get("createdAtUtc") instanceof Number)
+                ? ((Number) m.get("createdAtUtc")).longValue() : null;
+        String statusStr = (String) m.get("status");
+        Long cancelled   = (m.get("cancelledAtUtc") instanceof Number)
+                ? ((Number) m.get("cancelledAtUtc")).longValue() : null;
+
+        if (eventId == null || entrantId == null) return null;
+        long createdVal = (created != null) ? created : 0L;
+
+        com.example.eventmaster.model.Registration r =
+                new com.example.eventmaster.model.Registration(eventId, entrantId, createdVal);
+        r.setId(docId);
+        try {
+            r.setStatus(statusStr == null
+                    ? com.example.eventmaster.model.RegistrationStatus.ACTIVE
+                    : com.example.eventmaster.model.RegistrationStatus.valueOf(statusStr));
+        } catch (IllegalArgumentException ex) {
+            r.setStatus(com.example.eventmaster.model.RegistrationStatus.ACTIVE);
+        }
+        r.setCancelledAtUtc(cancelled);
+        return r;
+    }
+
+    // ---- Private helper kept for unit tests via reflection ----
+    @SuppressWarnings("unused") // accessed via reflection in RegistrationServiceFsTest
+    private static com.example.eventmaster.model.RegistrationStatus parseStatus(String s) {
+        try {
+            return (s == null)
+                    ? com.example.eventmaster.model.RegistrationStatus.ACTIVE
+                    : com.example.eventmaster.model.RegistrationStatus.valueOf(s);
+        } catch (IllegalArgumentException ex) {
+            return com.example.eventmaster.model.RegistrationStatus.ACTIVE;
+        }
+    }
+
+
 }
