@@ -6,3 +6,5 @@ public enum RegistrationStatus {
     CANCELLED_BY_ENTRANT,
     NOT_SELECTED
 }
+
+// added not_selected
