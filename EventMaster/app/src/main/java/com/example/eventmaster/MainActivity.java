@@ -2,6 +2,7 @@ package com.example.eventmaster;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.widget.Button;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -12,6 +13,8 @@ import com.example.eventmaster.model.WaitingListEntry;
 import com.example.eventmaster.ui.organizer.waitinglist.WaitingListActivity;
 
 import com.example.eventmaster.ui.entrant.EventDetailsActivity;
+import com.example.eventmaster.ui.entrant.EntrantNotificationsActivity;
+import com.example.eventmaster.ui.organizer.SelectedEntrantsActivity;
 import com.example.eventmaster.utils.TestDataHelper;
 import com.google.android.material.button.MaterialButton;
 
@@ -37,7 +40,12 @@ public class MainActivity extends AppCompatActivity {
         setupButtons();
     }
 
+    /**
+     * Sets up test buttons for navigation and admin functions.
+     */
     private void setupButtons() {
+
+        // Existing test buttons
         MaterialButton viewEventListButton = findViewById(R.id.view_event_list_button);
         MaterialButton adminBrowseEventsButton = findViewById(R.id.admin_browse_events_button);
         MaterialButton scanQRButton = findViewById(R.id.scan_qr_button);

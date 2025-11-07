@@ -35,6 +35,13 @@
         <activity android:name=".ui.entrant.EventListActivity" android:exported="false"/>
         <activity android:name=".ui.entrant.EventDetailsActivity" android:exported="false"/>
 
+        <!-- Added: Entrant Notifications -->
+        <activity
+            android:name=".ui.entrant.EntrantNotificationsActivity"
+            android:exported="false"
+            android:label="Notifications"
+            android:parentActivityName=".MainActivity" />
+
         <!-- Admin flow -->
         <activity android:name=".ui.admin.AdminBrowseActivity" android:exported="false"/>
         <activity android:name=".ui.admin.AdminEventListActivity" android:exported="false"/>
@@ -59,6 +66,13 @@
             android:name=".ui.organizer.OrganizerCreateEventActivity"
             android:exported="false"
             android:label="Create Event" />
+
+        <!-- Added: Selected Entrants -->
+        <activity
+            android:name=".ui.organizer.SelectedEntrantsActivity"
+            android:exported="false"
+            android:label="Selected Entrants"
+            android:parentActivityName=".MainActivity" />
 
         <!-- QR scanner -->
         <activity
