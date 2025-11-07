@@ -16,6 +16,10 @@
         android:id="@+id/nav_remove"
         android:icon="@android:drawable/ic_menu_close_clear_cancel"
         android:title="Remove" />
+    <item
+        android:id="@+id/nav_scan_qr"
+        android:icon="@android:drawable/ic_menu_camera"
+        android:title="Scan QR" />
 </menu>
 
 
