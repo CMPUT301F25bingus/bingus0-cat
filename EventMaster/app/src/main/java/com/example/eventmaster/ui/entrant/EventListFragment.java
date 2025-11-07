@@ -150,7 +150,9 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
                 startActivity(new Intent(requireContext(), ProfileActivity.class));
                 return true;
             } else if (itemId == R.id.nav_notifications) {
-                Toast.makeText(requireContext(), "Notifications - Coming soon", Toast.LENGTH_SHORT).show();
+               Intent intent = new Intent(requireContext(), EntrantNotificationsActivity.class);
+               startActivity(intent);
+
                 return true;
             } else if (itemId == R.id.nav_remove) {
                 Toast.makeText(requireContext(), "Remove - Coming soon", Toast.LENGTH_SHORT).show();
