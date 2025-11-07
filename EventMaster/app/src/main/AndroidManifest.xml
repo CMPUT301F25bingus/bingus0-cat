@@ -35,6 +35,10 @@
             android:exported="false" />
 
         <!-- Entrant flow -->
+        <activity
+            android:name=".ui.entrant.EntrantHomeActivity"
+            android:exported="false"
+            android:label="Entrant Home" />
         <activity android:name=".ui.entrant.EventListActivity" android:exported="false"/>
         <activity android:name=".ui.entrant.EventDetailsActivity" android:exported="false"/>
 
