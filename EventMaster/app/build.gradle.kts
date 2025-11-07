@@ -1,3 +1,5 @@
+import org.gradle.kotlin.dsl.androidTestImplementation
+
 plugins {
     alias(libs.plugins.android.application)
     id("com.google.gms.google-services")
@@ -31,6 +33,10 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
 }
 
 /** Ensure a modern protobuf on all configurations (app & androidTest). */
@@ -48,8 +54,8 @@ dependencies {
     implementation(libs.constraintlayout)
     implementation("androidx.coordinatorlayout:coordinatorlayout:1.2.0")
     implementation("androidx.cardview:cardview:1.0.0")
-
-    // QR / ZXing
+    
+    // ZXing for QR code scanning
     implementation("com.journeyapps:zxing-android-embedded:4.3.0")
     implementation("com.google.zxing:core:3.5.2")
 
@@ -77,4 +83,8 @@ dependencies {
     androidTestImplementation("androidx.test.espresso:espresso-contrib:3.5.1") {
         exclude(group = "com.google.protobuf", module = "protobuf-lite")
     }
+    testImplementation("org.robolectric:robolectric:4.12.1")
+    testImplementation("androidx.fragment:fragment-testing:1.8.3")
+    testImplementation("com.google.android.material:material:1.12.0")
+
 }

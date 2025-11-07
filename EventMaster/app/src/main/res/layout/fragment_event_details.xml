@@ -306,6 +306,11 @@
                                 android:contentDescription="Event QR Code" />
 
                         </androidx.cardview.widget.CardView>
+                        <!-- When invited they should still see event details and accept/decline-->
+                        <include
+                            android:id="@+id/invitation_include"
+                            layout="@layout/include_invitation_actions"
+                            android:visibility="gone"/>
 
                         <!-- Join Waiting List Button -->
                         <com.google.android.material.button.MaterialButton
@@ -317,7 +322,8 @@
                             android:textStyle="bold"
                             android:textColor="#FFFFFF"
                             app:cornerRadius="12dp"
-                            app:backgroundTint="#3D8B87" />
+                            app:backgroundTint="#3D8B87"
+                            android:visibility="gone"/>
 
                     </LinearLayout>
 
@@ -330,4 +336,3 @@
     </ScrollView>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
-

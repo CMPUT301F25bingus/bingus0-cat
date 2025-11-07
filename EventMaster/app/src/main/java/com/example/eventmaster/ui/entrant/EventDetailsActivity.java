@@ -31,9 +31,21 @@ public class EventDetailsActivity extends AppCompatActivity {
         // Load fragment
         if (savedInstanceState == null) {
             EventDetailsFragment fragment = EventDetailsFragment.newInstance(eventId);
-            FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-            transaction.replace(R.id.fragment_container, fragment);
-            transaction.commit();
+            // Forward TEST flags to fragment
+            Bundle args = fragment.getArguments() != null ? fragment.getArguments() : new Bundle();
+            args.putBoolean("TEST_MODE",
+                    getIntent().getBooleanExtra("TEST_MODE", false));
+            args.putBoolean("TEST_FORCE_INVITED",
+                    getIntent().getBooleanExtra("TEST_FORCE_INVITED", false));
+            fragment.setArguments(args);
+
+            getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.fragment_container, fragment)
+                    .commit();
+
+//            FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+//            transaction.replace(R.id.fragment_container, fragment);
+//            transaction.commit();
         }
     }
 }

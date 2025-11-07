@@ -8,14 +8,17 @@ import com.example.eventmaster.model.Event;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.Timestamp;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * Firestore implementation of EventRepository that supports:
@@ -176,5 +179,32 @@ public class EventRepositoryFs implements EventRepository {
         getEventById(eventId)
                 .addOnSuccessListener(listener::onSuccess)
                 .addOnFailureListener(listener::onFailure);
+    }
+
+
+    /** Lists events created by the currently signed-in organizer. */
+    public void listByOrganizer(@NonNull Consumer<List<Map<String,Object>>> onSuccess,
+                                @NonNull Consumer<Throwable> onError) {
+        String uid = FirebaseAuth.getInstance().getCurrentUser() != null
+                ? FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
+        if (uid == null) {
+            onError.accept(new IllegalStateException("Not signed in"));
+            return;
+        }
+
+        db.collection("events")
+                .whereEqualTo("organizerId", uid)
+                .get()
+                .addOnSuccessListener(snap -> {
+                    List<Map<String,Object>> out = new ArrayList<>();
+                    for (QueryDocumentSnapshot d : snap) {
+                        Map<String,Object> m = d.getData();
+                        // Ensure the adapter can read an id:
+                        m.put("eventId", d.getString("eventId") != null ? d.getString("eventId") : d.getId());
+                        out.add(m);
+                    }
+                    onSuccess.accept(out);
+                })
+                .addOnFailureListener(onError::accept);
     }
 }

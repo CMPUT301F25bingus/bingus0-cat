@@ -27,4 +27,5 @@
     <color name="check_purple">#6C5CE7</color>   <!-- checkbox check -->
     <color name="stroke">#1A000000</color>       <!-- subtle strokes -->
     <color name="shadow">#33000000</color>
+    <color name="backgroundColor">#64C3BF</color>
 </resources>

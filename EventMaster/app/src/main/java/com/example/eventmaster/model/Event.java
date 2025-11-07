@@ -179,7 +179,6 @@ public class Event {
     @Nullable
     public String validate() {
         if (name == null || name.trim().isEmpty()) {
-            // legacy tests looked for "Title"
             return "Title is required.";
         }
         if (registrationOpen == null) {
@@ -273,7 +272,7 @@ public class Event {
     @Nullable public String getEventId() { return getId(); }
     public void setEventId(@Nullable String eventId) { setId(eventId); }
 
-    // title <-> name (legacy code may call getTitle()/setTitle())
+    // title <-> name
     @NonNull public String getTitle() { return getName(); }
     public void setTitle(@NonNull String title) { setName(title); }
 
