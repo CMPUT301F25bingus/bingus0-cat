@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "227325822977",
-    "project_id": "eventmaster-test-raahim",
-    "storage_bucket": "eventmaster-test-raahim.firebasestorage.app"
+    "project_number": "843364541813",
+    "project_id": "symmetric-flare-476704-t1",
+    "storage_bucket": "symmetric-flare-476704-t1.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:227325822977:android:a37a0dec7198ae17311800",
+        "mobilesdk_app_id": "1:843364541813:android:82503027aef8b3129b1f3c",
         "android_client_info": {
           "package_name": "com.example.eventmaster"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyAaueOy0pentUQtOSfM2yB-jGD4YtaJhys"
+          "current_key": "AIzaSyDrvYwmunWQpt9LL5DKvKBPJbm8wV-wdm8"
         }
       ],
       "services": {
