@@ -27,6 +27,10 @@
             </intent-filter>
         </activity>
 
+        <!-- Organizer flow -->
+        <activity android:name=".ui.organizer.waitinglist.WaitingListActivity" android:exported="false" />
+        <activity android:name=".ui.organizer.chosenlist.ChosenListActivity" android:exported="false" />
+
         <!-- Entrant flow -->
         <activity android:name=".ui.entrant.EventListActivity" android:exported="false"/>
         <activity android:name=".ui.entrant.EventDetailsActivity" android:exported="false"/>

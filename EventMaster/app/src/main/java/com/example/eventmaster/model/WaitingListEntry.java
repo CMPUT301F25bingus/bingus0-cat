@@ -1,71 +1,55 @@
 package com.example.eventmaster.model;
 
 import com.google.firebase.Timestamp;
-
 import java.util.Date;
 
 /**
- * Represents an entrant's entry in an event's waiting list.
- * Tracks when they joined and optional geolocation data.
+ * Represents an entrant's entry in an event's waiting or chosen list.
  */
 public class WaitingListEntry {
-    private String entryId;
-    private String eventId;
-    private String userId;
+
+    private String entryId;     // Firestore document ID
+    private String eventId;     // Event reference
+    private String userId;      // Entrant’s unique ID
+    private String entrantName; // Optional display name
+    private String email;
+    private String phone;
     private Timestamp joinedDate;
-    private Double latitude;  // Optional geolocation
-    private Double longitude; // Optional geolocation
-    private String status; // "waiting", "selected", "accepted", "declined", "cancelled"
+    private Double latitude;    // Optional geolocation
+    private Double longitude;   // Optional geolocation
+    private String status;      // "waiting", "chosen", "accepted", "declined", "cancelled"
 
-    // No-arg constructor required for Firestore
-    public WaitingListEntry() {
-    }
+    // Empty constructor required by Firestore
+    public WaitingListEntry() {}
 
-    /**
-     * Creates a new waiting list entry.
-     *
-     * @param entryId    Unique identifier for this entry
-     * @param eventId    ID of the event
-     * @param userId     ID of the user joining the waiting list
-     * @param joinedDate Date/time when user joined
-     */
-    public WaitingListEntry(String entryId, String eventId, String userId, Date joinedDate) {
+    // Full constructor
+    public WaitingListEntry(String entryId, String eventId, String userId, String entrantName,
+                            String email, String phone, Date joinedDate, String status) {
         this.entryId = entryId;
         this.eventId = eventId;
         this.userId = userId;
-        this.joinedDate = joinedDate != null ? new Timestamp(joinedDate) : null;
-        this.status = "waiting";
+        this.entrantName = entrantName;
+        this.email = email;
+        this.phone = phone;
+        this.joinedDate = joinedDate != null ? new Timestamp(joinedDate) : Timestamp.now();
+        this.status = status != null ? status : "waiting";
+    }
+
+    // Convenience constructor (defaults to "waiting" status)
+    public WaitingListEntry(String entryId, String eventId, String userId, String entrantName,
+                            String email, String phone) {
+        this(entryId, eventId, userId, entrantName, email, phone, new Date(), "waiting");
     }
 
     // Getters and Setters
+    public String getEntryId() { return entryId; }
+    public void setEntryId(String entryId) { this.entryId = entryId; }
 
-    public String getEntryId() {
-        return entryId;
-    }
+    public String getEventId() { return eventId; }
+    public void setEventId(String eventId) { this.eventId = eventId; }
 
-    public void setEntryId(String entryId) {
-        this.entryId = entryId;
-    }
-
-    public String getEventId() {
-        return eventId;
-    }
-
-    public void setEventId(String eventId) {
-        this.eventId = eventId;
-    }
-
-    public String getUserId() {
-        return userId;
-    }
-
-    public void setUserId(String userId) {
-        this.userId = userId;
-    }
-
-    public Date getJoinedDate() {
-        return joinedDate != null ? joinedDate.toDate() : null;
-    }
+    public String getUserId() { return userId; }
+    public void setUserId(String userId) { this.userId = userId; }
 
     public void setJoinedDate(Date joinedDate) {
         this.joinedDate = joinedDate != null ? new Timestamp(joinedDate) : null;
@@ -78,28 +62,24 @@ public class WaitingListEntry {
     public void setJoinedDateTimestamp(Timestamp joinedDate) {
         this.joinedDate = joinedDate;
     }
+    public String getEntrantName() { return entrantName; }
+    public void setEntrantName(String entrantName) { this.entrantName = entrantName; }
 
-    public Double getLatitude() {
-        return latitude;
-    }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 
-    public void setLatitude(Double latitude) {
-        this.latitude = latitude;
-    }
+    public String getPhone() { return phone; }
+    public void setPhone(String phone) { this.phone = phone; }
 
-    public Double getLongitude() {
-        return longitude;
-    }
+    public Timestamp getJoinedDate() { return joinedDate; }
+    public void setJoinedDate(Timestamp joinedDate) { this.joinedDate = joinedDate; }
 
-    public void setLongitude(Double longitude) {
-        this.longitude = longitude;
-    }
+    public Double getLatitude() { return latitude; }
+    public void setLatitude(Double latitude) { this.latitude = latitude; }
 
-    public String getStatus() {
-        return status;
-    }
+    public Double getLongitude() { return longitude; }
+    public void setLongitude(Double longitude) { this.longitude = longitude; }
 
-    public void setStatus(String status) {
-        this.status = status;
-    }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 }
