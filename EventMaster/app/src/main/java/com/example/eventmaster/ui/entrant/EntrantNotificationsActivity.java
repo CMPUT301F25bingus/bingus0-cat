@@ -2,11 +2,13 @@ package com.example.eventmaster.ui.entrant;
 
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.ProgressBar;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -14,14 +16,26 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.eventmaster.R;
+import com.example.eventmaster.data.api.EventRepository;
 import com.example.eventmaster.data.api.NotificationService;
+import com.example.eventmaster.data.firestore.EventRepositoryFs;
 import com.example.eventmaster.data.firestore.NotificationServiceFs;
+import com.example.eventmaster.model.Event;
 import com.example.eventmaster.model.Notification;
+import com.example.eventmaster.utils.DeviceUtils;
+import com.google.android.gms.tasks.Task;
+import com.google.android.gms.tasks.Tasks;
+import com.google.firebase.auth.FirebaseAuth;
 
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Activity for displaying entrant notifications inbox.
@@ -39,13 +53,14 @@ import java.util.List;
 public class EntrantNotificationsActivity extends AppCompatActivity {
 
     private static final String TAG = "EntrantNotifications";
-    private static final String MOCK_USER_ID = "user_001"; // TODO: Replace with actual user ID
+    private static final boolean USE_MOCK_FALLBACK = true;
 
     // UI Components
     private ImageView backButton;
     private ImageView deleteAllButton;
     private RecyclerView recyclerView;
     private LinearLayout emptyState;
+    private ProgressBar loadingIndicator;
 
     // Data
     private List<Notification> notifications;
@@ -53,6 +68,9 @@ public class EntrantNotificationsActivity extends AppCompatActivity {
 
     // Services
     private NotificationService notificationService;
+    private EventRepository eventRepository;
+
+    private String currentUserId;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -61,6 +79,8 @@ public class EntrantNotificationsActivity extends AppCompatActivity {
 
         // Initialize service
         notificationService = new NotificationServiceFs();
+        eventRepository = new EventRepositoryFs();
+        currentUserId = resolveCurrentUserId();
 
         // Initialize UI components
         initializeViews();
@@ -83,6 +103,7 @@ public class EntrantNotificationsActivity extends AppCompatActivity {
         deleteAllButton = findViewById(R.id.delete_all_button);
         recyclerView = findViewById(R.id.notifications_recycler_view);
         emptyState = findViewById(R.id.empty_state);
+        loadingIndicator = findViewById(R.id.loading_indicator);
     }
 
     /**
@@ -115,115 +136,233 @@ public class EntrantNotificationsActivity extends AppCompatActivity {
      * Loads notifications for the current user from Firestore.
      */
     private void loadNotifications() {
-        Log.d(TAG, "Loading notifications for user: " + MOCK_USER_ID);
+        showLoading(true);
+        Log.d(TAG, "Loading notifications for user: " + currentUserId);
 
-        // For demo purposes, use mock data if Firestore is empty
-        // In production, only fetch from Firestore
-        loadMockNotifications();
-        
-        // Uncomment below to load from Firestore:
-        /*
         notificationService.getNotificationsForUser(
-                MOCK_USER_ID,
-                this::handleNotificationsLoaded,
+                currentUserId,
+                this::handleNotificationsFetched,
                 this::handleLoadError
         );
-        */
     }
 
-    /**
-     * Creates mock notifications for demonstration purposes.
-     * This simulates the notifications shown in the Figma design.
-     */
-    private void loadMockNotifications() {
-        notifications = new ArrayList<>();
+    private void handleNotificationsFetched(List<Notification> loadedNotifications) {
+        if (loadedNotifications == null || loadedNotifications.isEmpty()) {
+            Log.d(TAG, "No notifications found in Firestore for user: " + currentUserId);
+            if (USE_MOCK_FALLBACK) {
+                loadMockNotificationsFallback();
+            } else {
+                showLoading(false);
+                handleNotificationsLoaded(new ArrayList<>());
+            }
+            return;
+        }
 
-        // 1. Registration Confirmed (Win - US 01.04.01)
-        Notification win1 = new Notification(
-                "event_001",
-                MOCK_USER_ID,
-                "organizer_001",
+        hydrateNotificationsWithEvents(loadedNotifications);
+    }
+
+    private void hydrateNotificationsWithEvents(@NonNull List<Notification> loadedNotifications) {
+        Set<String> eventIds = new HashSet<>();
+        for (Notification notification : loadedNotifications) {
+            if (notification.getEventId() != null && !notification.getEventId().trim().isEmpty()) {
+                eventIds.add(notification.getEventId());
+            }
+        }
+
+        if (eventIds.isEmpty()) {
+            showLoading(false);
+            handleNotificationsLoaded(loadedNotifications);
+            return;
+        }
+
+        Map<String, Task<Event>> tasksByEventId = new HashMap<>();
+        List<Task<Event>> tasks = new ArrayList<>();
+        for (String eventId : eventIds) {
+            Task<Event> task = eventRepository.getEventById(eventId);
+            tasksByEventId.put(eventId, task);
+            tasks.add(task);
+        }
+
+        Tasks.whenAllComplete(tasks)
+                .addOnCompleteListener(result -> {
+                    Map<String, String> eventNames = new HashMap<>();
+                    for (Map.Entry<String, Task<Event>> entry : tasksByEventId.entrySet()) {
+                        Task<Event> task = entry.getValue();
+                        if (task.isSuccessful() && task.getResult() != null) {
+                            Event event = task.getResult();
+                            String name = firstNonEmpty(event.getName(), event.getTitle());
+                            eventNames.put(entry.getKey(), name != null ? name : entry.getKey());
+                        } else {
+                            Log.w(TAG, "Failed to resolve event for id=" + entry.getKey(), task.getException());
+                        }
+                    }
+
+                    decorateNotificationsWithEventNames(loadedNotifications, eventNames);
+                    showLoading(false);
+                    handleNotificationsLoaded(loadedNotifications);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Failed to fetch event details for notifications", e);
+                    showLoading(false);
+                    handleNotificationsLoaded(loadedNotifications);
+                });
+    }
+
+    private void decorateNotificationsWithEventNames(@NonNull List<Notification> loadedNotifications,
+                                                     @NonNull Map<String, String> eventNames) {
+        for (Notification notification : loadedNotifications) {
+            String eventId = notification.getEventId();
+            if (eventId == null) {
+                continue;
+            }
+            String eventName = eventNames.get(eventId);
+            if (eventName == null || eventName.trim().isEmpty()) {
+                continue;
+            }
+
+            if (notification.getTitle() == null || notification.getTitle().trim().isEmpty()) {
+                notification.setTitle(eventName + " update");
+            }
+
+            if (notification.getMessage() == null || notification.getMessage().trim().isEmpty()) {
+                notification.setMessage("Latest update for " + eventName);
+            } else if (!notification.getMessage().toLowerCase(Locale.getDefault())
+                    .contains(eventName.toLowerCase(Locale.getDefault()))) {
+                notification.setMessage(eventName + ": " + notification.getMessage());
+            }
+        }
+    }
+
+    private void loadMockNotificationsFallback() {
+        Log.d(TAG, "Loading mock notifications based on available events");
+        eventRepository.getAllEvents(new EventRepository.OnEventListListener() {
+            @Override
+            public void onSuccess(List<Event> events) {
+                showLoading(false);
+                List<Notification> mockNotifications = createMockNotifications(events);
+                handleNotificationsLoaded(mockNotifications);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                Log.e(TAG, "Failed to load events for mock notifications", e);
+                showLoading(false);
+                List<Notification> mockNotifications = createMockNotifications(null);
+                handleNotificationsLoaded(mockNotifications);
+            }
+        });
+    }
+
+    private List<Notification> createMockNotifications(@Nullable List<Event> events) {
+        List<Notification> generated = new ArrayList<>();
+
+        generated.add(buildMockNotification(events, 0,
                 Notification.NotificationType.LOTTERY_WON,
                 "Registration Confirmed",
-                "You've been selected to Swimming Lesson for Kids."
-        );
-        win1.setSentAt(getDateHoursAgo(2));
-        notifications.add(win1);
+                "You've been selected to %s.",
+                getDateHoursAgo(2)));
 
-        // 2. Reminder
-        Notification reminder1 = new Notification(
-                "event_002",
-                MOCK_USER_ID,
-                "organizer_002",
+        generated.add(buildMockNotification(events, 1,
                 Notification.NotificationType.REMINDER,
                 "Reminder: Register Before Deadline",
-                "Reminder! Sign up for Piano Lessons before Dec 15"
-        );
-        reminder1.setSentAt(getDateDaysAgo(2));
-        notifications.add(reminder1);
+                "Reminder! Sign up for %s before the deadline.",
+                getDateDaysAgo(2)));
 
-        // 3. Not Selected (Loss - US 01.04.02)
-        Notification loss1 = new Notification(
-                "event_003",
-                MOCK_USER_ID,
-                "organizer_003",
+        generated.add(buildMockNotification(events, 2,
                 Notification.NotificationType.LOTTERY_LOST,
                 "Not Selected This Time",
-                "Unfortunately, you weren't selected for Pottery.."
-        );
-        loss1.setSentAt(getDateWeeksAgo(1));
-        notifications.add(loss1);
+                "Unfortunately, you weren't selected for %s.",
+                getDateWeeksAgo(1)));
 
-        // 4. New Spot Available (Win variant)
-        Notification win2 = new Notification(
-                "event_001",
-                MOCK_USER_ID,
-                "organizer_001",
+        generated.add(buildMockNotification(events, 3,
                 Notification.NotificationType.INVITATION,
                 "New Spot Available!",
-                "A new spot became available for Swim Lessons!"
-        );
-        win2.setSentAt(getDateWeeksAgo(3));
-        notifications.add(win2);
+                "A new spot became available for %s!",
+                getDateWeeksAgo(3)));
 
-        // 5. Event Cancelled
-        Notification cancel1 = new Notification(
-                "event_004",
-                MOCK_USER_ID,
-                "organizer_004",
+        generated.add(buildMockNotification(events, 4,
                 Notification.NotificationType.CANCELLATION,
                 "Event Cancelled",
-                "Beginner Yoga Class has been cancelled."
-        );
-        cancel1.setSentAt(getDateWeeksAgo(4));
-        notifications.add(cancel1);
+                "%s has been cancelled.",
+                getDateWeeksAgo(4)));
 
-        // 6. Reminder 2
-        Notification reminder2 = new Notification(
-                "event_003",
-                MOCK_USER_ID,
-                "organizer_003",
+        generated.add(buildMockNotification(events, 5,
                 Notification.NotificationType.REMINDER,
                 "Reminder: Event Starts Tomorrow",
-                "Your Pottery Class starts tomorrow at 10:00 AM"
-        );
-        reminder2.setSentAt(getDateWeeksAgo(5));
-        notifications.add(reminder2);
+                "Your %s starts tomorrow at 10:00 AM.",
+                getDateWeeksAgo(5)));
 
-        // 7. Thank you message
-        Notification thanks = new Notification(
-                "event_005",
-                MOCK_USER_ID,
-                "organizer_005",
+        generated.add(buildMockNotification(events, 6,
                 Notification.NotificationType.GENERAL,
                 "Thank you for Attending!",
-                "We hope you enjoyed Pickle ball for Adults!"
-        );
-        thanks.setSentAt(getDateWeeksAgo(8));
-        notifications.add(thanks);
+                "We hope you enjoyed %s!",
+                getDateWeeksAgo(8)));
 
-        // Update adapter
-        handleNotificationsLoaded(notifications);
+        return generated;
+    }
+
+    private Notification buildMockNotification(@Nullable List<Event> events,
+                                               int index,
+                                               Notification.NotificationType type,
+                                               String titleTemplate,
+                                               String messageTemplate,
+                                               Date sentAt) {
+        Event event = (events != null && index < events.size()) ? events.get(index) : null;
+        String eventName = firstNonEmpty(
+                event != null ? event.getName() : null,
+                event != null ? event.getTitle() : null,
+                getDefaultEventName(index));
+        String eventId = firstNonEmpty(
+                event != null ? event.getId() : null,
+                String.format(Locale.getDefault(), "event_%03d", index + 1));
+        String organizerId = firstNonEmpty(
+                event != null ? event.getOrganizerId() : null,
+                String.format(Locale.getDefault(), "organizer_%03d", index + 1));
+
+        String title = String.format(Locale.getDefault(), titleTemplate, eventName);
+        String message = String.format(Locale.getDefault(), messageTemplate, eventName);
+
+        Notification notification = new Notification(
+                eventId,
+                currentUserId,
+                organizerId,
+                type,
+                title,
+                message
+        );
+        notification.setSentAt(sentAt);
+        return notification;
+    }
+
+    private String getDefaultEventName(int index) {
+        switch (index) {
+            case 0:
+                return "Swimming Lesson for Kids";
+            case 1:
+                return "Piano Lessons";
+            case 2:
+                return "Pottery Workshop";
+            case 3:
+                return "Swim Lessons";
+            case 4:
+                return "Beginner Yoga Class";
+            case 5:
+                return "Pottery Class";
+            default:
+                return "Pickleball for Adults";
+        }
+    }
+
+    private String firstNonEmpty(String... values) {
+        if (values == null) {
+            return null;
+        }
+        for (String value : values) {
+            if (value != null && !value.trim().isEmpty()) {
+                return value;
+            }
+        }
+        return null;
     }
 
     /**
@@ -281,9 +420,15 @@ public class EntrantNotificationsActivity extends AppCompatActivity {
      */
     private void handleLoadError(String error) {
         Log.e(TAG, "Failed to load notifications: " + error);
-        Toast.makeText(this, "Failed to load notifications: " + error, Toast.LENGTH_LONG).show();
-        
-        // Show empty state
+
+        if (USE_MOCK_FALLBACK) {
+            loadMockNotificationsFallback();
+            return;
+        }
+
+        showLoading(false);
+        Toast.makeText(this, "Failed to load notifications: " + error,
+                Toast.LENGTH_LONG).show();
         recyclerView.setVisibility(View.GONE);
         emptyState.setVisibility(View.VISIBLE);
     }
@@ -357,6 +502,24 @@ public class EntrantNotificationsActivity extends AppCompatActivity {
         emptyState.setVisibility(View.VISIBLE);
         Toast.makeText(this, "All notifications deleted", Toast.LENGTH_SHORT).show();
         Log.d(TAG, "All notifications deleted");
+    }
+
+    private void showLoading(boolean loading) {
+        if (loadingIndicator == null) {
+            return;
+        }
+        loadingIndicator.setVisibility(loading ? View.VISIBLE : View.GONE);
+        if (loading) {
+            recyclerView.setVisibility(View.GONE);
+            emptyState.setVisibility(View.GONE);
+        }
+    }
+
+    private String resolveCurrentUserId() {
+        if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+            return FirebaseAuth.getInstance().getCurrentUser().getUid();
+        }
+        return DeviceUtils.getDeviceId(this);
     }
 }
 

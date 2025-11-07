@@ -1,5 +1,6 @@
 package com.example.eventmaster.ui.organizer.enrollments;
 
+import android.content.Context;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -10,6 +11,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.example.eventmaster.R;
+import com.example.eventmaster.ui.organizer.SelectedEntrantsActivity;
 import com.google.android.material.appbar.MaterialToolbar;
 
 /**
@@ -60,8 +62,11 @@ public class OrganizerEntrantsHubFragment extends Fragment {
         View btnSelected  = v.findViewById(R.id.btnFinal);
         View btnCancelled = v.findViewById(R.id.btnCancelled);
 
-        btnSelected.setOnClickListener(x ->
-                openList("ACTIVE", getString(R.string.selected_entrants)));
+        btnSelected.setOnClickListener(x -> {
+            Context context = requireContext();
+            startActivity(SelectedEntrantsActivity.createIntent(context, eventId));
+            getParentFragmentManager().popBackStack();
+        });
 
         btnCancelled.setOnClickListener(x ->
                 openList("CANCELLED_ANY", getString(R.string.cancelled_entrants)));

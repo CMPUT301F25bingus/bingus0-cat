@@ -1,5 +1,7 @@
 package com.example.eventmaster.ui.organizer;
 
+import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -7,6 +9,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -37,6 +40,19 @@ public class SelectedEntrantsActivity extends AppCompatActivity {
     private static final String TAG = "SelectedEntrantsActivity";
     private static final String EXTRA_EVENT_ID = "event_id";
     private static final String EXTRA_SELECTED_ENTRANTS = "selected_entrants";
+
+    /**
+     * Creates an intent for launching the SelectedEntrantsActivity for a specific event.
+     *
+     * @param context The calling context.
+     * @param eventId The ID of the event whose selected entrants should be displayed.
+     * @return Configured {@link Intent}.
+     */
+    public static Intent createIntent(@NonNull Context context, @NonNull String eventId) {
+        Intent intent = new Intent(context, SelectedEntrantsActivity.class);
+        intent.putExtra(EXTRA_EVENT_ID, eventId);
+        return intent;
+    }
 
     // UI Components
     private LinearLayout backButtonContainer;
@@ -98,13 +114,16 @@ public class SelectedEntrantsActivity extends AppCompatActivity {
      * In production, data should come from Intent extras.
      */
     private void loadData() {
-        // TODO: Get data from Intent extras in production
-        // eventId = getIntent().getStringExtra(EXTRA_EVENT_ID);
-        // selectedEntrants = getIntent().getParcelableArrayListExtra(EXTRA_SELECTED_ENTRANTS);
+        Intent intent = getIntent();
+        if (intent != null) {
+            eventId = intent.getStringExtra(EXTRA_EVENT_ID);
+        }
 
-        // Mock data for demonstration
-        eventId = "event_123";
-        selectedEntrants = createMockSelectedEntrants();
+        if (eventId == null || eventId.isEmpty()) {
+            eventId = "event_123";
+        }
+
+        selectedEntrants = createMockSelectedEntrants(eventId);
 
         Log.d(TAG, "Loaded " + selectedEntrants.size() + " selected entrants for event: " + eventId);
     }
@@ -114,20 +133,17 @@ public class SelectedEntrantsActivity extends AppCompatActivity {
      * 
      * @return List of mock profiles
      */
-    private List<Profile> createMockSelectedEntrants() {
+    private List<Profile> createMockSelectedEntrants(@NonNull String eventId) {
         List<Profile> mockProfiles = new ArrayList<>();
 
-        Profile profile1 = new Profile("user_001", "Bingus", "Bingus@example.com");
-        profile1.setPhoneNumber("+1 (785) 534-1229");
-        mockProfiles.add(profile1);
+        boolean shouldPopulate = Math.abs(eventId.hashCode()) % 2 == 1;
+        if (!shouldPopulate) {
+            return mockProfiles;
+        }
 
-        Profile profile2 = new Profile("user_002", "Bingus0", "Bingus0@example.com");
-        profile2.setPhoneNumber("+1 (780) 533-4567");
-        mockProfiles.add(profile2);
-
-        Profile profile3 = new Profile("user_003", "Bingus1", "Bingus1@example.com");
-        profile3.setPhoneNumber("+1 (785) 534-1229");
-        mockProfiles.add(profile3);
+        Profile profile = new Profile("user_001", "Bingus", "bingus@example.com");
+        profile.setPhoneNumber("+1 (785) 534-1229");
+        mockProfiles.add(profile);
 
         return mockProfiles;
     }
