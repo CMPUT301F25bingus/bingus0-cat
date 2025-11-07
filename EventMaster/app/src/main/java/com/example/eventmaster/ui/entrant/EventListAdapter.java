@@ -19,75 +19,64 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * RecyclerView adapter for displaying a list of events.
- * Shows event cards with thumbnail, name, join button, and event info.
+ * RecyclerView adapter for displaying a list of events to entrants.
+ * Uses item_event_card_entrant.xml for the card layout.
  */
 public class EventListAdapter extends RecyclerView.Adapter<EventListAdapter.EventViewHolder> {
 
-    private List<Event> events;
-    private final OnEventClickListener listener;
-
-    /**
-     * Interface for handling event item clicks.
-     */
     public interface OnEventClickListener {
         void onEventClick(Event event);
         void onJoinButtonClick(Event event);
-        void onQRCodeClick(Event event);
+        void onQRCodeClick(Event event); // kept for compatibility; can reuse poster or ignore
     }
 
-    public EventListAdapter(OnEventClickListener listener) {
-        this.events = new ArrayList<>();
+    private final OnEventClickListener listener;
+    private List<Event> events = new ArrayList<>();
+
+    public EventListAdapter(@NonNull OnEventClickListener listener) {
         this.listener = listener;
     }
 
-    /**
-     * Updates the list of events and refreshes the RecyclerView.
-     *
-     * @param newEvents The new list of events
-     */
-    public void setEvents(List<Event> newEvents) {
+    /** Replace current events and refresh list. */
+    public void setEvents(@NonNull List<Event> newEvents) {
         this.events = newEvents;
         notifyDataSetChanged();
     }
 
-    /**
-     * Filters the event list based on search query.
-     *
-     * @param query Search query
-     * @param allEvents The complete list of events to filter from
-     */
-    public void filter(String query, List<Event> allEvents) {
-        List<Event> filteredList = new ArrayList<>();
-        
-        if (query.isEmpty()) {
-            filteredList = allEvents;
-        } else {
-            String lowerCaseQuery = query.toLowerCase(Locale.getDefault());
-            for (Event event : allEvents) {
-                if (event.getName().toLowerCase(Locale.getDefault()).contains(lowerCaseQuery) ||
-                    event.getDescription().toLowerCase(Locale.getDefault()).contains(lowerCaseQuery) ||
-                    event.getLocation().toLowerCase(Locale.getDefault()).contains(lowerCaseQuery)) {
-                    filteredList.add(event);
-                }
+    /** Filter helper. */
+    public void filter(@NonNull String query, @NonNull List<Event> allEvents) {
+        String q = query.trim().toLowerCase(Locale.getDefault());
+        if (q.isEmpty()) {
+            setEvents(allEvents);
+            return;
+        }
+
+        List<Event> filtered = new ArrayList<>();
+        for (Event e : allEvents) {
+            if (e == null) continue;
+            String name = safe(e.getName());
+            String desc = safe(e.getDescription());
+            String loc  = safe(e.getLocation());
+            if (name.toLowerCase().contains(q)
+                    || desc.toLowerCase().contains(q)
+                    || loc.toLowerCase().contains(q)) {
+                filtered.add(e);
             }
         }
-        
-        setEvents(filteredList);
+        setEvents(filtered);
     }
 
     @NonNull
     @Override
     public EventViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext())
+        View v = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_event_card_entrant, parent, false);
-        return new EventViewHolder(view);
+        return new EventViewHolder(v);
     }
 
     @Override
     public void onBindViewHolder(@NonNull EventViewHolder holder, int position) {
-        Event event = events.get(position);
-        holder.bind(event, listener);
+        holder.bind(events.get(position), listener);
     }
 
     @Override
@@ -95,60 +84,79 @@ public class EventListAdapter extends RecyclerView.Adapter<EventListAdapter.Even
         return events.size();
     }
 
-    /**
-     * ViewHolder for event items.
-     */
-    static class EventViewHolder extends RecyclerView.ViewHolder {
-        
-        private final ImageView thumbnail;
-        private final ImageView qrCode;
-        private final TextView eventName;
-        private final MaterialButton joinButton;
-        private final TextView registerByText;
-        private final TextView capacityText;
-        private final TextView joinedText;
+    private static String safe(String s) {
+        return s == null ? "" : s;
+    }
 
-        public EventViewHolder(@NonNull View itemView) {
+    /** ViewHolder matching item_event_card_entrant.xml */
+    static class EventViewHolder extends RecyclerView.ViewHolder {
+
+        final ImageView poster;
+        final TextView title;
+        final TextView location;
+        final TextView dates;
+        final TextView registerBy;
+        final TextView capacity;
+        final TextView joined;
+        final MaterialButton joinButton;
+
+        EventViewHolder(@NonNull View itemView) {
             super(itemView);
-            thumbnail = itemView.findViewById(R.id.event_thumbnail);
-            qrCode = itemView.findViewById(R.id.qr_code_image);
-            eventName = itemView.findViewById(R.id.event_name);
+            poster     = itemView.findViewById(R.id.imgEventPoster);
+            title      = itemView.findViewById(R.id.txtEventTitle);
+            location   = itemView.findViewById(R.id.txtEventLocation);
+            dates      = itemView.findViewById(R.id.txtEventDates);
+            registerBy = itemView.findViewById(R.id.register_by_text);
+            capacity   = itemView.findViewById(R.id.capacity_text);
+            joined     = itemView.findViewById(R.id.joined_text);
             joinButton = itemView.findViewById(R.id.join_button);
-            registerByText = itemView.findViewById(R.id.register_by_text);
-            capacityText = itemView.findViewById(R.id.capacity_text);
-            joinedText = itemView.findViewById(R.id.joined_text);
         }
 
-        public void bind(Event event, OnEventClickListener listener) {
-            // Set event name
-            eventName.setText(event.getName() != null ? event.getName() : "Unnamed Event");
+        void bind(Event event, OnEventClickListener listener) {
+            // Title
+            title.setText(safe(event.getName(), "Unnamed Event"));
 
-            // Format registration date with null check
-            if (event.getRegistrationEndDate() != null) {
-                SimpleDateFormat dateFormat = new SimpleDateFormat("MMM dd", Locale.getDefault());
-                String registerBy = "Register by: " + dateFormat.format(event.getRegistrationEndDate());
-                registerByText.setText(registerBy);
+            // Location
+            location.setText(safe(event.getLocation(), "Location TBA"));
+
+            // Dates (registration period or event date)
+            if (event.getRegistrationStartDate() != null && event.getRegistrationEndDate() != null) {
+                SimpleDateFormat fmt = new SimpleDateFormat("MMM dd", Locale.getDefault());
+                String text = "Reg: " + fmt.format(event.getRegistrationStartDate())
+                        + " - " + fmt.format(event.getRegistrationEndDate());
+                dates.setText(text);
+                registerBy.setText("Register by: " + fmt.format(event.getRegistrationEndDate()));
             } else {
-                registerByText.setText("Register by: TBA");
+                dates.setText("Dates TBA");
+                registerBy.setText("Register by: TBA");
             }
 
-            // Set capacity
-            capacityText.setText("Cap: " + event.getCapacity());
+            // Capacity
+            capacity.setText("Cap: " + event.getCapacity());
 
-            // Set joined count (placeholder - will be updated with actual count)
-            joinedText.setText("Joined: 0");
+            // Placeholder joined count (can be wired to real count later)
+            joined.setText("Joined: 0");
 
-            // TODO: Load thumbnail image if posterUrl is available
-            // For now, thumbnail shows gray background
+            // Poster: you can load from event.getPosterUrl() with Glide if you have it
+            poster.setImageResource(R.drawable.ic_launcher_background);
 
-            // TODO: Generate or load QR code
-            // For now, QR code shows placeholder
+            // Clicks
+            itemView.setOnClickListener(v -> {
+                if (listener != null) listener.onEventClick(event);
+            });
 
-            // Set click listeners
-            itemView.setOnClickListener(v -> listener.onEventClick(event));
-            joinButton.setOnClickListener(v -> listener.onJoinButtonClick(event));
-            qrCode.setOnClickListener(v -> listener.onQRCodeClick(event));
+            joinButton.setOnClickListener(v -> {
+                if (listener != null) listener.onJoinButtonClick(event);
+            });
+
+            // For now, QR code click just behaves like open details
+            poster.setOnClickListener(v -> {
+                if (listener != null) listener.onQRCodeClick(event);
+            });
+        }
+
+        private static String safe(String s, String fallback) {
+            return (s == null || s.isEmpty()) ? fallback : s;
         }
     }
 }
-
