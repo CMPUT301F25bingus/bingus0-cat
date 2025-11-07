@@ -1,62 +1,66 @@
 package com.example.eventmaster.ui.organizer;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.FragmentManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import androidx.fragment.app.FragmentManager;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.Toast;
 
 import com.example.eventmaster.R;
-import com.example.eventmaster.data.firestore.EventRepositoryFs;
-import com.example.eventmaster.ui.organizer.EventAdapter;
-import androidx.activity.OnBackPressedCallback;
 import com.example.eventmaster.ui.organizer.enrollments.OrganizerEntrantsHubFragment;
 import com.google.android.material.appbar.MaterialToolbar;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Activity that allows an organizer to view and manage their created events.
- * Displays a list of events owned by the currently logged-in organizer. When
- * an event is selected, the app opens the {@link OrganizerEntrantsHubFragment}
- * as an overlay, where the organizer can view entrants grouped by their
- * registration status (e.g., active, cancelled).
+ * Activity that displays a list of events created by the organizer.
+ * Allows the organizer to view and manage each event and open
+ * the Entrants Hub overlay to see registered participants.
  *
+ * Firestore Collection: "events"
+ * Fields: eventId, title, location, regStart, regEnd, posterUrl, createdAt
  *
- * This screen fulfills the following user stories:
- *  US 02.06.02: View cancelled entrants
- *  US 02.06.03: View final enrolled list
- *  US 02.02.01: View the list of entrants who joined my event waiting list --> todo
- *
- * Once authentication and event tracking are implemented, this class will
- * connect to Firestore via {@link EventRepositoryFs} to dynamically load
- * events owned by the logged-in organizer.
+ * User Stories Supported:
+ *  - US 02.02.01: View entrants on waiting list
+ *  - US 02.06.02: View cancelled entrants
+ *  - US 02.06.03: View final enrolled entrants
  */
-
 public class OrganizerManageEventsActivity extends AppCompatActivity {
 
+    /** RecyclerView that lists all events. */
     private RecyclerView recycler;
+
+    /** Adapter that binds event data to the list. */
     private EventAdapter adapter;
-    private List<Map<String, Object>> events = new ArrayList<>();
 
+    /** List of events fetched from Firestore. */
+    private final List<Map<String, Object>> events = new ArrayList<>();
+
+    /** Overlay container that hosts the Entrants Hub fragment. */
     private View overlayContainer;
-    private EventRepositoryFs eventRepo;
 
-
+    /**
+     * Initializes the screen, toolbar, and event list.
+     * Sets up listeners for event selection and back navigation.
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_organizer_manage_events);
 
+        // Set up the toolbar and back navigation
         MaterialToolbar topBar = findViewById(R.id.topBar);
         if (topBar != null) {
             setSupportActionBar(topBar);
-            // (Optional) ensure an up arrow shows even if theme doesn’t provide it:
             if (getSupportActionBar() != null) {
                 getSupportActionBar().setDisplayHomeAsUpEnabled(true);
             }
@@ -64,99 +68,74 @@ public class OrganizerManageEventsActivity extends AppCompatActivity {
         }
 
         overlayContainer = findViewById(R.id.fragment_container);
+
         recycler = findViewById(R.id.recyclerEvents);
         recycler.setLayoutManager(new LinearLayoutManager(this));
 
         adapter = new EventAdapter(events);
         recycler.setAdapter(adapter);
 
-        // 🔗 When an event is tapped, open the Entrants Hub
+        // Open Entrants Hub when an event is selected
         adapter.setOnEventClickListener(this::openEntrantsHub);
 
-        //keep the overlay visibility in sync with back stack
+        // Sync overlay visibility with fragment back stack
         getSupportFragmentManager().addOnBackStackChangedListener(this::syncOverlayVisibility);
 
-        // Sync overlay visibility with back stack
-        getSupportFragmentManager().addOnBackStackChangedListener(this::syncOverlayVisibility);
-
-        // Use the dispatcher for back gestures / system back
+        // Handle system back press
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
-//                handleBackToHomeOrPop();
-//            }
+                FragmentManager fm = getSupportFragmentManager();
+                if (fm.getBackStackEntryCount() > 0) {
+                    fm.popBackStack();
+                } else {
+                    handleBackToHomeOrPop();
+                }
             }
         });
 
-        // TEMP: fake data so tapping works
-        events.add(new java.util.HashMap<String, Object>() {{
-            put("eventId", "test_event_1");
-            put("title", "Swimming Lessons for Beginners");
-            put("location", "Local Recreation Centre Pool");
-            put("regStart", null);
-            put("regEnd", null);
-            put("posterUrl", null);
-        }});
-        events.add(new java.util.HashMap<String, Object>() {{
-            put("eventId", "test_event_3");
-            put("title", "Interpretive Dance - Safety Basics");
-            put("location", "Downtown Dance Studio");
-            put("regStart", null);
-            put("regEnd", null);
-            put("posterUrl", null);
-        }});
-        //to be used when auth/track phone is implemented.
-//        loadEvents();
-        adapter.notifyDataSetChanged();
+        // Load events from Firestore
+        loadEventsFromFirestore();
     }
 
-        //TODO: after auth is implemneted we can do this...
-//    private void loadEvents() {
-//        View progress = findViewById(R.id.progress);           // add to XML (small spinner)
-//        View empty = findViewById(R.id.emptyView);             // add to XML (“No events yet”)
-//        if (progress != null) progress.setVisibility(View.VISIBLE);
-//        if (empty != null) empty.setVisibility(View.GONE);
-//
-//        eventRepo.listByOrganizer(result -> {
-//            events.clear();
-//            events.addAll(result);
-//            adapter.notifyDataSetChanged();
-//            if (progress != null) progress.setVisibility(View.GONE);
-//            if (empty != null) empty.setVisibility(result.isEmpty() ? View.VISIBLE : View.GONE);
-//        }, err -> {
-//            if (progress != null) progress.setVisibility(View.GONE);
-//            if (empty != null) {
-//                ((android.widget.TextView) empty).setText("Failed to load: " + err.getMessage());
-//                empty.setVisibility(View.VISIBLE);
-//            }
-//        });
-//    }
-
-
     /**
-     * Handles back navigation:
-     * If an entrant-related fragment is open, pops it from the back stack.
-     * If no fragments are open, returns to {@link OrganizerHomeActivity}.
+     * Loads events from Firestore and updates the RecyclerView.
+     * Currently loads all events in the "events" collection.
+     * Can later be filtered to only show those created by the current organizer.
      */
-    private void handleBackToHomeOrPop() {
-        FragmentManager fm = getSupportFragmentManager();
-        if (fm.getBackStackEntryCount() > 0) {
-            fm.popBackStack();
-        } else {
-            // No fragments visible → go to OrganizerHomeActivity
-            Intent intent = new Intent(this, OrganizerHomeActivity.class);
-            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            startActivity(intent);
-            finish();
-        }
+    private void loadEventsFromFirestore() {
+        FirebaseFirestore.getInstance()
+                .collection("events")
+                .orderBy("createdAt")
+                .get()
+                .addOnSuccessListener(snap -> {
+                    events.clear();
+                    for (QueryDocumentSnapshot doc : snap) {
+                        Map<String, Object> m = new HashMap<>();
+                        m.put("eventId", doc.getString("eventId"));
+                        m.put("title", doc.getString("title"));
+                        m.put("location", doc.getString("location"));
+                        m.put("regStart", doc.get("regStart"));
+                        m.put("regEnd", doc.get("regEnd"));
+                        m.put("posterUrl", doc.get("posterUrl"));
+                        events.add(m);
+                    }
+                    adapter.notifyDataSetChanged();
+
+                    if (events.isEmpty()) {
+                        Toast.makeText(this, "No events yet. Create one!", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, "Failed to load events: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    android.util.Log.e("OrganizerManageEvents", "loadEvents failed", e);
+                });
     }
 
     /**
-     * Opens the {@link OrganizerEntrantsHubFragment} overlay for the selected event.
-     * This fragment allows organizers to view entrants categorized by their
-     * registration status (e.g., active, cancelled).
+     * Opens the Entrants Hub overlay for the selected event.
      *
-     * @param eventId the unique ID of the selected event
+     * @param eventId The Firestore ID of the selected event.
      */
     private void openEntrantsHub(String eventId) {
         overlayContainer.setVisibility(View.VISIBLE);
@@ -165,27 +144,35 @@ public class OrganizerManageEventsActivity extends AppCompatActivity {
         getSupportFragmentManager()
                 .beginTransaction()
                 .setCustomAnimations(
-                        android.R.anim.slide_in_left,  // enter
-                        android.R.anim.fade_out,       // exit
-                        android.R.anim.fade_in,        // popEnter
-                        android.R.anim.slide_out_right // popExit
+                        android.R.anim.slide_in_left,
+                        android.R.anim.fade_out,
+                        android.R.anim.fade_in,
+                        android.R.anim.slide_out_right
                 )
                 .replace(R.id.fragment_container, hub)
                 .addToBackStack("hub")
                 .commit();
     }
 
-
     /**
-     * Updates the visibility of the overlay container based on whether
-     * there are fragments on the back stack.
-     *
-     * If no fragments are visible, the overlay is hidden to reveal
-     * the event list beneath.
+     * Updates the overlay container visibility
+     * based on the fragment back stack state.
      */
     private void syncOverlayVisibility() {
         boolean hasStack = getSupportFragmentManager().getBackStackEntryCount() > 0;
         overlayContainer.setVisibility(hasStack ? View.VISIBLE : View.GONE);
     }
 
+    /**
+     * Handles back navigation. Pops a fragment if one is open;
+     * otherwise returns to the previous screen.
+     */
+    private void handleBackToHomeOrPop() {
+        FragmentManager fm = getSupportFragmentManager();
+        if (fm.getBackStackEntryCount() > 0) {
+            fm.popBackStack();
+        } else {
+            finish();
+        }
+    }
 }
