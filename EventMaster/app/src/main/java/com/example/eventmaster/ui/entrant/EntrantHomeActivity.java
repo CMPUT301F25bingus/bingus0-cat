@@ -6,8 +6,10 @@ import android.os.Bundle;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.eventmaster.MainActivity;
 import com.example.eventmaster.R;
 import com.example.eventmaster.ui.qr.QRScannerActivity;
+import com.example.eventmaster.utils.AuthHelper;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
 
@@ -35,6 +37,7 @@ public class EntrantHomeActivity extends AppCompatActivity {
 
         MaterialButton btnViewEvents = findViewById(R.id.btnViewEvents);
         MaterialButton btnScanQr     = findViewById(R.id.btnScanQr);
+        MaterialButton btnLogout     = findViewById(R.id.btnLogout);
 
         btnViewEvents.setOnClickListener(v -> {
             Intent i = new Intent(this, EventListActivity.class);
@@ -44,6 +47,14 @@ public class EntrantHomeActivity extends AppCompatActivity {
         btnScanQr.setOnClickListener(v -> {
             Intent i = new Intent(this, QRScannerActivity.class);
             startActivity(i);
+        });
+
+        btnLogout.setOnClickListener(v -> {
+            AuthHelper.signOut();
+            Intent i = new Intent(this, MainActivity.class);
+            i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(i);
+            finish();
         });
     }
 }
