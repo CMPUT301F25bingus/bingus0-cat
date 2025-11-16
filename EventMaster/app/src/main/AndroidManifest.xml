@@ -28,68 +28,68 @@
         </activity>
 
         <!-- Organizer flow -->
-        <activity android:name=".ui.organizer.waitinglist.WaitingListActivity" android:exported="false" />
-        <activity android:name=".ui.organizer.chosenlist.ChosenListActivity" android:exported="false" />
+        <activity android:name=".ui.organizer.activities.WaitingListActivity" android:exported="false" />
+        <activity android:name=".ui.organizer.activities.ChosenListActivity" android:exported="false" />
         <activity
-            android:name=".ui.organizer.OrganizerHomeActivity"
+            android:name=".ui.organizer.activities.OrganizerHomeActivity"
             android:exported="false" />
 
         <!-- Entrant flow -->
         <activity
-            android:name=".ui.entrant.EntrantHomeActivity"
+            android:name=".ui.entrant.activities.EntrantHomeActivity"
             android:exported="false"
             android:label="Entrant Home" />
-        <activity android:name=".ui.entrant.EventListActivity" android:exported="false"/>
-        <activity android:name=".ui.entrant.EventDetailsActivity" android:exported="false"/>
+        <activity android:name=".ui.entrant.activities.EventListActivity" android:exported="false"/>
+        <activity android:name=".ui.entrant.activities.EventDetailsActivity" android:exported="false"/>
 
         <!-- Added: Entrant Notifications -->
         <activity
-            android:name=".ui.entrant.EntrantNotificationsActivity"
+            android:name=".ui.entrant.activities.EntrantNotificationsActivity"
             android:exported="false"
             android:label="Notifications"
             android:parentActivityName=".MainActivity" />
 
         <!-- Admin flow -->
-        <activity android:name=".ui.admin.AdminBrowseActivity" android:exported="false"/>
-        <activity android:name=".ui.admin.AdminEventListActivity" android:exported="false"/>
-        <activity android:name=".ui.admin.AdminWelcomeActivity" android:exported="false"/>
+        <activity android:name=".ui.admin.activities.AdminBrowseActivity" android:exported="false"/>
+        <activity android:name=".ui.admin.activities.AdminEventListActivity" android:exported="false"/>
+        <activity android:name=".ui.admin.activities.AdminWelcomeActivity" android:exported="false"/>
 
         <activity
-            android:name=".ui.admin.profiles.BrowseOrganizersActivity"
-            android:parentActivityName=".ui.admin.AdminBrowseActivity"
+            android:name=".ui.admin.activities.BrowseOrganizersActivity"
+            android:parentActivityName=".ui.admin.activities.AdminBrowseActivity"
             android:exported="false"/>
         <activity
-            android:name=".ui.admin.profiles.BrowseEntrantsActivity"
-            android:parentActivityName=".ui.admin.AdminBrowseActivity"
+            android:name=".ui.admin.activities.BrowseEntrantsActivity"
+            android:parentActivityName=".ui.admin.activities.AdminBrowseActivity"
             android:exported="false"/>
         <activity
-            android:name=".ui.admin.profiles.AdminProfileDetailActivity"
-            android:parentActivityName=".ui.admin.profiles.BrowseOrganizersActivity"
+            android:name=".ui.admin.activities.AdminProfileDetailActivity"
+            android:parentActivityName=".ui.admin.activities.BrowseOrganizersActivity"
             android:exported="false"/>
 
         <!-- organizer flow   -->
-        <activity android:name=".ui.organizer.OrganizerManageEventsActivity" />
+        <activity android:name=".ui.organizer.activities.OrganizerManageEventsActivity" />
         <activity
-            android:name=".ui.organizer.OrganizerCreateEventActivity"
+            android:name=".ui.organizer.activities.OrganizerCreateEventActivity"
             android:exported="false"
             android:label="Create Event" />
 
         <!-- Added: Selected Entrants -->
         <activity
-            android:name=".ui.organizer.SelectedEntrantsActivity"
+            android:name=".ui.organizer.activities.SelectedEntrantsActivity"
             android:exported="false"
             android:label="Selected Entrants"
             android:parentActivityName=".MainActivity" />
 
         <!-- QR scanner -->
         <activity
-            android:name=".ui.qr.QRScannerActivity"
+            android:name=".ui.shared.activities.QRScannerActivity"
             android:screenOrientation="portrait"
             android:exported="false"/>
 
         <!-- Shared profile screens -->
-        <activity android:name=".ui.profile.ProfileActivity" android:exported="false"/>
-        <activity android:name=".ui.profile.EditProfileActivity" android:exported="false"/>
+        <activity android:name=".ui.shared.activities.ProfileActivity" android:exported="false"/>
+        <activity android:name=".ui.shared.activities.EditProfileActivity" android:exported="false"/>
 
     </application>
 

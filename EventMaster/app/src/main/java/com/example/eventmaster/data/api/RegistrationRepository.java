@@ -2,7 +2,7 @@ package com.example.eventmaster.data.api;
 
 import com.example.eventmaster.model.Registration;
 import com.google.android.gms.tasks.Task;
-import com.example.eventmaster.ui.organizer.enrollments.EntrantRow;
+import com.example.eventmaster.ui.organizer.adapters.EntrantRow;
 import java.util.List;
 
 public interface RegistrationRepository {

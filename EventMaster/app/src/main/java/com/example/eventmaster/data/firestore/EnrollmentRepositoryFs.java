@@ -3,7 +3,7 @@ package com.example.eventmaster.data.firestore;
 import androidx.annotation.NonNull;
 
 import com.example.eventmaster.data.api.EnrollmentRepository;
-import com.example.eventmaster.ui.organizer.enrollments.EntrantRow;
+import com.example.eventmaster.ui.organizer.adapters.EntrantRow;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
