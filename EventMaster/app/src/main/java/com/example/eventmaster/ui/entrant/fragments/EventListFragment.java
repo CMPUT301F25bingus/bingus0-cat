@@ -157,9 +157,6 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
                startActivity(intent);
 
                 return true;
-            } else if (itemId == R.id.nav_remove) {
-                Toast.makeText(requireContext(), "Remove - Coming soon", Toast.LENGTH_SHORT).show();
-                return true;
             } else if (itemId == R.id.nav_scan_qr){
                 Intent i = new Intent(requireContext(), QRScannerActivity.class);
                 startActivity(i);

@@ -54,7 +54,6 @@ import java.util.Set;
 public class EntrantNotificationsActivity extends AppCompatActivity {
 
     private static final String TAG = "EntrantNotifications";
-    private static final boolean USE_MOCK_FALLBACK = true;
 
     // UI Components
     private ImageView backButton;
@@ -149,13 +148,9 @@ public class EntrantNotificationsActivity extends AppCompatActivity {
 
     private void handleNotificationsFetched(List<Notification> loadedNotifications) {
         if (loadedNotifications == null || loadedNotifications.isEmpty()) {
-            Log.d(TAG, "No notifications found in Firestore for user: " + currentUserId);
-            if (USE_MOCK_FALLBACK) {
-                loadMockNotificationsFallback();
-            } else {
-                showLoading(false);
-                handleNotificationsLoaded(new ArrayList<>());
-            }
+            Log.d(TAG, "No notifications found for user: " + currentUserId);
+            showLoading(false);
+            handleNotificationsLoaded(new ArrayList<>());
             return;
         }
 
@@ -234,126 +229,6 @@ public class EntrantNotificationsActivity extends AppCompatActivity {
         }
     }
 
-    private void loadMockNotificationsFallback() {
-        Log.d(TAG, "Loading mock notifications based on available events");
-        eventRepository.getAllEvents(new EventRepository.OnEventListListener() {
-            @Override
-            public void onSuccess(List<Event> events) {
-                showLoading(false);
-                List<Notification> mockNotifications = createMockNotifications(events);
-                handleNotificationsLoaded(mockNotifications);
-            }
-
-            @Override
-            public void onFailure(Exception e) {
-                Log.e(TAG, "Failed to load events for mock notifications", e);
-                showLoading(false);
-                List<Notification> mockNotifications = createMockNotifications(null);
-                handleNotificationsLoaded(mockNotifications);
-            }
-        });
-    }
-
-    private List<Notification> createMockNotifications(@Nullable List<Event> events) {
-        List<Notification> generated = new ArrayList<>();
-
-        generated.add(buildMockNotification(events, 0,
-                Notification.NotificationType.LOTTERY_WON,
-                "Registration Confirmed",
-                "You've been selected to %s.",
-                getDateHoursAgo(2)));
-
-        generated.add(buildMockNotification(events, 1,
-                Notification.NotificationType.REMINDER,
-                "Reminder: Register Before Deadline",
-                "Reminder! Sign up for %s before the deadline.",
-                getDateDaysAgo(2)));
-
-        generated.add(buildMockNotification(events, 2,
-                Notification.NotificationType.LOTTERY_LOST,
-                "Not Selected This Time",
-                "Unfortunately, you weren't selected for %s.",
-                getDateWeeksAgo(1)));
-
-        generated.add(buildMockNotification(events, 3,
-                Notification.NotificationType.INVITATION,
-                "New Spot Available!",
-                "A new spot became available for %s!",
-                getDateWeeksAgo(3)));
-
-        generated.add(buildMockNotification(events, 4,
-                Notification.NotificationType.CANCELLATION,
-                "Event Cancelled",
-                "%s has been cancelled.",
-                getDateWeeksAgo(4)));
-
-        generated.add(buildMockNotification(events, 5,
-                Notification.NotificationType.REMINDER,
-                "Reminder: Event Starts Tomorrow",
-                "Your %s starts tomorrow at 10:00 AM.",
-                getDateWeeksAgo(5)));
-
-        generated.add(buildMockNotification(events, 6,
-                Notification.NotificationType.GENERAL,
-                "Thank you for Attending!",
-                "We hope you enjoyed %s!",
-                getDateWeeksAgo(8)));
-
-        return generated;
-    }
-
-    private Notification buildMockNotification(@Nullable List<Event> events,
-                                               int index,
-                                               Notification.NotificationType type,
-                                               String titleTemplate,
-                                               String messageTemplate,
-                                               Date sentAt) {
-        Event event = (events != null && index < events.size()) ? events.get(index) : null;
-        String eventName = firstNonEmpty(
-                event != null ? event.getName() : null,
-                event != null ? event.getTitle() : null,
-                getDefaultEventName(index));
-        String eventId = firstNonEmpty(
-                event != null ? event.getId() : null,
-                String.format(Locale.getDefault(), "event_%03d", index + 1));
-        String organizerId = firstNonEmpty(
-                event != null ? event.getOrganizerId() : null,
-                String.format(Locale.getDefault(), "organizer_%03d", index + 1));
-
-        String title = String.format(Locale.getDefault(), titleTemplate, eventName);
-        String message = String.format(Locale.getDefault(), messageTemplate, eventName);
-
-        Notification notification = new Notification(
-                eventId,
-                currentUserId,
-                organizerId,
-                type,
-                title,
-                message
-        );
-        notification.setSentAt(sentAt);
-        return notification;
-    }
-
-    private String getDefaultEventName(int index) {
-        switch (index) {
-            case 0:
-                return "Swimming Lesson for Kids";
-            case 1:
-                return "Piano Lessons";
-            case 2:
-                return "Pottery Workshop";
-            case 3:
-                return "Swim Lessons";
-            case 4:
-                return "Beginner Yoga Class";
-            case 5:
-                return "Pottery Class";
-            default:
-                return "Pickleball for Adults";
-        }
-    }
-
     private String firstNonEmpty(String... values) {
         if (values == null) {
             return null;
@@ -364,33 +239,6 @@ public class EntrantNotificationsActivity extends AppCompatActivity {
             }
         }
         return null;
-    }
-
-    /**
-     * Helper method to create a date X hours ago.
-     */
-    private Date getDateHoursAgo(int hours) {
-        Calendar cal = Calendar.getInstance();
-        cal.add(Calendar.HOUR, -hours);
-        return cal.getTime();
-    }
-
-    /**
-     * Helper method to create a date X days ago.
-     */
-    private Date getDateDaysAgo(int days) {
-        Calendar cal = Calendar.getInstance();
-        cal.add(Calendar.DAY_OF_YEAR, -days);
-        return cal.getTime();
-    }
-
-    /**
-     * Helper method to create a date X weeks ago.
-     */
-    private Date getDateWeeksAgo(int weeks) {
-        Calendar cal = Calendar.getInstance();
-        cal.add(Calendar.WEEK_OF_YEAR, -weeks);
-        return cal.getTime();
     }
 
     /**
@@ -421,12 +269,6 @@ public class EntrantNotificationsActivity extends AppCompatActivity {
      */
     private void handleLoadError(String error) {
         Log.e(TAG, "Failed to load notifications: " + error);
-
-        if (USE_MOCK_FALLBACK) {
-            loadMockNotificationsFallback();
-            return;
-        }
-
         showLoading(false);
         Toast.makeText(this, "Failed to load notifications: " + error,
                 Toast.LENGTH_LONG).show();

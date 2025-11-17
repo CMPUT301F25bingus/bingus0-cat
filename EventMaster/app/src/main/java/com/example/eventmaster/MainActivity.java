@@ -6,7 +6,7 @@ import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.eventmaster.ui.admin.activities.AdminWelcomeActivity;
-import com.example.eventmaster.ui.entrant.activities.EntrantHomeActivity;
+import com.example.eventmaster.ui.entrant.activities.EventListActivity;
 import com.example.eventmaster.ui.organizer.activities.OrganizerHomeActivity;
 import com.google.android.material.button.MaterialButton;
 
@@ -34,6 +34,6 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(new Intent(this, OrganizerHomeActivity.class)));
 
         btnEntrant.setOnClickListener(v ->
-                startActivity(new Intent(   this, EntrantHomeActivity.class)));
+                startActivity(new Intent(this, EventListActivity.class)));
     }
 }
