@@ -30,9 +30,8 @@
         <!-- Organizer flow -->
         <activity android:name=".ui.organizer.waitinglist.WaitingListActivity" android:exported="false" />
         <activity android:name=".ui.organizer.chosenlist.ChosenListActivity" android:exported="false" />
-        <activity
-            android:name=".ui.organizer.OrganizerHomeActivity"
-            android:exported="false" />
+        <activity android:name=".ui.organizer.OrganizerHomeActivity" android:exported="false" />
+        <activity android:name=".ui.organizer.OrganizerManageSpecificEventActivity" android:exported="false"/>
 
         <!-- Entrant flow -->
         <activity

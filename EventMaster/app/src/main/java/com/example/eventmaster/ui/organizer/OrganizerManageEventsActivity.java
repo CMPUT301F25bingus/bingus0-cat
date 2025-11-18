@@ -67,7 +67,7 @@ public class OrganizerManageEventsActivity extends AppCompatActivity {
         recycler.setAdapter(adapter);
 
         // When an event is tapped, open Entrants Hub overlay
-        adapter.setOnEventClickListener(this::openEntrantsHub);
+        adapter.setOnEventClickListener(this::openManageSpecificEvent);
 
         // Sync overlay visibility with fragment back stack
         getSupportFragmentManager().addOnBackStackChangedListener(this::syncOverlayVisibility);
@@ -139,27 +139,48 @@ public class OrganizerManageEventsActivity extends AppCompatActivity {
                 });
     }
 
-    /**
-     * Opens the Entrants Hub overlay for a selected event.
-     *
-     * @param eventId the ID of the selected event (from Firestore)
-     */
-    private void openEntrantsHub(@NonNull String eventId) {
-        overlayContainer.setVisibility(View.VISIBLE);
+//    /**
+//     * Opens the Entrants Hub overlay for a selected event.
+//     *
+//     * @param eventId the ID of the selected event (from Firestore)
+//     */
+//    private void openEntrantsHub(@NonNull String eventId) {
+//        overlayContainer.setVisibility(View.VISIBLE);
+//
+//        OrganizerEntrantsHubFragment hub = OrganizerEntrantsHubFragment.newInstance(eventId);
+//        getSupportFragmentManager()
+//                .beginTransaction()
+//                .setCustomAnimations(
+//                        android.R.anim.slide_in_left,
+//                        android.R.anim.fade_out,
+//                        android.R.anim.fade_in,
+//                        android.R.anim.slide_out_right
+//                )
+//                .replace(R.id.fragment_container, hub)
+//                .addToBackStack("hub")
+//                .commit();
+//    }
+private void openManageSpecificEvent(@NonNull String eventId) {
 
-        OrganizerEntrantsHubFragment hub = OrganizerEntrantsHubFragment.newInstance(eventId);
-        getSupportFragmentManager()
-                .beginTransaction()
-                .setCustomAnimations(
-                        android.R.anim.slide_in_left,
-                        android.R.anim.fade_out,
-                        android.R.anim.fade_in,
-                        android.R.anim.slide_out_right
-                )
-                .replace(R.id.fragment_container, hub)
-                .addToBackStack("hub")
-                .commit();
+    // Find the title from the existing events list
+    String title = "Event";
+    for (Map<String, Object> e : events) {
+        if (e.get("eventId").equals(eventId)) {
+            Object t = e.get("title");
+            if (t != null) title = t.toString();
+            break;
+        }
     }
+
+    // Launch the page
+    Intent intent = new Intent(this, OrganizerManageSpecificEventActivity.class);
+    intent.putExtra(OrganizerManageSpecificEventActivity.EXTRA_EVENT_ID, eventId);
+    intent.putExtra(OrganizerManageSpecificEventActivity.EXTRA_EVENT_TITLE, title);
+    startActivity(intent);
+}
+
+
+
 
     /**
      * Shows or hides the overlay container depending on whether
