@@ -116,6 +116,26 @@
                         android:textColor="#222222"/>
                 </com.google.android.material.textfield.TextInputLayout>
 
+                <!-- CAPACITY -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    app:boxBackgroundMode="filled"
+                    app:boxBackgroundColor="@android:color/white"
+                    app:boxStrokeColor="#22000000">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/editCapacity"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Capacity (number of entrants allowed)"
+                        android:inputType="number"
+                        android:maxLines="1"
+                        android:textColor="#222222"/>
+                </com.google.android.material.textfield.TextInputLayout>
+
+
                 <!-- DATE "CHIPS" -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/tvRegOpen"

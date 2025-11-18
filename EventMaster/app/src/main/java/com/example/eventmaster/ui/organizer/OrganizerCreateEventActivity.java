@@ -70,7 +70,7 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
     public MaterialButton tvRegClose;
     private MaterialButton btnPublish;
     MaterialCheckBox cbGenerateQr;
-    private TextInputEditText editTitle, editDescription, editLocation;
+    private TextInputEditText editTitle, editDescription, editLocation, editCapacity;
     private ProgressBar progress;
 
     private Uri posterUri = null;
@@ -113,6 +113,8 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
         cbGenerateQr = findViewById(R.id.cbGenerateQr);
         btnPublish = findViewById(R.id.btnPublish);
         progress = findViewById(R.id.progress);
+        editCapacity = findViewById(R.id.editCapacity);
+
 
         if (topBar != null) topBar.setNavigationOnClickListener(v -> onBackPressed());
 
@@ -156,6 +158,8 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
         String title = textOf(editTitle);
         String desc = textOf(editDescription);
         String location = textOf(editLocation);
+        String capStr = textOf(editCapacity);
+
 
         if (TextUtils.isEmpty(title)) { editTitle.setError("Required"); return; }
         if (TextUtils.isEmpty(regStartIso)) { toast("Pick a start date"); return; }
@@ -165,6 +169,21 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
         Timestamp regEnd = parseDateToTimestamp(regEndIso);
         if (regStart == null || regEnd == null) { toast("Invalid date/time"); return; }
         if (regEnd.compareTo(regStart) < 0) { toast("End must be after start"); return; }
+
+        //capacity for US 02.05.02
+        if (TextUtils.isEmpty(capStr)) { editCapacity.setError("Required"); return; }
+        int capacity = 0;
+        try {
+            capacity = Integer.parseInt(capStr);
+        } catch (NumberFormatException e) {
+            editCapacity.setError("Invalid number");
+            return;
+        }
+
+        if (capacity <= 0) {
+            editCapacity.setError("Capacity must be greater than 0");
+            return;
+        }
 
         String organizerId = FirebaseAuth.getInstance().getCurrentUser() != null
                 ? FirebaseAuth.getInstance().getCurrentUser().getUid() : "anonymous";
@@ -191,6 +210,8 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
         base.put("posterUrl", null);
         base.put("qrUrl", null);
         base.put("createdAt", Timestamp.now());
+        base.put("capacity", capacity);
+
 
 
         doc.set(base).addOnSuccessListener(unused -> {

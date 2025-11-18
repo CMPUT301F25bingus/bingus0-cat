@@ -12,8 +12,10 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.FragmentTransaction;
 
 import com.example.eventmaster.R;
+import com.example.eventmaster.data.firestore.LotteryServiceFs;
 import com.example.eventmaster.ui.organizer.enrollments.OrganizerEntrantsHubFragment;
 import com.google.android.material.appbar.MaterialToolbar;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
 
@@ -24,6 +26,8 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
     private String eventTitle;
 
     private FrameLayout fragmentContainer;
+    private final LotteryServiceFs lotteryService = new LotteryServiceFs();
+
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -55,10 +59,11 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
                 openEntrantsHub()
         );
 
-        // --- Other buttons still simple for now ---
+
+        // now to have lottery running:
+
         findViewById(R.id.btnRunLottery).setOnClickListener(v -> {
-            // TODO: Lottery code
-            Toast.makeText(this, "Run Lottery — coming soon!", Toast.LENGTH_SHORT).show();
+            runLottery();
         });
 
         findViewById(R.id.btnNotifications).setOnClickListener(v -> {
@@ -109,4 +114,65 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
                 }
         );
     }
+
+    private void runLottery() {
+
+        FirebaseFirestore.getInstance()
+                .collection("events")
+                .document(eventId)
+                .get()
+                .addOnSuccessListener(doc -> {
+
+                    if (!doc.exists()) {
+                        Toast.makeText(this, "Event not found.", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    // Read capacity (required)
+                    Long capLong = doc.getLong("capacity");
+                    if (capLong == null) {
+                        Toast.makeText(this, "Capacity not set for this event.", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    int capacity = capLong.intValue();
+
+                    // Show confirmation dialog
+                    new androidx.appcompat.app.AlertDialog.Builder(this)
+                            .setTitle("Run Lottery")
+                            .setMessage(
+                                    "This will select **" + capacity + "** winners from the waiting list.\n\n" +
+                                            "All other entrants will receive a 'not selected' notification.\n\n" +
+                                            "You cannot undo this action.\n\n" +
+                                            "Proceed?"
+                            )
+                            .setPositiveButton("Run Lottery", (d, w) -> {
+
+                                Toast.makeText(this, "Running lottery...", Toast.LENGTH_SHORT).show();
+
+                                LotteryServiceFs lottery = new LotteryServiceFs();
+
+                                lottery.drawLottery(eventId, capacity)
+                                        .addOnSuccessListener(aVoid -> {
+                                            Toast.makeText(this,
+                                                    "Lottery completed successfully!",
+                                                    Toast.LENGTH_LONG
+                                            ).show();
+                                        })
+                                        .addOnFailureListener(e -> {
+                                            Toast.makeText(this,
+                                                    "Lottery failed: " + e.getMessage(),
+                                                    Toast.LENGTH_LONG
+                                            ).show();
+                                        });
+                            })
+                            .setNegativeButton("Cancel", null)
+                            .show();
+
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, "Failed to load event capacity.", Toast.LENGTH_SHORT).show();
+                });
+    }
+
 }
