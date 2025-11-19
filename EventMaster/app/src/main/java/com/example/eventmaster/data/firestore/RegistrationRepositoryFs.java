@@ -5,7 +5,7 @@ import androidx.annotation.Nullable;
 
 import com.example.eventmaster.data.api.RegistrationRepository;
 import com.example.eventmaster.model.Registration;
-import com.example.eventmaster.ui.organizer.enrollments.EntrantRow;
+import com.example.eventmaster.ui.organizer.adapters.EntrantRow;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.firestore.DocumentSnapshot;
