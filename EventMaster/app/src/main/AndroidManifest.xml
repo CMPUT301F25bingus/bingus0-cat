@@ -31,7 +31,7 @@
         <activity android:name=".ui.organizer.activities.WaitingListActivity" android:exported="false" />
         <activity android:name=".ui.organizer.activities.ChosenListActivity" android:exported="false" />
         <activity android:name=".ui.organizer.activities.OrganizerHomeActivity" android:exported="false" />
-        <activity android:name=".ui.organizer.OrganizerManageSpecificEventActivity" android:exported="false"/>
+        <activity android:name=".ui.organizer.activities.OrganizerManageSpecificEventActivity" android:exported="false"/>
 
         <!-- Entrant flow -->
         <activity android:name=".ui.entrant.activities.EventListActivity" android:exported="false"/>

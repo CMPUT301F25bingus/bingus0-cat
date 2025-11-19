@@ -1,4 +1,4 @@
-package com.example.eventmaster.ui.organizer;
+package com.example.eventmaster.ui.organizer.activities;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -13,7 +13,7 @@ import androidx.fragment.app.FragmentTransaction;
 
 import com.example.eventmaster.R;
 import com.example.eventmaster.data.firestore.LotteryServiceFs;
-import com.example.eventmaster.ui.organizer.enrollments.OrganizerEntrantsHubFragment;
+import com.example.eventmaster.ui.organizer.fragments.OrganizerEntrantsHubFragment;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.firebase.firestore.FirebaseFirestore;
 
