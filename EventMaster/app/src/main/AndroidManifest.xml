@@ -48,6 +48,9 @@
         <activity android:name=".ui.organizer.activities.OrganizerManageSpecificEventActivity" android:exported="false"/>
 
         <!-- Entrant flow -->
+        <activity android:name=".ui.entrant.EntrantHomeActivity"
+            android:exported="false"
+            android:label="Entrant Home" />
         <activity android:name=".ui.entrant.activities.EventListActivity" android:exported="false"/>
         <activity android:name=".ui.entrant.activities.EventDetailsActivity" android:exported="false"/>
 

@@ -98,15 +98,19 @@ public class OrganizerManageEventsActivity extends AppCompatActivity {
      * For demo, loads all events. To scope per organizer, filter by organizerId.
      */
     private void loadEventsFromFirestore() {
+
+        String organizerId = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser().getUid();
+
         FirebaseFirestore.getInstance()
                 .collection("events")
+                .whereEqualTo("organizerId", organizerId)   // 🔥 NEW: Filter so organizer sees ONLY their own events
                 .orderBy("createdAt")
                 .get()
                 .addOnSuccessListener(snap -> {
                     events.clear();
 
                     for (QueryDocumentSnapshot doc : snap) {
-                        // Prefer explicit eventId; fallback to document id for older docs.
+
                         String eventId = doc.getString("eventId");
                         if (eventId == null || eventId.isEmpty()) {
                             eventId = doc.getId();
@@ -114,21 +118,24 @@ public class OrganizerManageEventsActivity extends AppCompatActivity {
 
                         Map<String, Object> m = new HashMap<>();
                         m.put("eventId", eventId);
-                        m.put("id", eventId); // extra safety for adapters using "id"
+                        m.put("id", eventId);
                         m.put("title", doc.getString("title"));
                         m.put("location", doc.getString("location"));
-                        m.put("regStart", doc.get("regStart"));     // may be Timestamp
-                        m.put("regEnd", doc.get("regEnd"));         // may be Timestamp
+
+                        m.put("regStart", doc.get("registrationOpen"));
+                        m.put("regEnd", doc.get("registrationClose"));
+
                         m.put("posterUrl", doc.get("posterUrl"));
 
                         events.add(m);
                     }
 
+
                     adapter.notifyDataSetChanged();
 
                     if (events.isEmpty()) {
                         Toast.makeText(this,
-                                "No events yet. Create one as organizer.",
+                                "You haven't created any events yet.",
                                 Toast.LENGTH_SHORT).show();
                     }
                 })
@@ -140,7 +147,7 @@ public class OrganizerManageEventsActivity extends AppCompatActivity {
                 });
     }
 
-//    /**
+    //    /**
 //     * Opens the Entrants Hub overlay for a selected event.
 //     *
 //     * @param eventId the ID of the selected event (from Firestore)
