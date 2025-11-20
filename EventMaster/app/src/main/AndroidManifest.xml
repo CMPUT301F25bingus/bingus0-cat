@@ -27,6 +27,20 @@
             </intent-filter>
         </activity>
 
+        <!-- Authentication activities -->
+        <activity
+            android:name=".ui.auth.OrganizerLoginActivity"
+            android:exported="false"
+            android:label="Organizer Login" />
+        <activity
+            android:name=".ui.auth.AdminLoginActivity"
+            android:exported="false"
+            android:label="Admin Login" />
+        <activity
+            android:name=".ui.auth.CreateProfileActivity"
+            android:exported="false"
+            android:label="Create Profile" />
+
         <!-- Organizer flow -->
         <activity android:name=".ui.organizer.activities.WaitingListActivity" android:exported="false" />
         <activity android:name=".ui.organizer.activities.ChosenListActivity" android:exported="false" />
