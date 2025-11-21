@@ -3,11 +3,15 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Camera permission for QR code scanning -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
 
     <application
         android:allowBackup="true"
@@ -46,6 +50,10 @@
         <activity android:name=".ui.organizer.activities.ChosenListActivity" android:exported="false" />
         <activity android:name=".ui.organizer.activities.OrganizerHomeActivity" android:exported="false" />
         <activity android:name=".ui.organizer.activities.OrganizerManageSpecificEventActivity" android:exported="false"/>
+        <activity
+            android:name=".ui.organizer.activities.OrganizerEntrantMapActivity"
+            android:exported="false"
+            android:label="Entrant Map" />
 
         <!-- Entrant flow -->
         <activity android:name=".ui.entrant.EntrantHomeActivity"

@@ -14,7 +14,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.eventmaster.R;
 import com.example.eventmaster.ui.organizer.adapters.EventAdapter;
-import com.example.eventmaster.ui.organizer.fragments.OrganizerEntrantsHubFragment;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
@@ -24,22 +23,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * OrganizerManageEventsActivity
- *
- * Role:
- * - Displays a list of events from Firestore for the organizer to manage.
- * - When an event card is tapped, opens OrganizerEntrantsHubFragment as an overlay
- *   so the organizer can view final (ACTIVE) and cancelled entrants.
- *
- * User Stories:
- * - US 02.06.02: View cancelled entrants
- * - US 02.06.03: View final enrolled list
- */
 public class OrganizerManageEventsActivity extends AppCompatActivity {
 
     private RecyclerView recycler;
     private EventAdapter adapter;
+
+    // Only THIS list is used
     private final List<Map<String, Object>> events = new ArrayList<>();
 
     private View overlayContainer;
@@ -49,7 +38,7 @@ public class OrganizerManageEventsActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.organizer_activity_manage_events);
 
-        // Top bar with back navigation
+        // Top bar
         MaterialToolbar topBar = findViewById(R.id.topBar);
         if (topBar != null) {
             setSupportActionBar(topBar);
@@ -64,16 +53,14 @@ public class OrganizerManageEventsActivity extends AppCompatActivity {
         recycler = findViewById(R.id.recyclerEvents);
         recycler.setLayoutManager(new LinearLayoutManager(this));
 
+        // Adapter now expects full event list with geolocation + capacity
         adapter = new EventAdapter(events);
         recycler.setAdapter(adapter);
 
-        // When an event is tapped, open Entrants Hub overlay
         adapter.setOnEventClickListener(this::openManageSpecificEvent);
 
-        // Sync overlay visibility with fragment back stack
         getSupportFragmentManager().addOnBackStackChangedListener(this::syncOverlayVisibility);
 
-        // Handle system back (gestures + button)
         getOnBackPressedDispatcher().addCallback(
                 this,
                 new OnBackPressedCallback(true) {
@@ -89,24 +76,26 @@ public class OrganizerManageEventsActivity extends AppCompatActivity {
                 }
         );
 
-        // Load events from Firestore
         loadEventsFromFirestore();
     }
 
     /**
-     * Loads events from Firestore and populates the RecyclerView.
-     * For demo, loads all events. To scope per organizer, filter by organizerId.
+     * Loads only the organizer’s events from Firestore.
      */
     private void loadEventsFromFirestore() {
 
-        String organizerId = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser().getUid();
+        String organizerId = com.google.firebase.auth.FirebaseAuth
+                .getInstance()
+                .getCurrentUser()
+                .getUid();
 
         FirebaseFirestore.getInstance()
                 .collection("events")
-                .whereEqualTo("organizerId", organizerId)   // 🔥 NEW: Filter so organizer sees ONLY their own events
+                .whereEqualTo("organizerId", organizerId)
                 .orderBy("createdAt")
                 .get()
                 .addOnSuccessListener(snap -> {
+
                     events.clear();
 
                     for (QueryDocumentSnapshot doc : snap) {
@@ -118,92 +107,61 @@ public class OrganizerManageEventsActivity extends AppCompatActivity {
 
                         Map<String, Object> m = new HashMap<>();
                         m.put("eventId", eventId);
-                        m.put("id", eventId);
                         m.put("title", doc.getString("title"));
                         m.put("location", doc.getString("location"));
-
                         m.put("regStart", doc.get("registrationOpen"));
                         m.put("regEnd", doc.get("registrationClose"));
-
                         m.put("posterUrl", doc.get("posterUrl"));
+                        m.put("capacity", doc.getLong("capacity"));
+                        m.put("geolocationRequired", doc.getBoolean("geolocationRequired"));
 
                         events.add(m);
                     }
 
-
                     adapter.notifyDataSetChanged();
 
                     if (events.isEmpty()) {
-                        Toast.makeText(this,
+                        Toast.makeText(
+                                this,
                                 "You haven't created any events yet.",
-                                Toast.LENGTH_SHORT).show();
+                                Toast.LENGTH_SHORT
+                        ).show();
                     }
+
                 })
                 .addOnFailureListener(e -> {
-                    Toast.makeText(this,
+                    Toast.makeText(
+                            this,
                             "Failed to load events: " + e.getMessage(),
-                            Toast.LENGTH_LONG).show();
-                    android.util.Log.e("OrganizerManageEvents", "loadEvents failed", e);
+                            Toast.LENGTH_LONG
+                    ).show();
                 });
     }
 
-    //    /**
-//     * Opens the Entrants Hub overlay for a selected event.
-//     *
-//     * @param eventId the ID of the selected event (from Firestore)
-//     */
-//    private void openEntrantsHub(@NonNull String eventId) {
-//        overlayContainer.setVisibility(View.VISIBLE);
-//
-//        OrganizerEntrantsHubFragment hub = OrganizerEntrantsHubFragment.newInstance(eventId);
-//        getSupportFragmentManager()
-//                .beginTransaction()
-//                .setCustomAnimations(
-//                        android.R.anim.slide_in_left,
-//                        android.R.anim.fade_out,
-//                        android.R.anim.fade_in,
-//                        android.R.anim.slide_out_right
-//                )
-//                .replace(R.id.fragment_container, hub)
-//                .addToBackStack("hub")
-//                .commit();
-//    }
-private void openManageSpecificEvent(@NonNull String eventId) {
 
-    // Find the title from the existing events list
-    String title = "Event";
-    for (Map<String, Object> e : events) {
-        if (e.get("eventId").equals(eventId)) {
-            Object t = e.get("title");
-            if (t != null) title = t.toString();
-            break;
+    private void openManageSpecificEvent(@NonNull String eventId) {
+
+        String title = "Event";
+
+        for (Map<String, Object> e : events) {
+            if (e.get("eventId").equals(eventId)) {
+                Object t = e.get("title");
+                if (t != null) title = t.toString();
+                break;
+            }
         }
+
+        Intent intent = new Intent(this, OrganizerManageSpecificEventActivity.class);
+        intent.putExtra(OrganizerManageSpecificEventActivity.EXTRA_EVENT_ID, eventId);
+        intent.putExtra(OrganizerManageSpecificEventActivity.EXTRA_EVENT_TITLE, title);
+        startActivity(intent);
     }
 
-    // Launch the page
-    Intent intent = new Intent(this, OrganizerManageSpecificEventActivity.class);
-    intent.putExtra(OrganizerManageSpecificEventActivity.EXTRA_EVENT_ID, eventId);
-    intent.putExtra(OrganizerManageSpecificEventActivity.EXTRA_EVENT_TITLE, title);
-    startActivity(intent);
-}
-
-
-
-
-    /**
-     * Shows or hides the overlay container depending on whether
-     * there are fragments currently in the back stack.
-     */
     private void syncOverlayVisibility() {
         boolean hasStack = getSupportFragmentManager().getBackStackEntryCount() > 0;
         overlayContainer.setVisibility(hasStack ? View.VISIBLE : View.GONE);
     }
 
-    /**
-     * Back behavior:
-     * - If a fragment (hub or list) is open, pop it.
-     * - Otherwise, finish and return to the previous activity (e.g. OrganizerHomeActivity).
-     */
     private void handleBackToHomeOrPop() {
         FragmentManager fm = getSupportFragmentManager();
         if (fm.getBackStackEntryCount() > 0) {

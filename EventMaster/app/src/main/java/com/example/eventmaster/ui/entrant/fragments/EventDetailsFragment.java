@@ -1,5 +1,7 @@
 package com.example.eventmaster.ui.entrant.fragments;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -9,8 +11,11 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
 
 import com.bumptech.glide.Glide;
@@ -28,6 +33,9 @@ import com.example.eventmaster.utils.DeviceUtils;
 import com.google.android.material.button.MaterialButton;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
+
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -411,11 +419,89 @@ public class EventDetailsFragment extends Fragment {
             handleJoinWaitingList();
         }
     }
+    private void requestLocationThenJoin() {
+        if (ActivityCompat.checkSelfPermission(requireContext(),
+                Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+
+            requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION);
+            return;
+        }
+
+        fetchLocationAndJoin();
+    }
+
+    private final ActivityResultLauncher<String> requestPermissionLauncher =
+            registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> {
+                if (granted) {
+                    fetchLocationAndJoin();
+                } else {
+                    Toast.makeText(requireContext(),
+                            "Location required to join this event",
+                            Toast.LENGTH_SHORT).show();
+                }
+            });
+
+    private void fetchLocationAndJoin() {
+        FusedLocationProviderClient client =
+                LocationServices.getFusedLocationProviderClient(requireContext());
+
+        if (ActivityCompat.checkSelfPermission(requireContext(),
+                Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(requireContext(),
+                        Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+        client.getLastLocation()
+                .addOnSuccessListener(location -> {
+                    if (location != null) {
+                        // pass lat/lng into join method
+                        joinWaitingListWithLocation(location.getLatitude(), location.getLongitude());
+                    } else {
+                        Toast.makeText(requireContext(),
+                                "Unable to fetch location",
+                                Toast.LENGTH_SHORT).show();
+                    }
+                });
+    }
+
+    private void joinWaitingListWithLocation(double lat, double lng) {
+        String entryId = UUID.randomUUID().toString();
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("entryId", entryId);
+        data.put("eventId", eventId);
+        data.put("userId", userId);
+        data.put("joinedAt", new Date());
+        data.put("lat", lat);
+        data.put("lng", lng);
+
+        FirebaseFirestore.getInstance()
+                .collection("events")
+                .document(eventId)
+                .collection("waitingList")   // <-- FIXED
+                .document(userId)
+                .set(data)
+                .addOnSuccessListener(unused -> {
+                    Toast.makeText(requireContext(), "Joined event!", Toast.LENGTH_SHORT).show();
+                    isInWaitingList = true;
+                    joinButton.setText("Exit Waiting List");
+                    joinButton.setEnabled(true);
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(requireContext(), "Failed to join: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    joinButton.setEnabled(true);
+                });
+    }
 
     /**
      * Handle joining the waiting list
      */
     private void handleJoinWaitingList() {
+        // --- GEOLOCATION REQUIREMENT CHECK ---
+        if (currentEvent != null && currentEvent.isGeolocationRequired()) {
+            requestLocationThenJoin();
+            return; // stop normal joining path
+        }
         // Validate eventId and userId first
         if (eventId == null || eventId.isEmpty()) {
             Toast.makeText(requireContext(), "Error: Event ID is missing", Toast.LENGTH_LONG).show();

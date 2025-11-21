@@ -33,43 +33,44 @@
                     app:title="Manage Events"
                     app:titleTextColor="@android:color/white" />
 
-                <!-- SEARCH + FILTER -->
+                <!-- SEARCH BAR -->
                 <LinearLayout
+                    android:id="@+id/searchBarContainer"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:layout_marginTop="12dp"
+                    android:layout_marginTop="16dp"
+                    android:paddingHorizontal="4dp"
                     android:gravity="center_vertical">
 
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        app:boxBackgroundMode="filled"
-                        app:boxBackgroundColor="@android:color/white"
-                        app:boxStrokeColor="#22000000">
+                    <ImageView
+                        android:id="@+id/searchIcon"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_marginEnd="8dp"
+                        android:src="@android:drawable/ic_menu_search"
+                        app:tint="#444444" />
 
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/searchEvents"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:hint="Search events..."
-                            android:textColor="#222222" />
-                    </com.google.android.material.textfield.TextInputLayout>
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnFilter"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Filter"
-                        android:textAllCaps="false"
+                    <EditText
+                        android:id="@+id/searchEvents"
+                        android:layout_width="match_parent"
+                        android:layout_height="42dp"
+                        android:background="@drawable/search_bar_bg"
+                        android:hint="Search events..."
+                        android:textSize="15sp"
+                        android:paddingHorizontal="16dp"
+                        android:gravity="center_vertical"
                         android:textColor="#222222"
-                        android:layout_marginStart="8dp"
-                        app:cornerRadius="12dp"
-                        app:backgroundTint="@android:color/white"
-                        app:strokeWidth="1dp"
-                        app:strokeColor="#33000000" />
+                        android:textColorHint="#777777"/>
                 </LinearLayout>
+
+                <!-- DIVIDER -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#C4C4C4"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="12dp"/>
 
                 <!-- EVENTS LIST -->
                 <androidx.recyclerview.widget.RecyclerView
@@ -81,6 +82,8 @@
                     android:paddingBottom="12dp" />
 
             </LinearLayout>
+
+            <!-- PROGRESS -->
             <ProgressBar
                 android:id="@+id/progress"
                 android:layout_width="48dp"
@@ -88,6 +91,7 @@
                 android:layout_gravity="center"
                 android:visibility="gone"/>
 
+            <!-- EMPTY VIEW -->
             <TextView
                 android:id="@+id/emptyView"
                 android:layout_width="wrap_content"
@@ -97,13 +101,14 @@
                 android:textColor="@android:color/black"
                 android:layout_gravity="center"
                 android:visibility="gone"/>
+
         </com.google.android.material.card.MaterialCardView>
+
         <FrameLayout
             android:id="@+id/fragment_container"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:visibility="gone" />
-
 
     </FrameLayout>
 </ScrollView>

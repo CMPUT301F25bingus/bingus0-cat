@@ -88,6 +88,7 @@ public class OrganizerEntrantsHubFragment extends Fragment {
         btnCancelled.setOnClickListener(x ->
                 openList("CANCELLED_ANY", getString(R.string.cancelled_entrants)));
 
+
         return v;
     }
 
@@ -131,7 +132,6 @@ public class OrganizerEntrantsHubFragment extends Fragment {
                 .addToBackStack(null)
                 .commit();
     }
-
 
     /**
      * Resolves the container view ID where the next fragment will be placed.
