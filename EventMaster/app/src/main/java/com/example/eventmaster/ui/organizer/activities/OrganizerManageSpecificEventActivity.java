@@ -147,7 +147,33 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
                     }
 
                     eventName.setText(doc.getString("title"));
-                    eventOrganizer.setText("Hosted by: " + doc.getString("organizerId"));
+                    // Replace organizerId with organizerName (fallback to ID)
+                    String organizerId = doc.getString("organizerId");
+
+                    if (organizerId != null) {
+                        FirebaseFirestore.getInstance()
+                                .collection("profiles")
+                                .document(organizerId)
+                                .get()
+                                .addOnSuccessListener(profileDoc -> {
+                                    if (profileDoc.exists()) {
+                                        String organizerName = profileDoc.getString("name");
+
+                                        if (organizerName != null && !organizerName.isEmpty()) {
+                                            eventOrganizer.setText("Hosted by: " + organizerName);
+                                        } else {
+                                            eventOrganizer.setText("Hosted by: " + organizerId);
+                                        }
+
+                                    } else {
+                                        eventOrganizer.setText("Hosted by: " + organizerId);
+                                    }
+                                })
+                                .addOnFailureListener(e -> eventOrganizer.setText("Hosted by: " + organizerId));
+                    } else {
+                        eventOrganizer.setText("Hosted by: Unknown");
+                    }
+
 
                     Double price = doc.getDouble("price");
                     if (price != null) {

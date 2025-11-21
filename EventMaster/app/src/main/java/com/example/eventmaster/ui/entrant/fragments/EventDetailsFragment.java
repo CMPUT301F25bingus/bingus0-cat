@@ -314,8 +314,32 @@ public class EventDetailsFragment extends Fragment {
     /** Displays event details in the UI. */
     private void displayEventDetails(Event event) {
         eventNameText.setText(event.getName() != null ? event.getName() : "Unnamed Event");
-        organizerText.setText("Hosted by: " +
-                (event.getOrganizerName() != null ? event.getOrganizerName() : "Unknown"));
+        String organizerId = event.getOrganizerId();
+
+        if (organizerId != null) {
+            FirebaseFirestore.getInstance()
+                    .collection("profiles")
+                    .document(organizerId)
+                    .get()
+                    .addOnSuccessListener(profileDoc -> {
+                        if (profileDoc.exists()) {
+                            String organizerName = profileDoc.getString("name");
+
+                            if (organizerName != null && !organizerName.isEmpty()) {
+                                organizerText.setText("Hosted by: " + organizerName);
+                            } else {
+                                organizerText.setText("Hosted by: " + organizerId);
+                            }
+
+                        } else {
+                            organizerText.setText("Hosted by: " + organizerId);
+                        }
+                    })
+                    .addOnFailureListener(e -> organizerText.setText("Hosted by: " + organizerId));
+        } else {
+            organizerText.setText("Hosted by: Unknown");
+        }
+
         locationText.setText(event.getLocation() != null ? event.getLocation() : "Location TBA");
         descriptionText.setText(event.getDescription() != null ? event.getDescription() : "No description available");
 
