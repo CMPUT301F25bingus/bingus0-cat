@@ -3,11 +3,15 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Camera permission for QR code scanning -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
 
     <application
 
@@ -22,6 +26,10 @@
 
         <activity
             android:name=".MainActivity"
+            android:exported="true" />
+
+        <activity
+            android:name=".ui.auth.LandingActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
@@ -59,6 +67,7 @@
         <activity android:name=".ui.organizer.activities.ChosenListActivity" android:exported="false" />
         <activity android:name=".ui.organizer.activities.OrganizerHomeActivity" android:exported="false" />
         <activity android:name=".ui.organizer.activities.OrganizerManageSpecificEventActivity" android:exported="false"/>
+        <activity android:name=".ui.organizer.activities.OrganizerEntrantMapActivity" android:exported="false" android:label="Entrant Map" />
         <activity android:name=".ui.organizer.activities.OrganizerManageEventsActivity" />
         <activity android:name=".ui.organizer.activities.OrganizerCreateEventActivity"  android:exported="false"  android:label="Create Event" />
         <activity android:name=".ui.organizer.activities.SelectedEntrantsActivity"  android:exported="false"  android:label="Selected Entrants" android:parentActivityName=".MainActivity" />

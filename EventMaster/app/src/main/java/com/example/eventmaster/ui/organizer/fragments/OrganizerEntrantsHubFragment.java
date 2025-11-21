@@ -96,6 +96,7 @@ public class OrganizerEntrantsHubFragment extends Fragment {
                 startActivity(intent);
         });
 
+
         return v;
     }
 

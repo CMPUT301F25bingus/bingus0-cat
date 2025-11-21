@@ -69,6 +69,10 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
     private MaterialCheckBox cbGenerateQr;
     private TextInputEditText editTitle, editDescription, editLocation, editCapacity;
     private ProgressBar progress;
+    private MaterialCheckBox cbRequireLocation;
+    private TextInputEditText editPrice;
+
+
 
     // Local state
     private Uri posterUri = null;
@@ -117,6 +121,10 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
         btnPublish = findViewById(R.id.btnPublish);
         progress = findViewById(R.id.progress);
         editCapacity = findViewById(R.id.editCapacity);
+        cbRequireLocation = findViewById(R.id.cbRequireLocation);
+        editPrice = findViewById(R.id.editPrice);
+
+
 
         // Toolbar back button
         if (topBar != null) topBar.setNavigationOnClickListener(v -> onBackPressed());
@@ -177,6 +185,25 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
         }
         if (capacity <= 0) { editCapacity.setError("Capacity must be greater than 0"); return; }
 
+        String priceStr = textOf(editPrice);
+        double price;
+
+        if (TextUtils.isEmpty(priceStr)) {
+            editPrice.setError("Required");
+            return;
+        }
+
+        try {
+            price = Double.parseDouble(priceStr);
+            if (price < 0) {
+                editPrice.setError("Price cannot be negative");
+                return;
+            }
+        } catch (Exception e) {
+            editPrice.setError("Invalid price");
+            return;
+        }
+
         // Organizer identity (already authenticated)
         String organizerId = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
@@ -201,6 +228,8 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
         base.put("qrUrl", null);
         base.put("capacity", capacity);
         base.put("createdAt", Timestamp.now());
+        base.put("geolocationRequired", cbRequireLocation.isChecked());
+        base.put("price", price);
 
         // Write base event document
         doc.set(base)

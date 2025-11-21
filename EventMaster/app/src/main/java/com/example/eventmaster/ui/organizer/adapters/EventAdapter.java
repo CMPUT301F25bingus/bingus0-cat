@@ -26,6 +26,7 @@ import java.util.Map;
  */
 public class EventAdapter extends RecyclerView.Adapter<EventAdapter.ViewHolder> {
 
+
     public interface OnEventClickListener {
         void onEventClick(@NonNull String eventId);
     }
@@ -50,24 +51,47 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.ViewHolder> 
     }
 
     @Override
-    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull ViewHolder h, int position) {
+
         Map<String, Object> e = events.get(position);
 
-        holder.txtTitle.setText(String.valueOf(e.get("title")));
-        holder.txtLocation.setText(String.valueOf(e.get("location")));
-        holder.txtDate.setText(formatDateRange(e.get("regStart"), e.get("regEnd")));
+        // TITLE
+        h.txtTitle.setText(String.valueOf(e.get("title")));
 
-        Object posterUrl = e.get("posterUrl");
-        if (posterUrl != null) {
-            Glide.with(holder.itemView.getContext())
-                    .load(String.valueOf(posterUrl))
-                    .placeholder(R.drawable.ic_launcher_background)
-                    .into(holder.imgPoster);
-        } else {
-            holder.imgPoster.setImageResource(R.drawable.ic_launcher_background);
+        // LOCATION
+        String loc = String.valueOf(e.get("location"));
+        h.txtLocation.setText("📍 " + loc);
+
+        // DATE RANGE
+        h.txtDates.setText(formatDateRange(e.get("regStart"), e.get("regEnd")));
+
+        // CAPACITY
+        Object capObj = e.get("capacity");
+        if (capObj != null) {
+            h.txtCapacity.setText("👥 Capacity: " + capObj.toString());
         }
 
-        holder.itemView.setOnClickListener(v -> {
+        // GEOLOCATION REQUIRED FLAG
+        Object geoObj = e.get("geolocationRequired");
+        if (geoObj instanceof Boolean && (Boolean) geoObj) {
+            h.txtGeoRequired.setVisibility(View.VISIBLE);
+        } else {
+            h.txtGeoRequired.setVisibility(View.GONE);
+        }
+
+        // POSTER LOADING
+        Object posterUrl = e.get("posterUrl");
+        if (posterUrl != null) {
+            Glide.with(h.itemView.getContext())
+                    .load(String.valueOf(posterUrl))
+                    .placeholder(R.drawable.ic_launcher_background)
+                    .into(h.imgPoster);
+        } else {
+            h.imgPoster.setImageResource(R.drawable.ic_launcher_background);
+        }
+
+        // CLICK HANDLER
+        h.itemView.setOnClickListener(v -> {
             if (clickListener == null) return;
             String eventId = extractEventId(e);
             if (eventId != null && !eventId.isEmpty()) {
@@ -81,7 +105,8 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.ViewHolder> 
         return events.size();
     }
 
-    /** Accepts common id keys: "id", "eventId", "docId". */
+    // ===== Helper Methods =====
+
     private String extractEventId(Map<String, Object> e) {
         Object id = e.get("id");
         if (id == null) id = e.get("eventId");
@@ -89,29 +114,33 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.ViewHolder> 
         return id == null ? null : String.valueOf(id);
     }
 
-    /** Formats "From MMM d, yyyy to MMM d, yyyy" if both ends present; otherwise shows fallback text. */
     private String formatDateRange(Object start, Object end) {
-        SimpleDateFormat sdf = new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
+        SimpleDateFormat sdf = new SimpleDateFormat("MMM d", Locale.getDefault());
         if (start instanceof Timestamp && end instanceof Timestamp) {
             try {
-                return "From " + sdf.format(((Timestamp) start).toDate())
-                        + " to " + sdf.format(((Timestamp) end).toDate());
+                String s = sdf.format(((Timestamp) start).toDate());
+                String e2 = sdf.format(((Timestamp) end).toDate());
+                return "📅 " + s + " → " + e2;
             } catch (Exception ignored) {}
         }
-        return "Dates unavailable";
+        return "📅 Registration: TBA";
     }
 
-    /** ViewHolder cache. */
+    // ===== ViewHolder =====
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        final TextView txtTitle, txtLocation, txtDate;
-        final ImageView imgPoster;
+
+        TextView txtTitle, txtLocation, txtDates, txtCapacity, txtGeoRequired;
+        ImageView imgPoster;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
-            txtTitle    = itemView.findViewById(R.id.txtEventTitle);
-            txtLocation = itemView.findViewById(R.id.txtEventLocation);
-            txtDate     = itemView.findViewById(R.id.txtEventDates);
-            imgPoster   = itemView.findViewById(R.id.imgEventPoster);
+
+            txtTitle       = itemView.findViewById(R.id.txtEventTitle);
+            txtLocation    = itemView.findViewById(R.id.txtEventLocation);
+            txtDates       = itemView.findViewById(R.id.txtEventDates);
+            txtCapacity    = itemView.findViewById(R.id.txtEventCapacity);
+            txtGeoRequired = itemView.findViewById(R.id.txtGeoRequired);
+            imgPoster      = itemView.findViewById(R.id.imgEventPoster);
         }
     }
 }
