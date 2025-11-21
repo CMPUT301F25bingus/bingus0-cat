@@ -18,6 +18,7 @@ public class WaitingListEntry {
     private Double latitude;    // Optional geolocation
     private Double longitude;   // Optional geolocation
     private String status;      // "waiting", "chosen", "accepted", "declined", "cancelled"
+    private Profile profile;    // Profile information for the entrant
 
     // Empty constructor required by Firestore
     public WaitingListEntry() {}
@@ -76,4 +77,12 @@ public class WaitingListEntry {
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+
+    public Profile getProfile() {
+        return profile;
+    }
+
+    public void setProfile(Profile profile) {
+        this.profile = profile;
+    }
 }
