@@ -9,6 +9,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.eventmaster.R;
+import com.example.eventmaster.model.Profile;
 import com.example.eventmaster.model.WaitingListEntry;
 
 import java.util.List;
@@ -36,21 +37,41 @@ public class WaitingListAdapter extends RecyclerView.Adapter<WaitingListAdapter.
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        WaitingListEntry entrant = entrants.get(position);
-        
-        // Set name
-        holder.textName.setText("Name: " + entrant.getEntrantName());
-        
-        // Set email
-        holder.textEmail.setText("Email: " + entrant.getEmail());
-        
-        // Set phone (handle null)
-        String phone = entrant.getPhone();
-        if (phone != null && !phone.isEmpty()) {
-            holder.textPhone.setText("Phone: " + phone);
+        WaitingListEntry entry = entrants.get(position);
+        Profile p = entry.getProfile();
+        //set name
+        String name;
+        if (p != null && p.getName() != null && !p.getName().isEmpty()) {
+            name = p.getName();
+        } else if (entry.getEntrantName() != null) {
+            name = entry.getEntrantName();
         } else {
-            holder.textPhone.setText("Phone: N/A");
+            name = "Unknown";
         }
+        holder.textName.setText("Name: " + name);
+
+        //set email
+        String email;
+        if (p != null && p.getEmail() != null && !p.getEmail().isEmpty()) {
+            email = p.getEmail();
+        } else if (entry.getEmail() != null) {
+            email = entry.getEmail();
+        } else {
+            email = "N/A";
+        }
+        holder.textEmail.setText("Email: " + email);
+
+        //set number if exists
+        String phone;
+        if (p != null && p.getPhoneNumber() != null && !p.getPhoneNumber().isEmpty()) {
+            phone = p.getPhoneNumber();
+        } else if (entry.getPhone() != null) {
+            phone = entry.getPhone();
+        } else {
+            phone = "N/A";
+        }
+        holder.textPhone.setText("Phone: " + phone);
+
     }
 
     @Override

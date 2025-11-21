@@ -13,7 +13,7 @@ import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.espresso.action.ViewActions;
 
-import com.example.eventmaster.ui.organizer.OrganizerCreateEventActivity;
+import com.example.eventmaster.ui.organizer.activities.OrganizerCreateEventActivity;
 import com.example.eventmaster.R;
 
 import org.junit.Before;
