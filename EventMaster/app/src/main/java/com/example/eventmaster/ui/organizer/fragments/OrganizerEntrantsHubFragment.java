@@ -12,6 +12,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.example.eventmaster.R;
+import com.example.eventmaster.ui.organizer.activities.CancelledEntrantsActivity;
 import com.example.eventmaster.ui.organizer.activities.SelectedEntrantsActivity;
 import com.example.eventmaster.ui.organizer.activities.WaitingListActivity;
 import com.example.eventmaster.ui.organizer.activities.ChosenListActivity;
@@ -82,11 +83,18 @@ public class OrganizerEntrantsHubFragment extends Fragment {
         });
 
         // Navigate to Selected Entrants (Final List) using real Firestore data
-        btnSelected.setOnClickListener(x ->
-                openList("ACTIVE", getString(R.string.selected_entrants)));
+        btnSelected.setOnClickListener(x -> {
+                Intent intent = new Intent(requireContext(), SelectedEntrantsActivity.class);
+                intent.putExtra("eventId", eventId);
+                startActivity(intent);
+            });
 
-        btnCancelled.setOnClickListener(x ->
-                openList("CANCELLED_ANY", getString(R.string.cancelled_entrants)));
+        //Navigate to cancelled entrants
+        btnCancelled.setOnClickListener(x -> {
+                Intent intent = new Intent(requireContext(), CancelledEntrantsActivity.class);
+                intent.putExtra("eventId", eventId);
+                startActivity(intent);
+        });
 
         return v;
     }
@@ -113,25 +121,6 @@ public class OrganizerEntrantsHubFragment extends Fragment {
                 }
         );
     }
-
-    /**
-     * Opens a list fragment filtered by entrant status.
-     *
-     * @param status Registration status to filter by ("ACTIVE" or "CANCELLED_ANY").
-     * @param title  Title for the next screen.
-     */
-    private void openList(String status, String title) {
-        OrganizerEntrantsListFragment frag =
-                OrganizerEntrantsListFragment.newInstance(eventId, status, title);
-
-        int containerId = resolveContainerId();
-        requireActivity().getSupportFragmentManager()
-                .beginTransaction()
-                .replace(containerId, frag)
-                .addToBackStack(null)
-                .commit();
-    }
-
 
     /**
      * Resolves the container view ID where the next fragment will be placed.

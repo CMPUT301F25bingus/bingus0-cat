@@ -26,11 +26,17 @@ public class WaitingListRepositoryFs implements WaitingListRepository {
                     "eventId=" + entry.getEventId() + 
                     ", userId=" + entry.getUserId() + 
                     ", status=" + entry.getStatus());
+
+            String userId = entry.getUserId(); // This should be the Firebase UID
+            if (userId == null || userId.isEmpty()) {
+                listener.onFailure(new Exception("userId is required"));
+                return;
+            }
             
             db.collection("events")
                     .document(entry.getEventId())
                     .collection("waiting_list")
-                    .document(entry.getUserId())
+                    .document(userId)
                     .set(entry)
                     .addOnSuccessListener(aVoid -> {
                         android.util.Log.d("WaitingListRepo", "Successfully added to waiting list");

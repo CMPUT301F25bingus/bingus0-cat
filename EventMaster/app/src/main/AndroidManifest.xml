@@ -10,6 +10,7 @@
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
 
     <application
+
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -18,6 +19,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.EventMaster">
+
         <activity
             android:name=".MainActivity"
             android:exported="true">
@@ -26,6 +28,17 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+
+        <!-- for csv exporting-->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.provider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/filepaths" />
+        </provider>
 
         <!-- Authentication activities -->
         <activity
@@ -46,6 +59,11 @@
         <activity android:name=".ui.organizer.activities.ChosenListActivity" android:exported="false" />
         <activity android:name=".ui.organizer.activities.OrganizerHomeActivity" android:exported="false" />
         <activity android:name=".ui.organizer.activities.OrganizerManageSpecificEventActivity" android:exported="false"/>
+        <activity android:name=".ui.organizer.activities.OrganizerManageEventsActivity" />
+        <activity android:name=".ui.organizer.activities.OrganizerCreateEventActivity"  android:exported="false"  android:label="Create Event" />
+        <activity android:name=".ui.organizer.activities.SelectedEntrantsActivity"  android:exported="false"  android:label="Selected Entrants" android:parentActivityName=".MainActivity" />
+        <activity android:name=".ui.organizer.activities.CancelledEntrantsActivity" android:exported="false" />
+
 
         <!-- Entrant flow -->
         <activity android:name=".ui.entrant.EntrantHomeActivity"
@@ -79,19 +97,8 @@
             android:parentActivityName=".ui.admin.activities.BrowseOrganizersActivity"
             android:exported="false"/>
 
-        <!-- organizer flow   -->
-        <activity android:name=".ui.organizer.activities.OrganizerManageEventsActivity" />
-        <activity
-            android:name=".ui.organizer.activities.OrganizerCreateEventActivity"
-            android:exported="false"
-            android:label="Create Event" />
 
-        <!-- Added: Selected Entrants -->
-        <activity
-            android:name=".ui.organizer.activities.SelectedEntrantsActivity"
-            android:exported="false"
-            android:label="Selected Entrants"
-            android:parentActivityName=".MainActivity" />
+
 
         <!-- QR scanner -->
         <activity

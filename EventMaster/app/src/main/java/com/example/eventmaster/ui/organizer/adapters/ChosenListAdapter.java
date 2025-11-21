@@ -9,6 +9,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.eventmaster.R;
+import com.example.eventmaster.model.Profile;
 import com.example.eventmaster.model.WaitingListEntry;
 
 import java.util.List;
@@ -37,16 +38,39 @@ public class ChosenListAdapter extends RecyclerView.Adapter<ChosenListAdapter.Vi
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         WaitingListEntry entry = chosenList.get(position);
-        holder.name.setText("Name: " + entry.getEntrantName());
-        holder.email.setText("Email: " + entry.getEmail());
-        
-        // Show phone or N/A if null
-        String phone = entry.getPhone();
-        if (phone != null && !phone.isEmpty()) {
-            holder.phone.setText("Phone: " + phone);
+        Profile p = entry.getProfile();
+        //set name
+        String name;
+        if (p != null && p.getName() != null && !p.getName().isEmpty()) {
+            name = p.getName();
+        } else if (entry.getEntrantName() != null) {
+            name = entry.getEntrantName();
         } else {
-            holder.phone.setText("Phone: N/A");
+            name = "Unknown";
         }
+        holder.name.setText("Name: " + name);
+
+        //set email
+        String email;
+        if (p != null && p.getEmail() != null && !p.getEmail().isEmpty()) {
+            email = p.getEmail();
+        } else if (entry.getEmail() != null) {
+            email = entry.getEmail();
+        } else {
+            email = "N/A";
+        }
+        holder.email.setText("Email: " + email);
+
+        //set number if exists
+        String phone;
+        if (p != null && p.getPhoneNumber() != null && !p.getPhoneNumber().isEmpty()) {
+            phone = p.getPhoneNumber();
+        } else if (entry.getPhone() != null) {
+            phone = entry.getPhone();
+        } else {
+            phone = "N/A";
+        }
+        holder.phone.setText("Phone: " + phone);
     }
 
     @Override

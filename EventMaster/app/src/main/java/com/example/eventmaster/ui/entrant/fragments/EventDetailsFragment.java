@@ -18,11 +18,13 @@ import com.example.eventmaster.R;
 import com.example.eventmaster.data.api.EventRepository;
 import com.example.eventmaster.data.api.WaitingListRepository;
 import com.example.eventmaster.data.firestore.EventRepositoryFs;
+import com.example.eventmaster.data.firestore.ProfileRepositoryFs;
 import com.example.eventmaster.data.firestore.WaitingListRepositoryFs;
 import com.example.eventmaster.data.firestore.InvitationServiceFs;
 import com.example.eventmaster.data.firestore.RegistrationServiceFs;
 import com.example.eventmaster.model.Event;
 import com.example.eventmaster.model.Invitation;
+import com.example.eventmaster.model.Profile;
 import com.example.eventmaster.model.WaitingListEntry;
 import com.example.eventmaster.utils.DeviceUtils;
 import com.google.android.material.button.MaterialButton;
@@ -59,6 +61,8 @@ public class EventDetailsFragment extends Fragment {
     private String userId;
     private boolean isInWaitingList = false;  // Track if user is in waiting list
 
+    private Profile currentProfile;  //needed to attach into waiting list entry and loaded using deviceID
+    private ProfileRepositoryFs profileRepo = new ProfileRepositoryFs();
     // UI Elements
     private ImageView posterImage;
     private ImageView backButton;
@@ -116,11 +120,40 @@ public class EventDetailsFragment extends Fragment {
         waitingListRepository = new WaitingListRepositoryFs();
         invitationService = new InvitationServiceFs();
         registrationService = new RegistrationServiceFs();
+        profileRepo = new ProfileRepositoryFs();
 
         userId = DeviceUtils.getDeviceId(requireContext());
-        
+        loadUserProfile();
+
         // Debug logging
         Log.d(TAG, "onCreate: eventId=" + eventId + ", userId=" + userId);
+    }
+
+    private void loadUserProfile() {
+        profileRepo.getByDeviceId(userId)
+                .addOnSuccessListener(profile -> {
+                    if (profile != null) {
+                        currentProfile = profile;
+                        Log.d(TAG, "Loaded profile for device: " + profile.getName());
+                    } else {
+                        //
+                        Profile newProf = new Profile(
+                                userId,
+                                "Guest User",
+                                "",
+                                null
+                        );
+                        profileRepo.upsert(newProf);
+                        currentProfile = newProf;
+                        Log.d(TAG, "Created new profile for device.");
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Profile load failed, creating fallback profile", e);
+                    Profile fallback = new Profile(userId, "Guest User", "", null);
+                    profileRepo.upsert(fallback);
+                    currentProfile = fallback;
+                });
     }
 
     @Nullable
@@ -378,6 +411,10 @@ public class EventDetailsFragment extends Fragment {
     }
 
     private void checkIfUserInWaitingList() {
+        if (eventId == null || userId == null) {
+            Log.w(TAG, "checkIfUserInWaitingList  skipped: NULL id(s).");
+            return;
+        }
         waitingListRepository.isUserInWaitingList(eventId, userId,
                 new WaitingListRepository.OnCheckListener() {
                     @Override
@@ -449,7 +486,9 @@ public class EventDetailsFragment extends Fragment {
 
         String entryId = UUID.randomUUID().toString();
         WaitingListEntry entry = new WaitingListEntry(entryId, eventId, userId, new Date());
-        
+
+        entry.setProfile(currentProfile);
+
         Log.d(TAG, "handleJoinWaitingList: Creating entry with entryId=" + entryId + 
                 ", eventId=" + eventId + ", userId=" + userId);
 
@@ -465,7 +504,7 @@ public class EventDetailsFragment extends Fragment {
                 joinButton.setText("Exit Waiting List");
                 joinButton.setEnabled(true);
                 loadWaitingListCount();
-                
+
                 // Send notification to user
                 sendJoinedWaitingListNotification(eventId, userId);
             }
