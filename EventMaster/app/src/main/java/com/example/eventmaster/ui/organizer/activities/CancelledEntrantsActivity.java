@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.eventmaster.R;
 import com.example.eventmaster.model.Profile;
 import com.example.eventmaster.ui.organizer.adapters.CancelledEntrantsAdapter;
+import com.google.android.material.appbar.MaterialToolbar;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
@@ -30,7 +31,7 @@ public class CancelledEntrantsActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
     private CancelledEntrantsAdapter adapter;
     private TextView totalCountText;
-    private LinearLayout backButton;
+    private MaterialToolbar backButton;
 
     private final List<Profile> cancelledProfiles = new ArrayList<>();
     private final List<String> cancelledStatuses = new ArrayList<>();

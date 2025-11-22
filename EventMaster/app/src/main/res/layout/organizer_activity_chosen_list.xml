@@ -1,50 +1,123 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp"
-    android:background="#A5D6D3">
+    android:background="#5FB3AD">
 
-    <TextView
+    <!-- TOP BAR (Unified Theme) -->
+    <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/btnBack"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="← Back to Waiting List"
-        android:textColor="#000000"
-        android:textSize="15sp"
-        android:background="#E0F2F1"
-        android:padding="16dp"
-        android:gravity="start|center_vertical"
-        android:clickable="true"
-        android:focusable="true" />
+        android:background="#B8D9D8">
 
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:padding="16dp">
+
+            <ImageView
+                android:id="@+id/back_arrow"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:src="@android:drawable/ic_menu_revert"
+                android:contentDescription="Back"
+                app:tint="@android:color/black"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="Back to View Entrants"
+                android:textColor="@android:color/black"
+                android:textStyle="bold"
+                android:textSize="20sp"
+                android:layout_marginStart="16dp"
+                app:layout_constraintStart_toEndOf="@+id/back_arrow"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </com.google.android.material.appbar.MaterialToolbar>
+
+
+    <!-- SCREEN TITLE -->
     <TextView
         android:id="@+id/btnTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Chosen Entrants"
+        android:textSize="22sp"
         android:textStyle="bold"
-        android:textColor="#000000"
-        android:textSize="16sp"
-        android:background="#5DB1A1"
-        android:padding="16dp"
-        android:gravity="center"
-        android:layout_marginTop="12dp" />
+        android:textAlignment="center"
+        android:textColor="@android:color/white"
+        android:background="#158482"
+        android:padding="12dp"
+        android:layout_marginStart="24dp"
+        android:layout_marginEnd="24dp"
+        android:layout_marginTop="24dp"
+        android:layout_marginBottom="16dp" />
 
+
+    <!-- LIST -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerViewChosenList"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:layout_marginTop="12dp" />
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
+        android:clipToPadding="false"
+        android:scrollbars="vertical" />
 
-    <TextView
-        android:id="@+id/textTotalChosen"
-        android:layout_width="wrap_content"
+
+    <!-- FOOTER SECTION -->
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Total chosen entrants: 0"
-        android:layout_marginTop="8dp"
-        android:textStyle="bold"
-        android:textColor="#000" />
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:background="#5FB3AD">
+
+        <!-- COUNT -->
+        <TextView
+            android:id="@+id/textTotalChosen"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Total chosen entrants: 0"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:textColor="@android:color/black"
+            android:layout_marginBottom="14dp" />
+
+        <!-- ACTION ROW -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="1">
+
+            <TextView
+                android:id="@+id/send_notification_button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="📧 Send Notification"
+                android:textSize="14sp"
+                android:textStyle="italic"
+                android:textColor="@android:color/black"
+                android:background="?attr/selectableItemBackground"
+                android:padding="8dp"
+                android:gravity="start"
+                android:clickable="true"
+                android:focusable="true" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
 </LinearLayout>

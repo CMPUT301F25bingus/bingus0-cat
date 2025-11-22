@@ -2,6 +2,7 @@ package com.example.eventmaster.ui.organizer.activities;
 
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -12,6 +13,7 @@ import com.example.eventmaster.R;
 import com.example.eventmaster.data.firestore.WaitingListRepositoryFs;
 import com.example.eventmaster.model.WaitingListEntry;
 import com.example.eventmaster.ui.organizer.adapters.*;
+import com.google.android.material.appbar.MaterialToolbar;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,7 +48,7 @@ public class ChosenListActivity extends AppCompatActivity {
 
         recyclerView = findViewById(R.id.recyclerViewChosenList);
         totalChosenText = findViewById(R.id.textTotalChosen);
-        TextView btnBack = findViewById(R.id.btnBack);
+        MaterialToolbar btnBack = findViewById(R.id.btnBack);
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         adapter = new ChosenListAdapter(new ArrayList<>());

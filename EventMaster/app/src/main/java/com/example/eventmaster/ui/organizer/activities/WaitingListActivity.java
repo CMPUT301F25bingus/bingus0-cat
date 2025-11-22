@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -17,6 +18,7 @@ import com.example.eventmaster.data.firestore.WaitingListRepositoryFs;
 import com.example.eventmaster.data.firestore.LotteryServiceFs;
 import com.example.eventmaster.model.WaitingListEntry;
 import com.example.eventmaster.ui.organizer.adapters.*;
+import com.google.android.material.appbar.MaterialToolbar;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,7 +38,7 @@ public class WaitingListActivity extends AppCompatActivity {
     private WaitingListAdapter adapter;
     private TextView totalCountText;
     private TextView drawReplacementText;
-    private TextView btnBack;
+    private MaterialToolbar btnBack;
 
     private final WaitingListRepositoryFs waitingRepo = new WaitingListRepositoryFs();
     private final LotteryServiceFs lotteryService = new LotteryServiceFs();

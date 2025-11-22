@@ -104,15 +104,15 @@ public class OrganizerEntrantsHubFragment extends Fragment {
     public void onViewCreated(@NonNull View v, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(v, savedInstanceState);
 
-        MaterialToolbar topBar = v.findViewById(R.id.topBar);
-        if (topBar != null) {
-            // Tap on toolbar back → pop just this fragment
-            topBar.setNavigationOnClickListener(
+        View backButton = v.findViewById(R.id.back_button);
+
+        if (backButton != null) {
+            backButton.setOnClickListener(
                     click -> getParentFragmentManager().popBackStack()
             );
         }
 
-        // Also handle system back gestures while this fragment is visible
+        // Handle Android back gesture
         requireActivity().getOnBackPressedDispatcher().addCallback(
                 getViewLifecycleOwner(),
                 new androidx.activity.OnBackPressedCallback(true) {

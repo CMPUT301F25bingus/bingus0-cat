@@ -24,6 +24,7 @@ import com.example.eventmaster.data.api.NotificationService;
 import com.example.eventmaster.data.firestore.NotificationServiceFs;
 import com.example.eventmaster.model.Profile;
 import com.example.eventmaster.ui.organizer.adapters.*;
+import com.google.android.material.appbar.MaterialToolbar;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
@@ -63,7 +64,7 @@ public class SelectedEntrantsActivity extends AppCompatActivity {
     }
 
     // UI Components
-    private LinearLayout backButtonContainer;
+    private MaterialToolbar backButtonContainer;
     private RecyclerView recyclerView;
     private TextView totalSelectedCount;
     private TextView sendNotificationButton;
