@@ -583,7 +583,7 @@ public class EventDetailsFragment extends Fragment {
         FirebaseFirestore.getInstance()
                 .collection("events")
                 .document(eventId)
-                .collection("waitingList")   // <-- FIXED
+                .collection("waiting_list")   // <-- FIXED
                 .document(userId)
                 .set(data)
                 .addOnSuccessListener(unused -> {

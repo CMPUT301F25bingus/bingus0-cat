@@ -44,7 +44,7 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
     private MaterialButton btnNotifications;
     private MaterialButton btnEditEvent;
     private MaterialButton btnCancelEvent;
-    private MaterialButton btnViewMap; // <-- YOUR MAP BUTTON
+    private MaterialButton btnViewMap;
 
     private FrameLayout fragmentContainer;
 
@@ -66,10 +66,10 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
         bindViews();
         loadEventDetails();
 
-        // BACK BUTTON ACTION
-        backButton.setOnClickListener(v -> finish());
+        // BACK BUTTON
+        backButton.setOnClickListener(v -> onBackPressed());
 
-        // EXISTING ACTION BUTTONS
+        // BUTTON ACTIONS
         btnViewEntrants.setOnClickListener(v -> openEntrantsHub());
         btnRunLottery.setOnClickListener(v -> runLottery());
 
@@ -91,6 +91,12 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
             startActivity(mapIntent);
         });
 
+        // 🔥 FIX: Auto-hide fragment container when backstack is empty
+        getSupportFragmentManager().addOnBackStackChangedListener(() -> {
+            if (getSupportFragmentManager().getBackStackEntryCount() == 0) {
+                fragmentContainer.setVisibility(View.GONE);
+            }
+        });
     }
 
     private void bindViews() {
@@ -110,9 +116,7 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
         btnNotifications = findViewById(R.id.btnNotifications);
         btnEditEvent = findViewById(R.id.btnEditEvent);
         btnCancelEvent = findViewById(R.id.btnCancelEvent);
-
         btnViewMap = findViewById(R.id.btnViewMap);
-
 
         fragmentContainer = findViewById(R.id.fragment_container);
     }
@@ -127,27 +131,20 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
                     Boolean geo = doc.getBoolean("geolocationRequired");
                     btnViewMap.setVisibility(geo != null && geo ? View.VISIBLE : View.GONE);
 
-                    if (geo != null && geo) {
-                        btnViewMap.setVisibility(View.VISIBLE);
-                    } else {
-                        btnViewMap.setVisibility(View.GONE);
-                    }
-
-                    // --------------------------------------
-
                     if (!doc.exists()) {
                         Toast.makeText(this, "Event not found", Toast.LENGTH_SHORT).show();
                         return;
                     }
 
-                    // POSTER
+                    // Poster
                     String posterUrl = doc.getString("posterUrl");
                     if (posterUrl != null && !posterUrl.isEmpty()) {
                         Glide.with(this).load(posterUrl).into(eventPoster);
                     }
 
                     eventName.setText(doc.getString("title"));
-                    // Replace organizerId with organizerName (fallback to ID)
+
+                    // Organizer name
                     String organizerId = doc.getString("organizerId");
 
                     if (organizerId != null) {
@@ -174,7 +171,7 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
                         eventOrganizer.setText("Hosted by: Unknown");
                     }
 
-
+                    // Price
                     Double price = doc.getDouble("price");
                     if (price != null) {
                         if (price % 1 == 0)
@@ -223,7 +220,7 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
         ft.commit();
     }
 
-    // NEW METHOD: Navigate to map page
+    // Map navigation
     private void openMapScreen() {
         Intent i = new Intent(this, OrganizerEntrantMapActivity.class);
         i.putExtra("eventId", eventId);
@@ -268,5 +265,16 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
                 .addOnFailureListener(e ->
                         Toast.makeText(this, "Failed loading event.", Toast.LENGTH_SHORT).show()
                 );
+    }
+
+    // 🔥 FULL FIX: Hide the overlay when back is pressed
+    @Override
+    public void onBackPressed() {
+        if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
+            getSupportFragmentManager().popBackStack();
+            fragmentContainer.setVisibility(View.GONE);
+        } else {
+            super.onBackPressed();
+        }
     }
 }
