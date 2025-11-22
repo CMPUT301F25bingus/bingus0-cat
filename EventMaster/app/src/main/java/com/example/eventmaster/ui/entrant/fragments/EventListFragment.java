@@ -200,8 +200,8 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
                 startActivity(intent);
                 return true;
             } else if (itemId == R.id.nav_alerts) {
-                Intent intent = new Intent(requireContext(), EntrantNotificationsActivity.class);
-                startActivity(intent);
+               Intent intent = new Intent(requireContext(), EntrantNotificationsActivity.class);
+               startActivity(intent);
                 return true;
             } else if (itemId == R.id.nav_profile) {
                 Intent intent = new Intent(requireContext(), ProfileActivity.class);

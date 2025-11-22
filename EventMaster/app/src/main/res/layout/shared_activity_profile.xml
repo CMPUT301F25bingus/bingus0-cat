@@ -115,6 +115,16 @@
                 app:cornerRadius="12dp"
                 app:backgroundTint="@color/btn_danger" />
 
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnLogout"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="8dp"
+                android:text="Log Out"
+                android:textColor="@android:color/white"
+                app:cornerRadius="12dp"
+                app:backgroundTint="@color/profile_button" />
+
             <!-- History header -->
             <TextView
                 android:id="@+id/tvHistoryHeader"

@@ -55,7 +55,7 @@ public class ProfileActivity extends AppCompatActivity {
 
     // === UI elements ===
     private TextView tvName, tvEmail, tvPhone, tvBanned;
-    private Button btnEdit, btnDelete;
+    private Button btnEdit, btnDelete, btnLogout;
     private RecyclerView rvHistory;
     private HistoryAdapter historyAdapter;
     private com.google.android.material.bottomnavigation.BottomNavigationView bottomNavigationView;
@@ -90,6 +90,7 @@ public class ProfileActivity extends AppCompatActivity {
         tvBanned = findViewById(R.id.tvBanned);
         btnEdit  = findViewById(R.id.btnEdit);
         btnDelete= findViewById(R.id.btnDelete);
+        btnLogout = findViewById(R.id.btnLogout);
         rvHistory = findViewById(R.id.rvHistory);
         bottomNavigationView = findViewById(R.id.bottom_navigation);
 
@@ -100,6 +101,9 @@ public class ProfileActivity extends AppCompatActivity {
 
         // 🔹 Delete button → confirm, then delete profile
         btnDelete.setOnClickListener(v -> confirmDelete());
+
+        // 🔹 Logout button → sign out and go to role selection
+        btnLogout.setOnClickListener(v -> handleLogout());
 
         // 🔹 Setup RecyclerView for history
         if (rvHistory != null) {
@@ -178,6 +182,27 @@ public class ProfileActivity extends AppCompatActivity {
                 .setNegativeButton("Cancel", null)
                 .setPositiveButton("Delete", (d, which) ->
                         profileRepo.delete(currentId, v -> finish(), err -> {}))
+                .show();
+    }
+
+    /**
+     * Handles logout: signs out from Firebase Auth and navigates to role selection screen.
+     */
+    private void handleLogout() {
+        new AlertDialog.Builder(this)
+                .setTitle("Log Out?")
+                .setMessage("Are you sure you want to log out?")
+                .setNegativeButton("Cancel", null)
+                .setPositiveButton("Log Out", (d, which) -> {
+                    // Sign out from Firebase Auth
+                    FirebaseAuth.getInstance().signOut();
+                    
+                    // Navigate to role selection screen (MainActivity)
+                    Intent intent = new Intent(this, com.example.eventmaster.MainActivity.class);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    startActivity(intent);
+                    finish();
+                })
                 .show();
     }
 
