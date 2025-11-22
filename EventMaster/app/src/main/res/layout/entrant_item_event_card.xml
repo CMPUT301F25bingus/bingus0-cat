@@ -3,108 +3,189 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="12dp"
+    android:layout_marginBottom="10dp"
+    android:layout_marginStart="16dp"
+    android:layout_marginEnd="16dp"
     app:cardCornerRadius="16dp"
-    app:cardUseCompatPadding="true"
+    app:cardUseCompatPadding="false"
     app:cardElevation="4dp"
-    app:cardBackgroundColor="@android:color/white"
-    android:padding="12dp">
+    app:cardBackgroundColor="@android:color/white">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical">
+        android:orientation="vertical">
 
-        <!-- Poster -->
-        <ImageView
-            android:id="@+id/imgEventPoster"
-            android:layout_width="90dp"
-            android:layout_height="90dp"
-            android:layout_marginEnd="12dp"
-            android:scaleType="centerCrop"
-            android:contentDescription="Event poster" />
+        <!-- Image with badge overlay -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="140dp"
+            android:background="@drawable/rounded_top_corners">
 
-        <!-- Info column -->
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical">
-
-            <!-- Title -->
-            <TextView
-                android:id="@+id/txtEventTitle"
+            <ImageView
+                android:id="@+id/imgEventPoster"
                 android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:contentDescription="Event poster"
+                android:background="@drawable/rounded_top_corners" />
+
+            <!-- Status Badge Overlay -->
+            <TextView
+                android:id="@+id/badge_status"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:layout_marginTop="10dp"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
+                android:background="@drawable/badge_waitlist"
+                android:text="On Waitlist"
+                android:textColor="@android:color/white"
+                android:textSize="10sp"
                 android:textStyle="bold"
-                android:textColor="#000000"
-                android:textSize="16sp"
-                android:maxLines="2"
-                android:ellipsize="end" />
+                android:visibility="gone" />
+        </FrameLayout>
 
-            <!-- Location / dates -->
-            <TextView
-                android:id="@+id/txtEventLocation"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textColor="#555555"
-                android:textSize="13sp"
-                android:layout_marginTop="2dp"
-                android:maxLines="1"
-                android:ellipsize="end" />
+        <!-- Content Section -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp">
 
-            <TextView
-                android:id="@+id/txtEventDates"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textColor="#666666"
-                android:textSize="12sp"
-                android:layout_marginTop="2dp" />
-
-            <!-- Info row that your adapter expects -->
+            <!-- Title and Category Row -->
             <LinearLayout
-                android:id="@+id/info_row"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:layout_marginTop="6dp">
+                android:gravity="center_vertical">
 
                 <TextView
-                    android:id="@+id/register_by_text"
+                    android:id="@+id/txtEventTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textStyle="bold"
+                    android:textColor="#000000"
+                    android:textSize="18sp"
+                    android:maxLines="2"
+                    android:ellipsize="end" />
+
+                <TextView
+                    android:id="@+id/category_chip"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="12sp"
+                    android:layout_marginStart="6dp"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp"
+                    android:paddingTop="3dp"
+                    android:paddingBottom="3dp"
+                    android:background="@drawable/bg_category_chip"
+                    android:text="Music"
                     android:textColor="#666666"
-                    android:layout_marginEnd="12dp" />
-
-                <TextView
-                    android:id="@+id/capacity_text"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textSize="12sp"
-                    android:textColor="#666666"
-                    android:layout_marginEnd="12dp" />
-
-                <TextView
-                    android:id="@+id/joined_text"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textSize="12sp"
-                    android:textColor="#666666" />
+                    android:textSize="10sp"
+                    android:visibility="gone" />
             </LinearLayout>
 
-            <!-- Join/Leave button with the legacy ID -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/join_button"
-                android:layout_width="wrap_content"
-                android:layout_height="36dp"
-                android:layout_marginTop="8dp"
-                android:textAllCaps="false"
-                android:textColor="@android:color/white"
-                android:text="Join Waiting List"
-                app:cornerRadius="18dp"
-                app:backgroundTint="#3D8B87" />
+            <!-- Description -->
+            <TextView
+                android:id="@+id/txtDescription"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:textColor="#666666"
+                android:textSize="12sp"
+                android:maxLines="2"
+                android:ellipsize="end"
+                android:visibility="gone" />
+
+            <!-- Metadata Section -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="8dp">
+
+                <!-- Location -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="4dp">
+
+                    <ImageView
+                        android:id="@+id/icon_location"
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:src="@drawable/ic_location"
+                        app:tint="#666666"
+                        android:contentDescription="Location" />
+
+                    <TextView
+                        android:id="@+id/txtEventLocation"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:textColor="#666666"
+                        android:textSize="11sp"
+                        android:maxLines="1"
+                        android:ellipsize="end" />
+                </LinearLayout>
+
+                <!-- Dates -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="4dp">
+
+                    <ImageView
+                        android:id="@+id/icon_calendar"
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:src="@drawable/ic_calendar"
+                        app:tint="#666666"
+                        android:contentDescription="Date" />
+
+                    <TextView
+                        android:id="@+id/txtEventDates"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:textColor="#666666"
+                        android:textSize="11sp" />
+                </LinearLayout>
+
+                <!-- Waiting List Count -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <ImageView
+                        android:id="@+id/icon_people"
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:src="@drawable/ic_people"
+                        app:tint="#666666"
+                        android:contentDescription="Waiting list" />
+
+                    <TextView
+                        android:id="@+id/txtWaitingListCount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:textColor="#666666"
+                        android:textSize="11sp"
+                        android:text="0 on waiting list" />
+                </LinearLayout>
+            </LinearLayout>
         </LinearLayout>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>
