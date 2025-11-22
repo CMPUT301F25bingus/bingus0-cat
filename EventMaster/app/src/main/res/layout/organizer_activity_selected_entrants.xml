@@ -50,7 +50,7 @@
         android:id="@+id/selectedEntrantsTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Selected entrants"
+        android:text="Enrolled entrants"
         android:textSize="22sp"
         android:textStyle="bold"
         android:textAlignment="center"
@@ -82,32 +82,6 @@
         android:orientation="vertical"
         android:padding="16dp"
         android:background="#5FB3AD">
-
-        <!-- LINK 1 -->
-        <TextView
-            android:id="@+id/view_enrolled_link"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Click here to view a list of all enrolled entrants"
-            android:textSize="13sp"
-            android:textColor="#0D47A1"
-            android:textStyle="italic"
-            android:layout_marginBottom="6dp"
-            android:clickable="true"
-            android:focusable="true" />
-
-        <!-- LINK 2 -->
-        <TextView
-            android:id="@+id/cancel_entrants_link"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Cancel the entrants who haven't yet signed up"
-            android:textSize="13sp"
-            android:textColor="#B71C1C"
-            android:textStyle="italic"
-            android:layout_marginBottom="16dp"
-            android:clickable="true"
-            android:focusable="true" />
 
         <!-- COUNT -->
         <TextView

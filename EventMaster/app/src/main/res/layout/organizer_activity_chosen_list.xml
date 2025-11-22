@@ -94,6 +94,20 @@
             android:textStyle="bold"
             android:textColor="@android:color/black"
             android:layout_marginBottom="14dp" />
+        <!-- LINK 2 -->
+        <TextView
+            android:id="@+id/cancel_entrants_link"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Cancel the entrants who haven't yet signed up"
+            android:textSize="13sp"
+            android:textColor="#B71C1C"
+            android:textStyle="italic"
+            android:layout_marginBottom="16dp"
+            android:clickable="true"
+            android:focusable="true" />
+
+
 
         <!-- ACTION ROW -->
         <LinearLayout

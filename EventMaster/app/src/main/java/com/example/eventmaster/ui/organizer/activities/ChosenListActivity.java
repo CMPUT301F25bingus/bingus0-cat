@@ -2,35 +2,38 @@ package com.example.eventmaster.ui.organizer.activities;
 
 import android.os.Bundle;
 import android.util.Log;
-import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.eventmaster.R;
+import com.example.eventmaster.data.firestore.RegistrationServiceFs;
 import com.example.eventmaster.data.firestore.WaitingListRepositoryFs;
 import com.example.eventmaster.model.WaitingListEntry;
-import com.example.eventmaster.ui.organizer.adapters.*;
+import com.example.eventmaster.ui.organizer.adapters.ChosenListAdapter;
 import com.google.android.material.appbar.MaterialToolbar;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Activity displaying the list of entrants chosen by the lottery.
- * 
- * Shows entrants who have been selected but haven't yet responded (accepted/declined).
- * Once they respond, they move to either Selected (accepted) or Cancelled (declined) lists.
- */
 public class ChosenListActivity extends AppCompatActivity {
 
     private static final String TAG = "ChosenListActivity";
+
     private RecyclerView recyclerView;
     private ChosenListAdapter adapter;
     private TextView totalChosenText;
+
+    private List<WaitingListEntry> chosenList = new ArrayList<>();
+
     private final WaitingListRepositoryFs repo = new WaitingListRepositoryFs();
+    private final RegistrationServiceFs registrationService = new RegistrationServiceFs();
+
     private String eventId;
 
     @Override
@@ -54,6 +57,10 @@ public class ChosenListActivity extends AppCompatActivity {
         adapter = new ChosenListAdapter(new ArrayList<>());
         recyclerView.setAdapter(adapter);
 
+        // Cancel entrants link
+        TextView cancelEntrantsLink = findViewById(R.id.cancel_entrants_link);
+        cancelEntrantsLink.setOnClickListener(v -> cancelAllPendingInvitations());
+
         // Back button click listener
         btnBack.setOnClickListener(v -> finish());
 
@@ -64,6 +71,9 @@ public class ChosenListActivity extends AppCompatActivity {
         repo.getChosenList(eventId, new WaitingListRepositoryFs.OnListLoadedListener() {
             @Override
             public void onSuccess(List<WaitingListEntry> entries) {
+
+                chosenList = entries;  //Save list for cancellation
+
                 adapter.updateList(entries);
                 totalChosenText.setText("Total chosen entrants: " + entries.size());
             }
@@ -71,9 +81,90 @@ public class ChosenListActivity extends AppCompatActivity {
             @Override
             public void onFailure(Exception e) {
                 totalChosenText.setText("Failed to load chosen entrants");
-                Log.e("ChosenList", "Error loading chosen list", e);
+                Log.e(TAG, "Error loading chosen list", e);
             }
         });
     }
-}
 
+    private void cancelAllPendingInvitations() {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        db.collection("events")
+                .document(eventId)
+                .collection("invitations")
+                .whereEqualTo("status", "PENDING")
+                .get()
+                .addOnSuccessListener(invSnap -> {
+
+                    if (invSnap.isEmpty()) {
+                        Toast.makeText(this, "No pending invitations to cancel", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    for (DocumentSnapshot doc : invSnap.getDocuments()) {
+
+                        // Get entrantId from document field, not doc ID
+                        String entrantId = doc.getString("entrantId");
+
+                        if (entrantId == null || entrantId.isEmpty()) {
+                            Log.e(TAG, "Invitation missing entrantId: " + doc.getId());
+                            continue;
+                        }
+
+                        // 1) Cancel the registration using your service
+                        registrationService.cancel(
+                                eventId,
+                                entrantId,
+                                true,   // cancelled BY ORGANIZER
+                                (v) -> Log.d(TAG, "Cancelled registration for: " + entrantId),
+                                (err) -> Log.e(TAG, "Failed to cancel " + entrantId, err)
+                        );
+
+                        // 2) Update the invitation status
+                        db.collection("events")
+                                .document(eventId)
+                                .collection("invitations")
+                                .document(doc.getId())
+                                .update("status", "CANCELLED_BY_ORGANIZER");
+                    }
+
+                    Toast.makeText(this, "Cancelled all pending invitations", Toast.LENGTH_SHORT).show();
+                    deleteChosenListCollection(eventId);
+//                    loadChosenList(eventId);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error loading invitations", e);
+                    Toast.makeText(this, "Error cancelling entrants", Toast.LENGTH_SHORT).show();
+                });
+    }
+
+    private void deleteChosenListCollection(String eventId) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        db.collection("events")
+                .document(eventId)
+                .collection("chosen_list")
+                .get()
+                .addOnSuccessListener(snap -> {
+                    if (snap.isEmpty()) {
+                        Log.d("ChosenList", "No chosen_list docs to delete.");
+                        return;
+                    }
+
+                    for (DocumentSnapshot doc : snap.getDocuments()) {
+                        doc.getReference().delete()
+                                .addOnSuccessListener(v -> Log.d("ChosenList", "Deleted " + doc.getId()))
+                                .addOnFailureListener(e -> Log.e("ChosenList", "Error deleting doc", e));
+                    }
+
+                    Log.d("ChosenList", "chosen_list collection cleared.");
+                    loadChosenList(eventId);
+
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("ChosenList", "Failed to load chosen_list", e);
+                });
+    }
+
+
+}

@@ -69,8 +69,6 @@ public class SelectedEntrantsActivity extends AppCompatActivity {
     private TextView totalSelectedCount;
     private TextView sendNotificationButton;
     private TextView exportCsvButton;
-    private TextView viewEnrolledLink;
-    private TextView cancelEntrantsLink;
 
     // Data
     private String eventId;
@@ -90,6 +88,9 @@ public class SelectedEntrantsActivity extends AppCompatActivity {
 
         // Initialize UI components
         initializeViews();
+
+        backButtonContainer.setNavigationOnClickListener(v -> finish());
+
 
         // Load data (from Intent or mock data for now)
         loadData();
@@ -113,8 +114,6 @@ public class SelectedEntrantsActivity extends AppCompatActivity {
         totalSelectedCount = findViewById(R.id.total_selected_count);
         sendNotificationButton = findViewById(R.id.send_notification_button);
         exportCsvButton = findViewById(R.id.export_csv_button);
-        viewEnrolledLink = findViewById(R.id.view_enrolled_link);
-        cancelEntrantsLink = findViewById(R.id.cancel_entrants_link);
     }
 
     /**
@@ -239,20 +238,11 @@ public class SelectedEntrantsActivity extends AppCompatActivity {
      * Sets up click listeners for all interactive components.
      */
     private void setupClickListeners() {
-        // Back button
-        backButtonContainer.setOnClickListener(v -> handleBackButtonClick());
-
         // Send Notification button (Main action for US 02.05.01)
         sendNotificationButton.setOnClickListener(v -> handleSendNotificationClick());
 
         // Export CSV button
         exportCsvButton.setOnClickListener(v -> handleExportCsvClick());
-
-        // View enrolled link
-        viewEnrolledLink.setOnClickListener(v -> handleViewEnrolledClick());
-
-        // Cancel entrants link
-        cancelEntrantsLink.setOnClickListener(v -> handleCancelEntrantsClick());
     }
 
     /**
@@ -418,25 +408,6 @@ public class SelectedEntrantsActivity extends AppCompatActivity {
 
     }
 
-    /**
-     * Handles View Enrolled link click.
-     * Shows list of entrants who have confirmed attendance.
-     */
-    private void handleViewEnrolledClick() {
-        Log.d(TAG, "View enrolled link clicked");
-        Toast.makeText(this, "View enrolled entrants - Coming soon!", Toast.LENGTH_SHORT).show();
-        // TODO: Navigate to enrolled entrants screen
-    }
-
-    /**
-     * Handles Cancel Entrants link click.
-     * Allows cancelling entrants who haven't signed up.
-     */
-    private void handleCancelEntrantsClick() {
-        Log.d(TAG, "Cancel entrants link clicked");
-        Toast.makeText(this, "Cancel entrants functionality - Coming soon!", Toast.LENGTH_SHORT).show();
-        // TODO: Implement cancel entrants functionality
-    }
 
 
     private String safe(String s) {
