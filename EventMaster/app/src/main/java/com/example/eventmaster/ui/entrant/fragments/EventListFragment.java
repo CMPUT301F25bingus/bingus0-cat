@@ -4,15 +4,23 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.EditText;
+import android.widget.LinearLayout;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -32,6 +40,8 @@ import com.example.eventmaster.ui.shared.activities.QRScannerActivity;
 import com.example.eventmaster.utils.DeviceUtils;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.checkbox.MaterialCheckBox;
+import com.google.android.material.textfield.TextInputEditText;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -56,6 +66,15 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
     private BottomNavigationView bottomNavigationView;
 
     private List<Event> allEvents = new ArrayList<>();
+    
+    // Filter state variables
+    private List<Event> filteredEvents = new ArrayList<>();
+    private String sortOrder = "newest"; // "newest" or "oldest"
+    private Double maxPrice = null; // null means no price limit
+    private String locationFilter = null;
+    private boolean onlyAvailableSpots = false;
+    
+    private static final String TAG = "EventListFragment";
 
     public EventListFragment() {
         // Required empty public constructor
@@ -128,7 +147,25 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                adapter.filter(s.toString(), allEvents);
+                // Search works on filtered events (applies after filters)
+                String query = s.toString().trim().toLowerCase();
+                
+                // Check if any filters are active
+                boolean filtersActive = maxPrice != null || 
+                                       (locationFilter != null && !locationFilter.isEmpty()) || 
+                                       onlyAvailableSpots || 
+                                       !sortOrder.equals("newest");
+                
+                // Use filtered events if filters are active, otherwise use all events
+                List<Event> eventsToSearch = filtersActive ? filteredEvents : allEvents;
+                
+                if (query.isEmpty()) {
+                    // No search query, show filtered results (or all if no filters)
+                    adapter.setEvents(eventsToSearch);
+                } else {
+                    // Apply search on filtered results
+                    adapter.filter(query, eventsToSearch);
+                }
                 updateEmptyState();
             }
 
@@ -173,7 +210,7 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
             @Override
             public void onSuccess(List<Event> events) {
                 allEvents = events;
-                adapter.setEvents(events);
+                applyFilters(); // Apply any active filters
                 updateEmptyState();
             }
 
@@ -201,15 +238,220 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
     }
 
     /**
-     * Shows filter dialog (placeholder for future implementation).
+     * Shows filter dialog with options for sorting and filtering events.
+     * Implements US 01.01.04 - Filter events by interest or availability.
      */
     private void showFilterDialog() {
-        Toast.makeText(requireContext(), "Filter options coming soon!", Toast.LENGTH_SHORT).show();
-        // TODO: Implement filter dialog with options like:
-        // - Sort by date
-        // - Filter by price range
-        // - Filter by location
-        // - Show only events with available spots
+        View dialogView = LayoutInflater.from(requireContext())
+                .inflate(R.layout.dialog_filter_events, null);
+        
+        // Get UI elements from dialog
+        RadioGroup radioGroupSort = dialogView.findViewById(R.id.radioGroupSort);
+        RadioButton radioSortNewest = dialogView.findViewById(R.id.radioSortNewest);
+        RadioButton radioSortOldest = dialogView.findViewById(R.id.radioSortOldest);
+        SeekBar seekBarPrice = dialogView.findViewById(R.id.seekBarPrice);
+        TextView textPriceValue = dialogView.findViewById(R.id.textPriceValue);
+        TextInputEditText editLocation = dialogView.findViewById(R.id.editLocation);
+        AutoCompleteTextView autoCompleteEventType = dialogView.findViewById(R.id.autoCompleteEventType);
+        LinearLayout layoutEventTypes = dialogView.findViewById(R.id.layoutEventTypes);
+        MaterialCheckBox checkAvailableSpots = dialogView.findViewById(R.id.checkAvailableSpots);
+        MaterialButton btnClearFilters = dialogView.findViewById(R.id.btnClearFilters);
+        MaterialButton btnApplyFilters = dialogView.findViewById(R.id.btnApplyFilters);
+        
+        // Price ranges: 0=$0, 1=$50, 2=$100, 3=$150, 4=$200+
+        final double[] priceRanges = {0, 50, 100, 150, 200};
+        
+        // Set up Event Type dropdown
+        String[] eventTypes = {"All types", "Recreational", "Athletic", "Educational", "Social", "Cultural"};
+        ArrayAdapter<String> eventTypeAdapter = new ArrayAdapter<>(
+            requireContext(),
+            android.R.layout.simple_dropdown_item_1line,
+            eventTypes
+        );
+        autoCompleteEventType.setAdapter(eventTypeAdapter);
+        autoCompleteEventType.setFocusable(true);
+        autoCompleteEventType.setFocusableInTouchMode(true);
+        
+        // Set current filter values
+        if (sortOrder.equals("newest")) {
+            radioSortNewest.setChecked(true);
+        } else {
+            radioSortOldest.setChecked(true);
+        }
+        
+        // Set price seekbar
+        if (maxPrice != null) {
+            int priceIndex = 4; // Default to $200+
+            for (int i = 0; i < priceRanges.length; i++) {
+                if (maxPrice <= priceRanges[i]) {
+                    priceIndex = i;
+                    break;
+                }
+            }
+            seekBarPrice.setProgress(priceIndex);
+        } else {
+            seekBarPrice.setProgress(4); // $200+ (no limit)
+        }
+        updatePriceText(textPriceValue, seekBarPrice.getProgress(), priceRanges);
+        
+        if (locationFilter != null) {
+            editLocation.setText(locationFilter);
+        }
+        
+        checkAvailableSpots.setChecked(onlyAvailableSpots);
+        
+        // SeekBar listener to update price text
+        seekBarPrice.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                updatePriceText(textPriceValue, progress, priceRanges);
+            }
+            
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {}
+            
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {}
+        });
+        
+        // Event type dropdown handler
+        autoCompleteEventType.setOnItemClickListener((parent, view, position, id) -> {
+            String selected = eventTypes[position];
+            autoCompleteEventType.setText(selected, false);
+            if (position == 0) {
+                layoutEventTypes.setVisibility(View.GONE);
+            } else {
+                layoutEventTypes.setVisibility(View.VISIBLE);
+            }
+        });
+        
+        autoCompleteEventType.setOnClickListener(v -> autoCompleteEventType.showDropDown());
+        
+        // Create dialog
+        AlertDialog dialog = new AlertDialog.Builder(requireContext())
+                .setView(dialogView)
+                .create();
+        
+        // Apply filters button
+        btnApplyFilters.setOnClickListener(v -> {
+            // Get sort order
+            int selectedRadioId = radioGroupSort.getCheckedRadioButtonId();
+            if (selectedRadioId == R.id.radioSortNewest) {
+                sortOrder = "newest";
+            } else {
+                sortOrder = "oldest";
+            }
+            
+            // Get price filter
+            int priceProgress = seekBarPrice.getProgress();
+            if (priceProgress < 4) {
+                maxPrice = priceRanges[priceProgress];
+            } else {
+                maxPrice = null; // No limit
+            }
+            
+            // Get location filter
+            String locationText = editLocation.getText() != null 
+                ? editLocation.getText().toString().trim() 
+                : "";
+            locationFilter = locationText.isEmpty() ? null : locationText;
+            
+            // Get availability filter
+            onlyAvailableSpots = checkAvailableSpots.isChecked();
+            
+            // Apply filters
+            applyFilters();
+            
+            // Clear search when filters are applied
+            searchEditText.setText("");
+            
+            dialog.dismiss();
+        });
+        
+        // Clear filters button
+        btnClearFilters.setOnClickListener(v -> {
+            sortOrder = "newest";
+            maxPrice = null;
+            locationFilter = null;
+            onlyAvailableSpots = false;
+            
+            // Reset dialog UI
+            radioSortNewest.setChecked(true);
+            seekBarPrice.setProgress(4);
+            updatePriceText(textPriceValue, 4, priceRanges);
+            editLocation.setText("");
+            checkAvailableSpots.setChecked(false);
+            autoCompleteEventType.setText("All types", false);
+            layoutEventTypes.setVisibility(View.GONE);
+            
+            // Apply cleared filters
+            applyFilters();
+            
+            // Clear search
+            searchEditText.setText("");
+            
+            dialog.dismiss();
+        });
+        
+        dialog.show();
+    }
+    
+    /**
+     * Updates the price text display based on seekbar progress.
+     */
+    private void updatePriceText(TextView textView, int progress, double[] priceRanges) {
+        if (progress >= priceRanges.length) {
+            textView.setText("Max Price: $200+ (No limit)");
+        } else if (progress == 0) {
+            textView.setText("Max Price: Free events only ($0)");
+        } else {
+            textView.setText(String.format("Max Price: $%.0f", priceRanges[progress]));
+        }
+    }
+    
+    /**
+     * Applies active filters to the event list.
+     */
+    private void applyFilters() {
+        filteredEvents = new ArrayList<>(allEvents);
+        
+        // Filter by price
+        if (maxPrice != null) {
+            filteredEvents.removeIf(event -> event.getPrice() > maxPrice);
+        }
+        
+        // Filter by location
+        if (locationFilter != null && !locationFilter.isEmpty()) {
+            String locationLower = locationFilter.toLowerCase();
+            filteredEvents.removeIf(event -> 
+                event.getLocation() == null || 
+                !event.getLocation().toLowerCase().contains(locationLower)
+            );
+        }
+        
+        // Filter by available spots
+        if (onlyAvailableSpots) {
+            filteredEvents.removeIf(event -> event.getCapacity() <= 0);
+        }
+        
+        // Sort by date
+        filteredEvents.sort((e1, e2) -> {
+            Date date1 = e1.getRegistrationStartDate();
+            Date date2 = e2.getRegistrationStartDate();
+            
+            if (date1 == null && date2 == null) return 0;
+            if (date1 == null) return 1;
+            if (date2 == null) return -1;
+            
+            int comparison = date1.compareTo(date2);
+            return sortOrder.equals("newest") ? -comparison : comparison;
+        });
+        
+        // Update adapter with filtered results
+        adapter.setEvents(filteredEvents);
+        updateEmptyState();
+        
+        Log.d(TAG, "Applied filters - showing " + filteredEvents.size() + " of " + allEvents.size() + " events");
     }
 
     @Override

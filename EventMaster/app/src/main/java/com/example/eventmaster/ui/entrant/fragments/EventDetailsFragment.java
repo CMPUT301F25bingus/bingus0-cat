@@ -86,12 +86,21 @@ public class EventDetailsFragment extends Fragment {
     private TextView descriptionText;
     private TextView waitingListCountText;
     private MaterialButton joinButton;
+    
+    // Lottery criteria
+    private View lotteryCriteriaCard;
+    private TextView lotteryCriteriaText;
 
     // Invitation include
     private View inviteInclude;
     private TextView inviteStatusText;
     private MaterialButton btnAccept;
     private MaterialButton btnDecline;
+    
+    // Replacement lottery
+    private View replacementLotterySection;
+    private TextView replacementLotteryText;
+    private MaterialButton btnJoinReplacementLottery;
 
     private boolean testMode = false;
     private boolean testForceInvited = false;
@@ -185,14 +194,22 @@ public class EventDetailsFragment extends Fragment {
         descriptionText = view.findViewById(R.id.event_description_text);
         waitingListCountText = view.findViewById(R.id.waiting_list_count_text);
         joinButton = view.findViewById(R.id.join_waiting_list_button);
+        
+        lotteryCriteriaCard = view.findViewById(R.id.lottery_criteria_card);
+        lotteryCriteriaText = view.findViewById(R.id.lottery_criteria_text);
 
         inviteInclude = view.findViewById(R.id.invitation_include);
         inviteStatusText = view.findViewById(R.id.invite_status_text);
         btnAccept = view.findViewById(R.id.btnAccept);
         btnDecline = view.findViewById(R.id.btnDecline);
+        
+        replacementLotterySection = view.findViewById(R.id.replacement_lottery_section);
+        replacementLotteryText = view.findViewById(R.id.replacement_lottery_text);
+        btnJoinReplacementLottery = view.findViewById(R.id.btnJoinReplacementLottery);
 
         inviteInclude.setVisibility(View.GONE);
         joinButton.setVisibility(View.GONE);
+        replacementLotterySection.setVisibility(View.GONE);
 
         backButton.setOnClickListener(v -> requireActivity().onBackPressed());
         favoriteIcon.setOnClickListener(v -> handleFavoriteClick());
@@ -342,6 +359,165 @@ public class EventDetailsFragment extends Fragment {
         inviteInclude.setVisibility(View.GONE);
         joinButton.setVisibility(View.VISIBLE);
         checkIfUserInWaitingList();
+        // Check if user is eligible for replacement lottery
+        checkReplacementLotteryEligibility();
+    }
+    
+    /**
+     * Checks if user is eligible for replacement lottery (when someone else declines).
+     * Implements US 01.05.01 - Get another chance if selected user declines.
+     */
+    private void checkReplacementLotteryEligibility() {
+        // Only show if no active invitation exists
+        if (inviteInclude.getVisibility() == View.VISIBLE) {
+            replacementLotterySection.setVisibility(View.GONE);
+            return;
+        }
+        
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        
+        // Check if user has a replacement lottery notification for this event
+        db.collection("notifications")
+                .whereEqualTo("recipientId", userId)
+                .whereEqualTo("eventId", eventId)
+                .whereEqualTo("type", "REPLACEMENT_LOTTERY_AVAILABLE")
+                .whereEqualTo("isRead", false)
+                .limit(1)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    if (!querySnapshot.isEmpty()) {
+                        // User has replacement lottery notification, show option
+                        showReplacementLotteryOption();
+                    } else {
+                        // Check if user was not selected initially
+                        checkIfCanRejoinForReplacement();
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error checking replacement lottery eligibility", e);
+                    checkIfCanRejoinForReplacement();
+                });
+    }
+    
+    /**
+     * Checks if user was not selected initially and can rejoin waiting list for replacement lottery.
+     */
+    private void checkIfCanRejoinForReplacement() {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        
+        // Check if user was previously not selected (has LOTTERY_NOT_SELECTED notification)
+        db.collection("notifications")
+                .whereEqualTo("recipientId", userId)
+                .whereEqualTo("eventId", eventId)
+                .whereEqualTo("type", "LOTTERY_NOT_SELECTED")
+                .limit(1)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    if (!querySnapshot.isEmpty()) {
+                        // User was not selected, check if they can rejoin waiting list
+                        showReplacementLotteryOption();
+                    } else {
+                        replacementLotterySection.setVisibility(View.GONE);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error checking if can rejoin for replacement", e);
+                    replacementLotterySection.setVisibility(View.GONE);
+                });
+    }
+    
+    /**
+     * Shows the replacement lottery option UI.
+     */
+    private void showReplacementLotteryOption() {
+        // Check if user is already in waiting list
+        waitingListRepository.isUserInWaitingList(eventId, userId,
+                new WaitingListRepository.OnCheckListener() {
+                    @Override
+                    public void onSuccess(boolean exists) {
+                        if (exists) {
+                            replacementLotterySection.setVisibility(View.GONE);
+                        } else {
+                            replacementLotterySection.setVisibility(View.VISIBLE);
+                            replacementLotteryText.setText(
+                                "A spot has opened up! Join the waiting list for another chance to be selected. 🎲"
+                            );
+                            
+                            btnJoinReplacementLottery.setOnClickListener(v -> {
+                                btnJoinReplacementLottery.setEnabled(false);
+                                btnJoinReplacementLottery.setText("Joining...");
+                                handleJoinWaitingListForReplacement();
+                            });
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Exception e) {
+                        replacementLotterySection.setVisibility(View.VISIBLE);
+                        replacementLotteryText.setText(
+                            "A spot has opened up! Join the waiting list for another chance to be selected. 🎲"
+                        );
+                        
+                        btnJoinReplacementLottery.setOnClickListener(v -> {
+                            btnJoinReplacementLottery.setEnabled(false);
+                            btnJoinReplacementLottery.setText("Joining...");
+                            handleJoinWaitingListForReplacement();
+                        });
+                    }
+                });
+    }
+    
+    /**
+     * Handle joining the waiting list from replacement lottery section.
+     */
+    private void handleJoinWaitingListForReplacement() {
+        if (eventId == null || eventId.isEmpty() || userId == null || userId.isEmpty() || currentEvent == null) {
+            Toast.makeText(requireContext(), "Error: Missing information", Toast.LENGTH_LONG).show();
+            btnJoinReplacementLottery.setEnabled(true);
+            btnJoinReplacementLottery.setText("Join Replacement Lottery");
+            return;
+        }
+
+        if (currentEvent.getRegistrationStartDate() == null || currentEvent.getRegistrationEndDate() == null) {
+            Toast.makeText(requireContext(), "Registration dates not available yet", Toast.LENGTH_SHORT).show();
+            btnJoinReplacementLottery.setEnabled(true);
+            btnJoinReplacementLottery.setText("Join Replacement Lottery");
+            return;
+        }
+
+        Date now = new Date();
+        if (now.before(currentEvent.getRegistrationStartDate()) || now.after(currentEvent.getRegistrationEndDate())) {
+            Toast.makeText(requireContext(), "Registration is not open", Toast.LENGTH_SHORT).show();
+            btnJoinReplacementLottery.setEnabled(true);
+            btnJoinReplacementLottery.setText("Join Replacement Lottery");
+            return;
+        }
+
+        String entryId = UUID.randomUUID().toString();
+        WaitingListEntry entry = new WaitingListEntry(entryId, eventId, userId, new Date());
+
+        waitingListRepository.addToWaitingList(entry, new WaitingListRepository.OnWaitingListOperationListener() {
+            @Override
+            public void onSuccess() {
+                Toast.makeText(requireContext(), "Successfully rejoined waiting list for another chance! 🎲", Toast.LENGTH_SHORT).show();
+                isInWaitingList = true;
+                
+                if (joinButton.getVisibility() == View.VISIBLE) {
+                    joinButton.setText("Exit Waiting List");
+                    joinButton.setEnabled(true);
+                }
+                
+                loadWaitingListCount();
+                replacementLotterySection.setVisibility(View.GONE);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                Toast.makeText(requireContext(), "Failed to rejoin: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                btnJoinReplacementLottery.setEnabled(true);
+                btnJoinReplacementLottery.setText("Join Replacement Lottery");
+            }
+        });
     }
 
     /** Displays event details in the UI. */
@@ -421,6 +597,28 @@ public class EventDetailsFragment extends Fragment {
         } else {
             qrCodeImage.setVisibility(View.GONE);
         }
+        
+        // Display lottery selection criteria
+        displayLotteryCriteria(event);
+    }
+    
+    /**
+     * Displays lottery selection criteria information.
+     * Implements US 01.05.05 - View criteria for lottery selection.
+     */
+    private void displayLotteryCriteria(Event event) {
+        if (lotteryCriteriaCard == null || lotteryCriteriaText == null) {
+            return;
+        }
+        
+        // Build catchy, concise criteria text
+        String criteria = "Selection Method: Random lottery where all entrants on the waiting list have an equal chance!\n\n" +
+                         "Selected entrants will receive invitations! 🎉";
+        
+        lotteryCriteriaText.setText(criteria);
+        
+        // Show the card
+        lotteryCriteriaCard.setVisibility(View.VISIBLE);
     }
 
     /** Loads number of people on waiting list. */
