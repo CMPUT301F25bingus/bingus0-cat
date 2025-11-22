@@ -32,6 +32,7 @@ import com.example.eventmaster.data.firestore.EventRepositoryFs;
 import com.example.eventmaster.data.firestore.WaitingListRepositoryFs;
 import com.example.eventmaster.model.Event;
 import com.example.eventmaster.model.WaitingListEntry;
+import com.example.eventmaster.ui.entrant.activities.EntrantHistoryActivity;
 import com.example.eventmaster.ui.entrant.activities.EntrantNotificationsActivity;
 import com.example.eventmaster.ui.entrant.activities.EventDetailsActivity;
 import com.example.eventmaster.ui.entrant.adapters.EventListAdapter;
@@ -179,24 +180,27 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
      * Sets up bottom navigation item selection.
      */
     private void setupBottomNavigation() {
+        // Set Home as selected (current screen)
+        bottomNavigationView.setSelectedItemId(R.id.nav_home);
+        
         bottomNavigationView.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
             
-           if (itemId == R.id.nav_search) {
-                // Already on search/events screen
+            if (itemId == R.id.nav_home) {
+                // Already on Home (Browse Events) screen
+                return true;
+            } else if (itemId == R.id.nav_history) {
+                Intent intent = new Intent(requireContext(), EntrantHistoryActivity.class);
+                startActivity(intent);
+                return true;
+            } else if (itemId == R.id.nav_alerts) {
+                Intent intent = new Intent(requireContext(), EntrantNotificationsActivity.class);
+                startActivity(intent);
                 return true;
             } else if (itemId == R.id.nav_profile) {
-                //Toast.makeText(requireContext(), "Profile - Coming soon", Toast.LENGTH_SHORT).show();
-                startActivity(new Intent(requireContext(), ProfileActivity.class));
+                Intent intent = new Intent(requireContext(), ProfileActivity.class);
+                startActivity(intent);
                 return true;
-            } else if (itemId == R.id.nav_notifications) {
-               Intent intent = new Intent(requireContext(), EntrantNotificationsActivity.class);
-               startActivity(intent);
-
-                return true;
-            } else if (itemId == R.id.nav_scan_qr){
-                Intent i = new Intent(requireContext(), QRScannerActivity.class);
-                startActivity(i);
             }
             return false;
         });

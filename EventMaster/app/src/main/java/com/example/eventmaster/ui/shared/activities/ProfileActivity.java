@@ -58,6 +58,7 @@ public class ProfileActivity extends AppCompatActivity {
     private Button btnEdit, btnDelete;
     private RecyclerView rvHistory;
     private HistoryAdapter historyAdapter;
+    private com.google.android.material.bottomnavigation.BottomNavigationView bottomNavigationView;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -90,6 +91,7 @@ public class ProfileActivity extends AppCompatActivity {
         btnEdit  = findViewById(R.id.btnEdit);
         btnDelete= findViewById(R.id.btnDelete);
         rvHistory = findViewById(R.id.rvHistory);
+        bottomNavigationView = findViewById(R.id.bottom_navigation);
 
         // 🔹 Edit button → open EditProfileActivity
         btnEdit.setOnClickListener(v ->
@@ -105,6 +107,39 @@ public class ProfileActivity extends AppCompatActivity {
             historyAdapter = new HistoryAdapter();
             rvHistory.setAdapter(historyAdapter);
         }
+
+        // Setup bottom navigation (for entrants)
+        setupBottomNavigation();
+    }
+
+    private void setupBottomNavigation() {
+        if (bottomNavigationView == null) return;
+
+        // Show bottom nav for entrants (always show for now, can be made conditional later)
+        bottomNavigationView.setVisibility(android.view.View.VISIBLE);
+        bottomNavigationView.setSelectedItemId(R.id.nav_profile);
+
+        bottomNavigationView.setOnItemSelectedListener(item -> {
+            int itemId = item.getItemId();
+
+            if (itemId == R.id.nav_home) {
+                finish();
+                startActivity(new Intent(this, com.example.eventmaster.ui.entrant.activities.EventListActivity.class));
+                return true;
+            } else if (itemId == R.id.nav_history) {
+                finish();
+                startActivity(new Intent(this, com.example.eventmaster.ui.entrant.activities.EntrantHistoryActivity.class));
+                return true;
+            } else if (itemId == R.id.nav_alerts) {
+                finish();
+                startActivity(new Intent(this, com.example.eventmaster.ui.entrant.activities.EntrantNotificationsActivity.class));
+                return true;
+            } else if (itemId == R.id.nav_profile) {
+                // Already on Profile screen
+                return true;
+            }
+            return false;
+        });
     }
 
     @Override
