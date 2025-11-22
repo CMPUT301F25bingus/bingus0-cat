@@ -230,7 +230,9 @@ public class EventDetailsFragment extends Fragment {
             public void onSuccess(Event event) {
                 currentEvent = event;
                 displayEventDetails(event);
-                loadWaitingListCount();
+//                loadWaitingListCount();
+                loadWaitingListCountWithLimit(event);
+
             }
 
             @Override
@@ -423,12 +425,54 @@ public class EventDetailsFragment extends Fragment {
         }
     }
 
-    /** Loads number of people on waiting list. */
-    private void loadWaitingListCount() {
+    /** Loads waiting list count AND applies waitingListLimit rules properly. */
+    private void loadWaitingListCountWithLimit(Event event) {
+
+        Integer waitingLimit = event.getWaitingListLimit();   // null = unlimited
+
         waitingListRepository.getWaitingListCount(eventId, new WaitingListRepository.OnCountListener() {
             @Override
             public void onSuccess(int count) {
+
                 waitingListCountText.setText(count + " people have joined the waiting list");
+
+                // If user is already in the WL → always allow them to leave
+                waitingListRepository.isUserInWaitingList(eventId, userId, new WaitingListRepository.OnCheckListener() {
+                    @Override
+                    public void onSuccess(boolean exists) {
+
+                        isInWaitingList = exists;
+
+                        // If user already joined → allow them to exit even if full
+                        if (exists) {
+                            joinButton.setEnabled(true);
+                            joinButton.setText("Exit Waiting List");
+                            return;
+                        }
+
+                        // --- If no limit set → normal behaviour ---
+                        if (waitingLimit == null || waitingLimit == 0) {
+                            joinButton.setEnabled(true);
+                            joinButton.setText("Join Waiting List");
+                            return;
+                        }
+
+                        // --- If FULL → disable joining ---
+                        if (count >= waitingLimit) {
+                            joinButton.setEnabled(false);
+                            joinButton.setText("Waiting List Full");
+                        } else {
+                            joinButton.setEnabled(true);
+                            joinButton.setText("Join Waiting List");
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Exception e) {
+                        joinButton.setEnabled(true);
+                        joinButton.setText("Join Waiting List");
+                    }
+                });
             }
 
             @Override
@@ -605,28 +649,23 @@ public class EventDetailsFragment extends Fragment {
         joinButton.setEnabled(false);
         joinButton.setText("Joining...");
 
-        waitingListRepository.addToWaitingList(entry, new WaitingListRepository.OnWaitingListOperationListener() {
-            @Override
-            public void onSuccess() {
-                Log.d(TAG, "Successfully joined waiting list");
-                Toast.makeText(requireContext(), "Successfully joined waiting list!", Toast.LENGTH_SHORT).show();
-                isInWaitingList = true;
-                joinButton.setText("Exit Waiting List");
-                joinButton.setEnabled(true);
-                loadWaitingListCount();
+        ((WaitingListRepositoryFs) waitingListRepository)
+                .joinWithLimitCheck(entry, new WaitingListRepository.OnWaitingListOperationListener() {
+                    @Override
+                    public void onSuccess() {
+                        Toast.makeText(requireContext(), "Successfully joined waiting list!", Toast.LENGTH_SHORT).show();
+                        isInWaitingList = true;
 
-                // Send notification to user
-                sendJoinedWaitingListNotification(eventId, userId);
-            }
+                        loadEventDetails(); // refresh limit + button
+                    }
 
-            @Override
-            public void onFailure(Exception e) {
-                Log.e(TAG, "Failed to join waiting list", e);
-                Toast.makeText(requireContext(), "Failed to join: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                joinButton.setEnabled(true);
-                joinButton.setText("Join Waiting List");
-            }
-        });
+                    @Override
+                    public void onFailure(Exception e) {
+                        Toast.makeText(requireContext(), e.getMessage(), Toast.LENGTH_LONG).show();
+                        loadEventDetails(); // refresh button state
+                    }
+                });
+
     }
 
     /**
@@ -644,9 +683,7 @@ public class EventDetailsFragment extends Fragment {
                 public void onSuccess() {
                     Toast.makeText(requireContext(), "Successfully left waiting list", Toast.LENGTH_SHORT).show();
                     isInWaitingList = false;
-                    joinButton.setText("Join Waiting List");
-                    joinButton.setEnabled(true);
-                    loadWaitingListCount();
+                    loadEventDetails();
                 }
 
                 @Override
