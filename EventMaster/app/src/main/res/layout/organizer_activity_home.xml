@@ -71,5 +71,17 @@
             app:cornerRadius="10dp"
             app:backgroundTint="#15837C" />
 
+        <!-- Logout button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnLogout"
+            android:layout_width="200dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="Log Out"
+            android:textAllCaps="false"
+            android:textColor="@android:color/white"
+            app:cornerRadius="10dp"
+            app:backgroundTint="@color/btn_neutral" />
+
     </LinearLayout>
 </ScrollView>

@@ -1,5 +1,7 @@
 package com.example.eventmaster.ui.entrant.fragments;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -9,8 +11,11 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
 
 import com.bumptech.glide.Glide;
@@ -18,16 +23,21 @@ import com.example.eventmaster.R;
 import com.example.eventmaster.data.api.EventRepository;
 import com.example.eventmaster.data.api.WaitingListRepository;
 import com.example.eventmaster.data.firestore.EventRepositoryFs;
+import com.example.eventmaster.data.firestore.ProfileRepositoryFs;
 import com.example.eventmaster.data.firestore.WaitingListRepositoryFs;
 import com.example.eventmaster.data.firestore.InvitationServiceFs;
 import com.example.eventmaster.data.firestore.RegistrationServiceFs;
 import com.example.eventmaster.model.Event;
 import com.example.eventmaster.model.Invitation;
+import com.example.eventmaster.model.Profile;
 import com.example.eventmaster.model.WaitingListEntry;
 import com.example.eventmaster.utils.DeviceUtils;
 import com.google.android.material.button.MaterialButton;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
+
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -59,6 +69,8 @@ public class EventDetailsFragment extends Fragment {
     private String userId;
     private boolean isInWaitingList = false;  // Track if user is in waiting list
 
+    private Profile currentProfile;  //needed to attach into waiting list entry and loaded using deviceID
+    private ProfileRepositoryFs profileRepo = new ProfileRepositoryFs();
     // UI Elements
     private ImageView posterImage;
     private ImageView backButton;
@@ -74,12 +86,21 @@ public class EventDetailsFragment extends Fragment {
     private TextView descriptionText;
     private TextView waitingListCountText;
     private MaterialButton joinButton;
+    
+    // Lottery criteria
+    private View lotteryCriteriaCard;
+    private TextView lotteryCriteriaText;
 
     // Invitation include
     private View inviteInclude;
     private TextView inviteStatusText;
     private MaterialButton btnAccept;
     private MaterialButton btnDecline;
+    
+    // Replacement lottery
+    private View replacementLotterySection;
+    private TextView replacementLotteryText;
+    private MaterialButton btnJoinReplacementLottery;
 
     private boolean testMode = false;
     private boolean testForceInvited = false;
@@ -116,11 +137,40 @@ public class EventDetailsFragment extends Fragment {
         waitingListRepository = new WaitingListRepositoryFs();
         invitationService = new InvitationServiceFs();
         registrationService = new RegistrationServiceFs();
+        profileRepo = new ProfileRepositoryFs();
 
         userId = DeviceUtils.getDeviceId(requireContext());
-        
+        loadUserProfile();
+
         // Debug logging
         Log.d(TAG, "onCreate: eventId=" + eventId + ", userId=" + userId);
+    }
+
+    private void loadUserProfile() {
+        profileRepo.getByDeviceId(userId)
+                .addOnSuccessListener(profile -> {
+                    if (profile != null) {
+                        currentProfile = profile;
+                        Log.d(TAG, "Loaded profile for device: " + profile.getName());
+                    } else {
+                        //
+                        Profile newProf = new Profile(
+                                userId,
+                                "Guest User",
+                                "",
+                                null
+                        );
+                        profileRepo.upsert(newProf);
+                        currentProfile = newProf;
+                        Log.d(TAG, "Created new profile for device.");
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Profile load failed, creating fallback profile", e);
+                    Profile fallback = new Profile(userId, "Guest User", "", null);
+                    profileRepo.upsert(fallback);
+                    currentProfile = fallback;
+                });
     }
 
     @Nullable
@@ -144,14 +194,22 @@ public class EventDetailsFragment extends Fragment {
         descriptionText = view.findViewById(R.id.event_description_text);
         waitingListCountText = view.findViewById(R.id.waiting_list_count_text);
         joinButton = view.findViewById(R.id.join_waiting_list_button);
+        
+        lotteryCriteriaCard = view.findViewById(R.id.lottery_criteria_card);
+        lotteryCriteriaText = view.findViewById(R.id.lottery_criteria_text);
 
         inviteInclude = view.findViewById(R.id.invitation_include);
         inviteStatusText = view.findViewById(R.id.invite_status_text);
         btnAccept = view.findViewById(R.id.btnAccept);
         btnDecline = view.findViewById(R.id.btnDecline);
+        
+        replacementLotterySection = view.findViewById(R.id.replacement_lottery_section);
+        replacementLotteryText = view.findViewById(R.id.replacement_lottery_text);
+        btnJoinReplacementLottery = view.findViewById(R.id.btnJoinReplacementLottery);
 
         inviteInclude.setVisibility(View.GONE);
         joinButton.setVisibility(View.GONE);
+        replacementLotterySection.setVisibility(View.GONE);
 
         backButton.setOnClickListener(v -> requireActivity().onBackPressed());
         favoriteIcon.setOnClickListener(v -> handleFavoriteClick());
@@ -301,13 +359,196 @@ public class EventDetailsFragment extends Fragment {
         inviteInclude.setVisibility(View.GONE);
         joinButton.setVisibility(View.VISIBLE);
         checkIfUserInWaitingList();
+        // Check if user is eligible for replacement lottery
+        checkReplacementLotteryEligibility();
+    }
+    
+    /**
+     * Checks if user is eligible for replacement lottery (when someone else declines).
+     * Implements US 01.05.01 - Get another chance if selected user declines.
+     */
+    private void checkReplacementLotteryEligibility() {
+        // Only show if no active invitation exists
+        if (inviteInclude.getVisibility() == View.VISIBLE) {
+            replacementLotterySection.setVisibility(View.GONE);
+            return;
+        }
+        
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        
+        // Check if user has a replacement lottery notification for this event
+        db.collection("notifications")
+                .whereEqualTo("recipientId", userId)
+                .whereEqualTo("eventId", eventId)
+                .whereEqualTo("type", "REPLACEMENT_LOTTERY_AVAILABLE")
+                .whereEqualTo("isRead", false)
+                .limit(1)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    if (!querySnapshot.isEmpty()) {
+                        // User has replacement lottery notification, show option
+                        showReplacementLotteryOption();
+                    } else {
+                        // Check if user was not selected initially
+                        checkIfCanRejoinForReplacement();
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error checking replacement lottery eligibility", e);
+                    checkIfCanRejoinForReplacement();
+                });
+    }
+    
+    /**
+     * Checks if user was not selected initially and can rejoin waiting list for replacement lottery.
+     */
+    private void checkIfCanRejoinForReplacement() {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        
+        // Check if user was previously not selected (has LOTTERY_NOT_SELECTED notification)
+        db.collection("notifications")
+                .whereEqualTo("recipientId", userId)
+                .whereEqualTo("eventId", eventId)
+                .whereEqualTo("type", "LOTTERY_NOT_SELECTED")
+                .limit(1)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    if (!querySnapshot.isEmpty()) {
+                        // User was not selected, check if they can rejoin waiting list
+                        showReplacementLotteryOption();
+                    } else {
+                        replacementLotterySection.setVisibility(View.GONE);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error checking if can rejoin for replacement", e);
+                    replacementLotterySection.setVisibility(View.GONE);
+                });
+    }
+    
+    /**
+     * Shows the replacement lottery option UI.
+     */
+    private void showReplacementLotteryOption() {
+        // Check if user is already in waiting list
+        waitingListRepository.isUserInWaitingList(eventId, userId,
+                new WaitingListRepository.OnCheckListener() {
+                    @Override
+                    public void onSuccess(boolean exists) {
+                        if (exists) {
+                            replacementLotterySection.setVisibility(View.GONE);
+                        } else {
+                            replacementLotterySection.setVisibility(View.VISIBLE);
+                            replacementLotteryText.setText(
+                                "A spot has opened up! Join the waiting list for another chance to be selected. 🎲"
+                            );
+                            
+                            btnJoinReplacementLottery.setOnClickListener(v -> {
+                                btnJoinReplacementLottery.setEnabled(false);
+                                btnJoinReplacementLottery.setText("Joining...");
+                                handleJoinWaitingListForReplacement();
+                            });
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Exception e) {
+                        replacementLotterySection.setVisibility(View.VISIBLE);
+                        replacementLotteryText.setText(
+                            "A spot has opened up! Join the waiting list for another chance to be selected. 🎲"
+                        );
+                        
+                        btnJoinReplacementLottery.setOnClickListener(v -> {
+                            btnJoinReplacementLottery.setEnabled(false);
+                            btnJoinReplacementLottery.setText("Joining...");
+                            handleJoinWaitingListForReplacement();
+                        });
+                    }
+                });
+    }
+    
+    /**
+     * Handle joining the waiting list from replacement lottery section.
+     */
+    private void handleJoinWaitingListForReplacement() {
+        if (eventId == null || eventId.isEmpty() || userId == null || userId.isEmpty() || currentEvent == null) {
+            Toast.makeText(requireContext(), "Error: Missing information", Toast.LENGTH_LONG).show();
+            btnJoinReplacementLottery.setEnabled(true);
+            btnJoinReplacementLottery.setText("Join Replacement Lottery");
+            return;
+        }
+
+        if (currentEvent.getRegistrationStartDate() == null || currentEvent.getRegistrationEndDate() == null) {
+            Toast.makeText(requireContext(), "Registration dates not available yet", Toast.LENGTH_SHORT).show();
+            btnJoinReplacementLottery.setEnabled(true);
+            btnJoinReplacementLottery.setText("Join Replacement Lottery");
+            return;
+        }
+
+        Date now = new Date();
+        if (now.before(currentEvent.getRegistrationStartDate()) || now.after(currentEvent.getRegistrationEndDate())) {
+            Toast.makeText(requireContext(), "Registration is not open", Toast.LENGTH_SHORT).show();
+            btnJoinReplacementLottery.setEnabled(true);
+            btnJoinReplacementLottery.setText("Join Replacement Lottery");
+            return;
+        }
+
+        String entryId = UUID.randomUUID().toString();
+        WaitingListEntry entry = new WaitingListEntry(entryId, eventId, userId, new Date());
+
+        waitingListRepository.addToWaitingList(entry, new WaitingListRepository.OnWaitingListOperationListener() {
+            @Override
+            public void onSuccess() {
+                Toast.makeText(requireContext(), "Successfully rejoined waiting list for another chance! 🎲", Toast.LENGTH_SHORT).show();
+                isInWaitingList = true;
+                
+                if (joinButton.getVisibility() == View.VISIBLE) {
+                    joinButton.setText("Exit Waiting List");
+                    joinButton.setEnabled(true);
+                }
+                
+                loadWaitingListCount();
+                replacementLotterySection.setVisibility(View.GONE);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                Toast.makeText(requireContext(), "Failed to rejoin: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                btnJoinReplacementLottery.setEnabled(true);
+                btnJoinReplacementLottery.setText("Join Replacement Lottery");
+            }
+        });
     }
 
     /** Displays event details in the UI. */
     private void displayEventDetails(Event event) {
         eventNameText.setText(event.getName() != null ? event.getName() : "Unnamed Event");
-        organizerText.setText("Hosted by: " +
-                (event.getOrganizerName() != null ? event.getOrganizerName() : "Unknown"));
+        String organizerId = event.getOrganizerId();
+
+        if (organizerId != null) {
+            FirebaseFirestore.getInstance()
+                    .collection("profiles")
+                    .document(organizerId)
+                    .get()
+                    .addOnSuccessListener(profileDoc -> {
+                        if (profileDoc.exists()) {
+                            String organizerName = profileDoc.getString("name");
+
+                            if (organizerName != null && !organizerName.isEmpty()) {
+                                organizerText.setText("Hosted by: " + organizerName);
+                            } else {
+                                organizerText.setText("Hosted by: " + organizerId);
+                            }
+
+                        } else {
+                            organizerText.setText("Hosted by: " + organizerId);
+                        }
+                    })
+                    .addOnFailureListener(e -> organizerText.setText("Hosted by: " + organizerId));
+        } else {
+            organizerText.setText("Hosted by: Unknown");
+        }
+
         locationText.setText(event.getLocation() != null ? event.getLocation() : "Location TBA");
         descriptionText.setText(event.getDescription() != null ? event.getDescription() : "No description available");
 
@@ -356,6 +597,28 @@ public class EventDetailsFragment extends Fragment {
         } else {
             qrCodeImage.setVisibility(View.GONE);
         }
+        
+        // Display lottery selection criteria
+        displayLotteryCriteria(event);
+    }
+    
+    /**
+     * Displays lottery selection criteria information.
+     * Implements US 01.05.05 - View criteria for lottery selection.
+     */
+    private void displayLotteryCriteria(Event event) {
+        if (lotteryCriteriaCard == null || lotteryCriteriaText == null) {
+            return;
+        }
+        
+        // Build catchy, concise criteria text
+        String criteria = "Selection Method: Random lottery where all entrants on the waiting list have an equal chance!\n\n" +
+                         "Selected entrants will receive invitations! 🎉";
+        
+        lotteryCriteriaText.setText(criteria);
+        
+        // Show the card
+        lotteryCriteriaCard.setVisibility(View.VISIBLE);
     }
 
     /** Loads number of people on waiting list. */
@@ -378,6 +641,10 @@ public class EventDetailsFragment extends Fragment {
     }
 
     private void checkIfUserInWaitingList() {
+        if (eventId == null || userId == null) {
+            Log.w(TAG, "checkIfUserInWaitingList  skipped: NULL id(s).");
+            return;
+        }
         waitingListRepository.isUserInWaitingList(eventId, userId,
                 new WaitingListRepository.OnCheckListener() {
                     @Override
@@ -411,11 +678,89 @@ public class EventDetailsFragment extends Fragment {
             handleJoinWaitingList();
         }
     }
+    private void requestLocationThenJoin() {
+        if (ActivityCompat.checkSelfPermission(requireContext(),
+                Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+
+            requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION);
+            return;
+        }
+
+        fetchLocationAndJoin();
+    }
+
+    private final ActivityResultLauncher<String> requestPermissionLauncher =
+            registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> {
+                if (granted) {
+                    fetchLocationAndJoin();
+                } else {
+                    Toast.makeText(requireContext(),
+                            "Location required to join this event",
+                            Toast.LENGTH_SHORT).show();
+                }
+            });
+
+    private void fetchLocationAndJoin() {
+        FusedLocationProviderClient client =
+                LocationServices.getFusedLocationProviderClient(requireContext());
+
+        if (ActivityCompat.checkSelfPermission(requireContext(),
+                Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(requireContext(),
+                        Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+        client.getLastLocation()
+                .addOnSuccessListener(location -> {
+                    if (location != null) {
+                        // pass lat/lng into join method
+                        joinWaitingListWithLocation(location.getLatitude(), location.getLongitude());
+                    } else {
+                        Toast.makeText(requireContext(),
+                                "Unable to fetch location",
+                                Toast.LENGTH_SHORT).show();
+                    }
+                });
+    }
+
+    private void joinWaitingListWithLocation(double lat, double lng) {
+        String entryId = UUID.randomUUID().toString();
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("entryId", entryId);
+        data.put("eventId", eventId);
+        data.put("userId", userId);
+        data.put("joinedAt", new Date());
+        data.put("lat", lat);
+        data.put("lng", lng);
+
+        FirebaseFirestore.getInstance()
+                .collection("events")
+                .document(eventId)
+                .collection("waitingList")   // <-- FIXED
+                .document(userId)
+                .set(data)
+                .addOnSuccessListener(unused -> {
+                    Toast.makeText(requireContext(), "Joined event!", Toast.LENGTH_SHORT).show();
+                    isInWaitingList = true;
+                    joinButton.setText("Exit Waiting List");
+                    joinButton.setEnabled(true);
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(requireContext(), "Failed to join: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    joinButton.setEnabled(true);
+                });
+    }
 
     /**
      * Handle joining the waiting list
      */
     private void handleJoinWaitingList() {
+        // --- GEOLOCATION REQUIREMENT CHECK ---
+        if (currentEvent != null && currentEvent.isGeolocationRequired()) {
+            requestLocationThenJoin();
+            return; // stop normal joining path
+        }
         // Validate eventId and userId first
         if (eventId == null || eventId.isEmpty()) {
             Toast.makeText(requireContext(), "Error: Event ID is missing", Toast.LENGTH_LONG).show();
@@ -449,7 +794,9 @@ public class EventDetailsFragment extends Fragment {
 
         String entryId = UUID.randomUUID().toString();
         WaitingListEntry entry = new WaitingListEntry(entryId, eventId, userId, new Date());
-        
+
+        entry.setProfile(currentProfile);
+
         Log.d(TAG, "handleJoinWaitingList: Creating entry with entryId=" + entryId + 
                 ", eventId=" + eventId + ", userId=" + userId);
 
@@ -465,7 +812,7 @@ public class EventDetailsFragment extends Fragment {
                 joinButton.setText("Exit Waiting List");
                 joinButton.setEnabled(true);
                 loadWaitingListCount();
-                
+
                 // Send notification to user
                 sendJoinedWaitingListNotification(eventId, userId);
             }

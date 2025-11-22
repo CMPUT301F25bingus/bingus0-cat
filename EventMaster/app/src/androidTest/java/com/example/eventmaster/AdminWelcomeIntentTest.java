@@ -12,8 +12,8 @@ import androidx.test.core.app.ActivityScenario;
 import androidx.test.espresso.intent.Intents;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
-import com.example.eventmaster.ui.admin.AdminBrowseActivity;
-import com.example.eventmaster.ui.admin.AdminWelcomeActivity;
+import com.example.eventmaster.ui.admin.activities.AdminBrowseActivity;
+import com.example.eventmaster.ui.admin.activities.AdminWelcomeActivity;
 
 import org.junit.After;
 import org.junit.Before;

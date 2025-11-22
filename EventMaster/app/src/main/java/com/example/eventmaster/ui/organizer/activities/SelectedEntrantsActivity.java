@@ -2,7 +2,9 @@ package com.example.eventmaster.ui.organizer.activities;
 
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.view.View;
 import android.widget.LinearLayout;
@@ -13,6 +15,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.FileProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -21,7 +24,11 @@ import com.example.eventmaster.data.api.NotificationService;
 import com.example.eventmaster.data.firestore.NotificationServiceFs;
 import com.example.eventmaster.model.Profile;
 import com.example.eventmaster.ui.organizer.adapters.*;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -111,23 +118,86 @@ public class SelectedEntrantsActivity extends AppCompatActivity {
 
     /**
      * Loads event data and selected entrants.
-     * Currently uses mock data for demonstration.
-     * In production, data should come from Intent extras.
      */
     private void loadData() {
         Intent intent = getIntent();
         if (intent != null) {
-            eventId = intent.getStringExtra(EXTRA_EVENT_ID);
+            eventId = intent.getStringExtra("eventId");
         }
 
         if (eventId == null || eventId.isEmpty()) {
-            eventId = "event_123";
+            Toast.makeText(this, "Invalid event ID", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
         }
 
-        selectedEntrants = createMockSelectedEntrants(eventId);
-
+        selectedEntrants = new ArrayList<>();
+        loadSelectedEntrantsFromFirestore();
         Log.d(TAG, "Loaded " + selectedEntrants.size() + " selected entrants for event: " + eventId);
     }
+
+    private void loadSelectedEntrantsFromFirestore() {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        // 1) Load selected entrants (status = ACTIVE)
+        db.collection("events")
+                .document(eventId)
+                .collection("registrations")
+                .whereEqualTo("status", "ACTIVE")
+                .get()
+                .addOnSuccessListener(regSnap -> {
+
+                    if (regSnap.isEmpty()) {
+                        Log.d(TAG, "No selected entrants found");
+                        updateUI();
+                        adapter.updateEntrants(selectedEntrants);
+                        return;
+                    }
+
+                    Log.d(TAG, "Found " + regSnap.size() + " selected entrants");
+
+                    for (DocumentSnapshot doc : regSnap.getDocuments()) {
+
+                        String deviceId = doc.getId(); // userId stored by entrant side
+
+                        loadProfileForSelectedEntrant(deviceId);
+                    }
+
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, "Failed to load selected entrants", Toast.LENGTH_SHORT).show();
+                    Log.e(TAG, "Error loading selected entrants", e);
+                });
+    }
+
+    private void loadProfileForSelectedEntrant(String deviceId) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        // 2) Find the matching profile by its deviceId field
+        db.collection("profiles")
+                .whereEqualTo("deviceId", deviceId)
+                .limit(1)
+                .get()
+                .addOnSuccessListener(profileSnap -> {
+
+                    if (!profileSnap.isEmpty()) {
+                        Profile profile = profileSnap.getDocuments().get(0).toObject(Profile.class);
+                        selectedEntrants.add(profile);
+                        Log.d(TAG, "Loaded profile for: " + profile.getName());
+                    } else {
+                        Log.w(TAG, "No profile found for deviceId: " + deviceId);
+                    }
+
+                    // Update the adapter each time a profile loads
+                    adapter.updateEntrants(new ArrayList<>(selectedEntrants));
+                    updateUI();
+
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Failed loading profile for " + deviceId, e);
+                });
+    }
+
 
     /**
      * Creates mock selected entrants data for demonstration purposes.
@@ -290,12 +360,61 @@ public class SelectedEntrantsActivity extends AppCompatActivity {
 
     /**
      * Handles Export CSV button click.
-     * Implements US 02.06.05 (stubbed for now).
+     * Implements US 02.06.05
      */
+
+//    https://stackoverflow.com/questions/61279201/how-to-export-csv-file-android-studio
     private void handleExportCsvClick() {
         Log.d(TAG, "Export CSV button clicked");
-        Toast.makeText(this, "Export CSV functionality - Coming soon!", Toast.LENGTH_SHORT).show();
-        // TODO: Implement CSV export using CSVExportService
+        if (selectedEntrants == null || selectedEntrants.isEmpty()) {
+            Toast.makeText(this, "No selected entrants to export", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        try {
+            String filename = "Event_" + eventId + "_SelectedEntrants.csv";
+
+            // Build CSV content
+            StringBuilder builder = new StringBuilder();
+            builder.append("Name,Email,Phone,User ID\n");
+
+            for (Profile p : selectedEntrants) {
+                builder.append(safe(p.getName())).append(",");
+                builder.append(safe(p.getEmail())).append(",");
+                builder.append(safe(p.getPhoneNumber())).append(",");
+                builder.append(safe(p.getUserId())).append("\n");
+            }
+
+            // Write file to Downloads folder
+            File downloads = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+            File file = new File(downloads, filename);
+
+            FileOutputStream fos = new FileOutputStream(file);
+            fos.write(builder.toString().getBytes());
+            fos.flush();
+            fos.close();
+
+            // Share the file
+            Uri uri = FileProvider.getUriForFile(
+                    this,
+                    getPackageName() + ".provider",
+                    file
+            );
+
+            Intent shareIntent = new Intent(Intent.ACTION_SEND);
+            shareIntent.setType("text/csv");
+            shareIntent.putExtra(Intent.EXTRA_STREAM, uri);
+            shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+            startActivity(Intent.createChooser(shareIntent, "Export CSV"));
+
+            Toast.makeText(this, "CSV exported to Downloads", Toast.LENGTH_SHORT).show();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(this, "Failed to export CSV: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
+
     }
 
     /**
@@ -317,5 +436,11 @@ public class SelectedEntrantsActivity extends AppCompatActivity {
         Toast.makeText(this, "Cancel entrants functionality - Coming soon!", Toast.LENGTH_SHORT).show();
         // TODO: Implement cancel entrants functionality
     }
+
+
+    private String safe(String s) {
+        return (s == null) ? "" : s.replace(",", " ");  // Avoid breaking CSV format
+    }
+
 }
 

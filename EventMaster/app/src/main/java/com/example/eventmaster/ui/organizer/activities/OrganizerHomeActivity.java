@@ -5,7 +5,9 @@ import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.eventmaster.MainActivity;
 import com.example.eventmaster.R;
+import com.example.eventmaster.utils.AuthHelper;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
 
@@ -35,6 +37,7 @@ public class OrganizerHomeActivity extends AppCompatActivity {
         // --- Buttons ---
         MaterialButton btnCreate = findViewById(R.id.btnCreateEvents);
         MaterialButton btnManage = findViewById(R.id.btnManageEvents);
+        MaterialButton btnLogout = findViewById(R.id.btnLogout);
 
         // Navigate to event creation screen
         btnCreate.setOnClickListener(v ->
@@ -45,5 +48,14 @@ public class OrganizerHomeActivity extends AppCompatActivity {
         btnManage.setOnClickListener(v ->
                 startActivity(new Intent(this, OrganizerManageEventsActivity.class))
         );
+
+        // Logout button
+        btnLogout.setOnClickListener(v -> {
+            AuthHelper.signOut();
+            Intent i = new Intent(this, MainActivity.class);
+            i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(i);
+            finish();
+        });
     }
 }
