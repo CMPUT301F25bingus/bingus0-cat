@@ -433,7 +433,6 @@ public class EventDetailsFragment extends Fragment {
         waitingListRepository.getWaitingListCount(eventId, new WaitingListRepository.OnCountListener() {
             @Override
             public void onSuccess(int count) {
-
                 waitingListCountText.setText(count + " people have joined the waiting list");
 
                 // If user is already in the WL → always allow them to leave
@@ -583,7 +582,7 @@ public class EventDetailsFragment extends Fragment {
         FirebaseFirestore.getInstance()
                 .collection("events")
                 .document(eventId)
-                .collection("waiting_list")   // <-- FIXED
+                .collection("waiting_list")
                 .document(userId)
                 .set(data)
                 .addOnSuccessListener(unused -> {

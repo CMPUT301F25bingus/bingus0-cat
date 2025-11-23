@@ -30,6 +30,8 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
@@ -71,7 +73,8 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
     private ProgressBar progress;
     private MaterialCheckBox cbRequireLocation;
     private TextInputEditText editPrice;
-
+    private AutoCompleteTextView eventTypeDropdown;
+    private String selectedEventType = null;
 
 
     // Local state
@@ -154,6 +157,35 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
 
         // Publish event button
         btnPublish.setOnClickListener(v -> publishEvent());
+        eventTypeDropdown = findViewById(R.id.eventTypeDropdown);
+
+    // Generic event type list
+        String[] eventTypes = new String[]{
+                "Sports",
+                "Food",
+                "Music",
+                "Education",
+                "Workshop",
+                "Volunteer",
+                "Social",
+                "Fitness",
+                "Family",
+                "Arts & Culture",
+                "Other"
+        };
+
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                this,
+                android.R.layout.simple_list_item_1,
+                eventTypes
+        );
+
+        eventTypeDropdown.setAdapter(adapter);
+
+        eventTypeDropdown.setOnItemClickListener((parent, view, position, id) -> {
+            selectedEventType = eventTypes[position];
+        });
+
     }
 
     /**
@@ -167,6 +199,11 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
         String capStr = textOf(editCapacity);
         String waitLimitStr = textOf(editWaitingLimit);
         Integer waitingListLimit = null;  // null = unlimited
+
+        if (TextUtils.isEmpty(selectedEventType)) {
+            toast("Select an event type");
+            return;
+        }
 
         // ---- Input Validation ----
         if (TextUtils.isEmpty(title)) { editTitle.setError("Required"); return; }
@@ -251,6 +288,7 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
         base.put("geolocationRequired", cbRequireLocation.isChecked());
         base.put("price", price);
         base.put("waitingListLimit", waitingListLimit);
+        base.put("eventType", selectedEventType);
 
 
         // Write base event document

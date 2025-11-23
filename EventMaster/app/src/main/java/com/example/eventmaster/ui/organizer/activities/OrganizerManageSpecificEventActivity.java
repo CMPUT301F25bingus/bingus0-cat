@@ -1,6 +1,7 @@
 package com.example.eventmaster.ui.organizer.activities;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.FrameLayout;
@@ -8,6 +9,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.FragmentTransaction;
@@ -18,6 +21,12 @@ import com.example.eventmaster.data.firestore.LotteryServiceFs;
 import com.example.eventmaster.ui.organizer.fragments.OrganizerEntrantsHubFragment;
 import com.google.android.material.button.MaterialButton;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 
 public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
 
@@ -37,14 +46,17 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
     private TextView eventCapacity;
     private TextView eventDescription;
     private TextView eventDates;
+    private TextView eventType;
+
 
     // Action buttons
     private MaterialButton btnViewEntrants;
     private MaterialButton btnRunLottery;
     private MaterialButton btnNotifications;
-    private MaterialButton btnEditEvent;
     private MaterialButton btnCancelEvent;
     private MaterialButton btnViewMap;
+    private ImageView editPosterIcon;
+    private Uri newPosterUri = null;
 
     private FrameLayout fragmentContainer;
 
@@ -77,13 +89,11 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
                 Toast.makeText(this, "Notifications — coming soon!", Toast.LENGTH_SHORT).show()
         );
 
-        btnEditEvent.setOnClickListener(v ->
-                Toast.makeText(this, "Edit Event — coming soon!", Toast.LENGTH_SHORT).show()
-        );
-
         btnCancelEvent.setOnClickListener(v ->
                 Toast.makeText(this, "Cancel Event — coming soon!", Toast.LENGTH_SHORT).show()
         );
+
+        editPosterIcon.setOnClickListener(v -> pickNewPoster.launch("image/*"));
 
         btnViewMap.setOnClickListener(v -> {
             Intent mapIntent = new Intent(this, OrganizerEntrantMapActivity.class);
@@ -91,7 +101,6 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
             startActivity(mapIntent);
         });
 
-        // 🔥 FIX: Auto-hide fragment container when backstack is empty
         getSupportFragmentManager().addOnBackStackChangedListener(() -> {
             if (getSupportFragmentManager().getBackStackEntryCount() == 0) {
                 fragmentContainer.setVisibility(View.GONE);
@@ -114,12 +123,23 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
         btnViewEntrants = findViewById(R.id.btnViewEntrants);
         btnRunLottery = findViewById(R.id.btnRunLottery);
         btnNotifications = findViewById(R.id.btnNotifications);
-        btnEditEvent = findViewById(R.id.btnEditEvent);
         btnCancelEvent = findViewById(R.id.btnCancelEvent);
+
         btnViewMap = findViewById(R.id.btnViewMap);
+        editPosterIcon = findViewById(R.id.edit_poster_icon);
+        eventType = findViewById(R.id.event_type_text);
 
         fragmentContainer = findViewById(R.id.fragment_container);
     }
+
+    private final ActivityResultLauncher<String> pickNewPoster =
+            registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
+                if (uri != null) {
+                    newPosterUri = uri;
+                    Glide.with(this).load(uri).into(eventPoster);
+                    uploadUpdatedPoster(uri);
+                }
+            });
 
     private void loadEventDetails() {
         FirebaseFirestore.getInstance()
@@ -130,6 +150,14 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
 
                     Boolean geo = doc.getBoolean("geolocationRequired");
                     btnViewMap.setVisibility(geo != null && geo ? View.VISIBLE : View.GONE);
+
+                    if (geo != null && geo) {
+                        btnViewMap.setVisibility(View.VISIBLE);
+                    } else {
+                        btnViewMap.setVisibility(View.GONE);
+                    }
+
+                    // --------------------------------------
 
                     if (!doc.exists()) {
                         Toast.makeText(this, "Event not found", Toast.LENGTH_SHORT).show();
@@ -143,8 +171,7 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
                     }
 
                     eventName.setText(doc.getString("title"));
-
-                    // Organizer name
+                    // Replace organizerId with organizerName (fallback to ID)
                     String organizerId = doc.getString("organizerId");
 
                     if (organizerId != null) {
@@ -187,6 +214,13 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
 
                     eventDescription.setText(doc.getString("description"));
 
+                    String type = doc.getString("eventType");
+                    if (type != null && !type.isEmpty()) {
+                        eventType.setText("Type: " + type);
+                    } else {
+                        eventType.setText("Type: Not specified");
+                    }
+
                     com.google.firebase.Timestamp start = doc.getTimestamp("registrationOpen");
                     com.google.firebase.Timestamp end = doc.getTimestamp("registrationClose");
 
@@ -199,6 +233,55 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
                 .addOnFailureListener(e ->
                         Toast.makeText(this, "Failed to load event: " + e.getMessage(), Toast.LENGTH_SHORT).show()
                 );
+    }
+
+    private void uploadUpdatedPoster(Uri uri) {
+        if (uri == null) return;
+
+        Toast.makeText(this, "Updating poster...", Toast.LENGTH_SHORT).show();
+
+        try {
+            StorageReference ref = FirebaseStorage.getInstance()
+                    .getReference("events/" + eventId + "/poster.jpg");
+
+            byte[] bytes = readAllBytes(uri);
+
+            ref.putBytes(bytes)
+                    .continueWithTask(task -> {
+                        if (!task.isSuccessful()) throw task.getException();
+                        return ref.getDownloadUrl();
+                    })
+                    .addOnSuccessListener(url -> {
+                        FirebaseFirestore.getInstance()
+                                .collection("events")
+                                .document(eventId)
+                                .update("posterUrl", url.toString())
+                                .addOnSuccessListener(unused ->
+                                        Toast.makeText(this, "Poster updated!", Toast.LENGTH_SHORT).show()
+                                )
+                                .addOnFailureListener(e ->
+                                        Toast.makeText(this, "Failed updating Firestore: " + e.getMessage(), Toast.LENGTH_LONG).show()
+                                );
+                    })
+                    .addOnFailureListener(e ->
+                            Toast.makeText(this, "Upload failed: " + e.getMessage(), Toast.LENGTH_LONG).show()
+                    );
+        } catch (Exception e) {
+            Toast.makeText(this, "Failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private byte[] readAllBytes(Uri uri) throws IOException {
+        try (InputStream in = getContentResolver().openInputStream(uri);
+             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+
+            byte[] buffer = new byte[4096];
+            int len;
+            while ((len = in.read(buffer)) != -1) {
+                out.write(buffer, 0, len);
+            }
+            return out.toByteArray();
+        }
     }
 
     private void openEntrantsHub() {
