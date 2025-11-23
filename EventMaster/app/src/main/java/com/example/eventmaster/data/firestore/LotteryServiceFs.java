@@ -166,7 +166,7 @@ public class LotteryServiceFs implements LotteryService {
                             notification.put("recipientId", e.getUserId());
                             notification.put("type", "LOTTERY_NOT_SELECTED");
                             notification.put("title", "Lottery Results");
-                            notification.put("message", "Thank you for your interest. Unfortunately, you were not selected in this lottery.");
+                            notification.put("message", "Thank you for your interest. Unfortunately, you were not selected in this lottery. "   + "But don't worry! a spot might still open if someone else changes their mind.");
                             notification.put("isRead", false);
                             notification.put("createdAt", Timestamp.now());
 
