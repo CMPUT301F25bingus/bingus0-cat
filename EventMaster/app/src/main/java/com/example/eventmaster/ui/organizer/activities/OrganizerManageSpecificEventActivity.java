@@ -27,6 +27,7 @@ import com.google.firebase.storage.StorageReference;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Date;
 
 public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
 
@@ -83,7 +84,7 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
 
         // BUTTON ACTIONS
         btnViewEntrants.setOnClickListener(v -> openEntrantsHub());
-        btnRunLottery.setOnClickListener(v -> runLottery());
+//        btnRunLottery.setOnClickListener(v -> runLottery());
 
         btnNotifications.setOnClickListener(v ->
                 Toast.makeText(this, "Notifications — coming soon!", Toast.LENGTH_SHORT).show()
@@ -228,6 +229,29 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
                         String s = new java.text.SimpleDateFormat("MMM d").format(start.toDate());
                         String e = new java.text.SimpleDateFormat("MMM d").format(end.toDate());
                         eventDates.setText("📅 " + s + " → " + e);
+
+                        // ---------- LOTTERY BUTTON LOCK LOGIC ----------
+                        Date now = new Date();
+
+                        if (now.before(end.toDate())) {
+                            // Registration still open → DISABLE lottery button
+                            btnRunLottery.setEnabled(false);
+                            btnRunLottery.setAlpha(0.4f);    // Dim the button visually
+
+                            btnRunLottery.setOnClickListener(v ->
+                                    Toast.makeText(
+                                            this,
+                                            "For fairness, the lottery can only be run after registration closes.",
+                                            Toast.LENGTH_LONG
+                                    ).show()
+                            );
+                        } else {
+                            // Registration closed → enable lottery normally
+                            btnRunLottery.setEnabled(true);
+                            btnRunLottery.setAlpha(1f);
+
+                            btnRunLottery.setOnClickListener(v -> runLottery());
+                        }
                     }
                 })
                 .addOnFailureListener(e ->
