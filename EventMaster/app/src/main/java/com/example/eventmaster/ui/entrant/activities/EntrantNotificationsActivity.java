@@ -22,6 +22,8 @@ import com.example.eventmaster.data.firestore.EventRepositoryFs;
 import com.example.eventmaster.data.firestore.NotificationServiceFs;
 import com.example.eventmaster.model.Event;
 import com.example.eventmaster.model.Notification;
+import com.example.eventmaster.ui.entrant.activities.EntrantHistoryActivity;
+import com.example.eventmaster.ui.entrant.activities.EventListActivity;
 import com.example.eventmaster.ui.entrant.adapters.NotificationsAdapter;
 import com.example.eventmaster.utils.DeviceUtils;
 import com.google.android.gms.tasks.Task;
@@ -61,6 +63,7 @@ public class EntrantNotificationsActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
     private LinearLayout emptyState;
     private ProgressBar loadingIndicator;
+    private com.google.android.material.bottomnavigation.BottomNavigationView bottomNavigationView;
 
     // Data
     private List<Notification> notifications;
@@ -88,6 +91,9 @@ public class EntrantNotificationsActivity extends AppCompatActivity {
         // Setup RecyclerView
         setupRecyclerView();
 
+        // Setup bottom navigation
+        setupBottomNavigation();
+
         // Setup click listeners
         setupClickListeners();
 
@@ -104,6 +110,7 @@ public class EntrantNotificationsActivity extends AppCompatActivity {
         recyclerView = findViewById(R.id.notifications_recycler_view);
         emptyState = findViewById(R.id.empty_state);
         loadingIndicator = findViewById(R.id.loading_indicator);
+        bottomNavigationView = findViewById(R.id.bottom_navigation);
     }
 
     /**
@@ -118,6 +125,36 @@ public class EntrantNotificationsActivity extends AppCompatActivity {
         // Set item click listener
         adapter.setOnNotificationClickListener(notification -> {
             handleNotificationClick(notification);
+        });
+    }
+
+    /**
+     * Sets up bottom navigation item selection.
+     */
+    private void setupBottomNavigation() {
+        // Set Alerts as selected (current screen)
+        bottomNavigationView.setSelectedItemId(R.id.nav_alerts);
+
+        bottomNavigationView.setOnItemSelectedListener(item -> {
+            int itemId = item.getItemId();
+
+            if (itemId == R.id.nav_home) {
+                finish();
+                startActivity(getIntent().setClass(this, EventListActivity.class));
+                return true;
+            } else if (itemId == R.id.nav_history) {
+                finish();
+                startActivity(getIntent().setClass(this, EntrantHistoryActivity.class));
+                return true;
+            } else if (itemId == R.id.nav_alerts) {
+                // Already on Alerts screen
+                return true;
+            } else if (itemId == R.id.nav_profile) {
+                finish();
+                startActivity(getIntent().setClass(this, com.example.eventmaster.ui.shared.activities.ProfileActivity.class));
+                return true;
+            }
+            return false;
         });
     }
 

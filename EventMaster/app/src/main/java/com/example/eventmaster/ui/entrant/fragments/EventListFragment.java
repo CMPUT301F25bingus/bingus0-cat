@@ -11,6 +11,7 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
@@ -32,6 +33,7 @@ import com.example.eventmaster.data.firestore.EventRepositoryFs;
 import com.example.eventmaster.data.firestore.WaitingListRepositoryFs;
 import com.example.eventmaster.model.Event;
 import com.example.eventmaster.model.WaitingListEntry;
+import com.example.eventmaster.ui.entrant.activities.EntrantHistoryActivity;
 import com.example.eventmaster.ui.entrant.activities.EntrantNotificationsActivity;
 import com.example.eventmaster.ui.entrant.activities.EventDetailsActivity;
 import com.example.eventmaster.ui.entrant.adapters.EventListAdapter;
@@ -62,6 +64,7 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
     private RecyclerView recyclerView;
     private EditText searchEditText;
     private MaterialButton filterButton;
+    private ImageButton qrScannerButton;
     private TextView emptyStateText;
     private BottomNavigationView bottomNavigationView;
 
@@ -106,6 +109,7 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
         recyclerView = view.findViewById(R.id.events_recycler_view);
         searchEditText = view.findViewById(R.id.search_edit_text);
         filterButton = view.findViewById(R.id.filter_button);
+        qrScannerButton = view.findViewById(R.id.qr_scanner_button);
         emptyStateText = view.findViewById(R.id.empty_state_text);
         bottomNavigationView = view.findViewById(R.id.bottom_navigation);
 
@@ -117,6 +121,9 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
 
         // Setup filter button
         filterButton.setOnClickListener(v -> showFilterDialog());
+
+        // Setup QR scanner button
+        qrScannerButton.setOnClickListener(v -> openQRScanner());
 
         // Setup bottom navigation
         setupBottomNavigation();
@@ -179,24 +186,27 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
      * Sets up bottom navigation item selection.
      */
     private void setupBottomNavigation() {
+        // Set Home as selected (current screen)
+        bottomNavigationView.setSelectedItemId(R.id.nav_home);
+        
         bottomNavigationView.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
             
-           if (itemId == R.id.nav_search) {
-                // Already on search/events screen
+            if (itemId == R.id.nav_home) {
+                // Already on Home (Browse Events) screen
                 return true;
-            } else if (itemId == R.id.nav_profile) {
-                //Toast.makeText(requireContext(), "Profile - Coming soon", Toast.LENGTH_SHORT).show();
-                startActivity(new Intent(requireContext(), ProfileActivity.class));
+            } else if (itemId == R.id.nav_history) {
+                Intent intent = new Intent(requireContext(), EntrantHistoryActivity.class);
+                startActivity(intent);
                 return true;
-            } else if (itemId == R.id.nav_notifications) {
+            } else if (itemId == R.id.nav_alerts) {
                Intent intent = new Intent(requireContext(), EntrantNotificationsActivity.class);
                startActivity(intent);
-
                 return true;
-            } else if (itemId == R.id.nav_scan_qr){
-                Intent i = new Intent(requireContext(), QRScannerActivity.class);
-                startActivity(i);
+            } else if (itemId == R.id.nav_profile) {
+                Intent intent = new Intent(requireContext(), ProfileActivity.class);
+                startActivity(intent);
+                return true;
             }
             return false;
         });
@@ -546,6 +556,14 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
         // Navigate to event details (same as clicking the card)
         onEventClick(event);
         Toast.makeText(requireContext(), "QR Code for " + event.getName(), Toast.LENGTH_SHORT).show();
+    }
+
+    /**
+     * Opens the QR code scanner activity.
+     */
+    private void openQRScanner() {
+        Intent intent = new Intent(requireContext(), QRScannerActivity.class);
+        startActivity(intent);
     }
 }
 

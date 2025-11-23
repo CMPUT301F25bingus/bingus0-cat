@@ -86,10 +86,6 @@ public class EventDetailsFragment extends Fragment {
     private TextView descriptionText;
     private TextView waitingListCountText;
     private MaterialButton joinButton;
-    
-    // Lottery criteria
-    private View lotteryCriteriaCard;
-    private TextView lotteryCriteriaText;
 
     // Invitation include
     private View inviteInclude;
@@ -194,9 +190,6 @@ public class EventDetailsFragment extends Fragment {
         descriptionText = view.findViewById(R.id.event_description_text);
         waitingListCountText = view.findViewById(R.id.waiting_list_count_text);
         joinButton = view.findViewById(R.id.join_waiting_list_button);
-        
-        lotteryCriteriaCard = view.findViewById(R.id.lottery_criteria_card);
-        lotteryCriteriaText = view.findViewById(R.id.lottery_criteria_text);
 
         inviteInclude = view.findViewById(R.id.invitation_include);
         inviteStatusText = view.findViewById(R.id.invite_status_text);
@@ -499,21 +492,22 @@ public class EventDetailsFragment extends Fragment {
         waitingListRepository.addToWaitingList(entry, new WaitingListRepository.OnWaitingListOperationListener() {
             @Override
             public void onSuccess() {
-                Toast.makeText(requireContext(), "Successfully rejoined waiting list for another chance! 🎲", Toast.LENGTH_SHORT).show();
                 isInWaitingList = true;
                 
                 if (joinButton.getVisibility() == View.VISIBLE) {
                     joinButton.setText("Exit Waiting List");
+                    joinButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFFFF5252)); // Red color
                     joinButton.setEnabled(true);
                 }
                 
                 loadWaitingListCount();
                 replacementLotterySection.setVisibility(View.GONE);
+                btnJoinReplacementLottery.setEnabled(true);
+                btnJoinReplacementLottery.setText("Join Replacement Lottery");
             }
 
             @Override
             public void onFailure(Exception e) {
-                Toast.makeText(requireContext(), "Failed to rejoin: " + e.getMessage(), Toast.LENGTH_LONG).show();
                 btnJoinReplacementLottery.setEnabled(true);
                 btnJoinReplacementLottery.setText("Join Replacement Lottery");
             }
@@ -597,28 +591,6 @@ public class EventDetailsFragment extends Fragment {
         } else {
             qrCodeImage.setVisibility(View.GONE);
         }
-        
-        // Display lottery selection criteria
-        displayLotteryCriteria(event);
-    }
-    
-    /**
-     * Displays lottery selection criteria information.
-     * Implements US 01.05.05 - View criteria for lottery selection.
-     */
-    private void displayLotteryCriteria(Event event) {
-        if (lotteryCriteriaCard == null || lotteryCriteriaText == null) {
-            return;
-        }
-        
-        // Build catchy, concise criteria text
-        String criteria = "Selection Method: Random lottery where all entrants on the waiting list have an equal chance!\n\n" +
-                         "Selected entrants will receive invitations! 🎉";
-        
-        lotteryCriteriaText.setText(criteria);
-        
-        // Show the card
-        lotteryCriteriaCard.setVisibility(View.VISIBLE);
     }
 
     /** Loads number of people on waiting list. */
@@ -652,9 +624,11 @@ public class EventDetailsFragment extends Fragment {
                         isInWaitingList = exists;
                         if (exists) {
                             joinButton.setText("Exit Waiting List");
+                            joinButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFFFF5252)); // Red color
                             joinButton.setEnabled(true);
                         } else {
                             joinButton.setText("Join Waiting List");
+                            joinButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFF3D8B87)); // Teal color
                             joinButton.setEnabled(true);
                         }
                     }
@@ -664,6 +638,7 @@ public class EventDetailsFragment extends Fragment {
                         isInWaitingList = false;
                         joinButton.setEnabled(true);
                         joinButton.setText("Join Waiting List");
+                        joinButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFF3D8B87)); // Teal color
                     }
                 });
     }
@@ -737,18 +712,20 @@ public class EventDetailsFragment extends Fragment {
         FirebaseFirestore.getInstance()
                 .collection("events")
                 .document(eventId)
-                .collection("waitingList")   // <-- FIXED
+                .collection("waiting_list")
                 .document(userId)
                 .set(data)
                 .addOnSuccessListener(unused -> {
-                    Toast.makeText(requireContext(), "Joined event!", Toast.LENGTH_SHORT).show();
                     isInWaitingList = true;
                     joinButton.setText("Exit Waiting List");
+                    joinButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFFFF5252)); // Red color
                     joinButton.setEnabled(true);
+                    loadWaitingListCount();
                 })
                 .addOnFailureListener(e -> {
-                    Toast.makeText(requireContext(), "Failed to join: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                     joinButton.setEnabled(true);
+                    joinButton.setText("Join Waiting List");
+                    joinButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFF3D8B87)); // Teal color
                 });
     }
 
@@ -756,11 +733,6 @@ public class EventDetailsFragment extends Fragment {
      * Handle joining the waiting list
      */
     private void handleJoinWaitingList() {
-        // --- GEOLOCATION REQUIREMENT CHECK ---
-        if (currentEvent != null && currentEvent.isGeolocationRequired()) {
-            requestLocationThenJoin();
-            return; // stop normal joining path
-        }
         // Validate eventId and userId first
         if (eventId == null || eventId.isEmpty()) {
             Toast.makeText(requireContext(), "Error: Event ID is missing", Toast.LENGTH_LONG).show();
@@ -792,12 +764,80 @@ public class EventDetailsFragment extends Fragment {
             return;
         }
 
+        // Show guidelines dialog before joining
+        showGuidelinesDialog();
+    }
+
+    /**
+     * Shows guidelines dialog that user must accept before joining waiting list
+     */
+    private void showGuidelinesDialog() {
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(requireContext());
+        builder.setCancelable(true);
+
+        // Inflate custom layout
+        View dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_guidelines, null);
+        builder.setView(dialogView);
+
+        // Get views from custom layout
+        com.google.android.material.checkbox.MaterialCheckBox checkbox = dialogView.findViewById(R.id.guidelines_checkbox);
+        com.google.android.material.button.MaterialButton cancelButton = dialogView.findViewById(R.id.btn_cancel);
+        com.google.android.material.button.MaterialButton acceptButton = dialogView.findViewById(R.id.btn_accept);
+
+        // Create dialog
+        android.app.AlertDialog dialog = builder.create();
+        
+        // Set window properties for rounded corners and padding
+        dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        android.view.WindowManager.LayoutParams params = dialog.getWindow().getAttributes();
+        params.width = android.view.ViewGroup.LayoutParams.MATCH_PARENT;
+        params.height = android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
+        params.horizontalMargin = 0.02f; // 2% margin on each side - reduced for more space
+        dialog.getWindow().setAttributes(params);
+        dialog.getWindow().setLayout(android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
+        
+        // Add margins to prevent edge clipping
+        dialog.getWindow().setDimAmount(0.5f);
+
+        // Cancel button action
+        cancelButton.setOnClickListener(v -> dialog.dismiss());
+
+        // Checkbox listener - enable/disable accept button
+        checkbox.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            acceptButton.setEnabled(isChecked);
+            if (isChecked) {
+                acceptButton.setAlpha(1.0f);
+            } else {
+                acceptButton.setAlpha(0.5f);
+            }
+        });
+
+        // Accept button action
+        acceptButton.setOnClickListener(v -> {
+            if (checkbox.isChecked()) {
+                dialog.dismiss();
+                // Proceed with joining (check geolocation if required)
+                if (currentEvent != null && currentEvent.isGeolocationRequired()) {
+                    requestLocationThenJoin();
+                } else {
+                    proceedWithJoin();
+                }
+            }
+        });
+
+        dialog.show();
+    }
+
+    /**
+     * Proceeds with joining the waiting list after guidelines acceptance
+     */
+    private void proceedWithJoin() {
         String entryId = UUID.randomUUID().toString();
         WaitingListEntry entry = new WaitingListEntry(entryId, eventId, userId, new Date());
 
         entry.setProfile(currentProfile);
 
-        Log.d(TAG, "handleJoinWaitingList: Creating entry with entryId=" + entryId + 
+        Log.d(TAG, "proceedWithJoin: Creating entry with entryId=" + entryId + 
                 ", eventId=" + eventId + ", userId=" + userId);
 
         joinButton.setEnabled(false);
@@ -807,9 +847,9 @@ public class EventDetailsFragment extends Fragment {
             @Override
             public void onSuccess() {
                 Log.d(TAG, "Successfully joined waiting list");
-                Toast.makeText(requireContext(), "Successfully joined waiting list!", Toast.LENGTH_SHORT).show();
                 isInWaitingList = true;
                 joinButton.setText("Exit Waiting List");
+                joinButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFFFF5252)); // Red color
                 joinButton.setEnabled(true);
                 loadWaitingListCount();
 
@@ -820,9 +860,9 @@ public class EventDetailsFragment extends Fragment {
             @Override
             public void onFailure(Exception e) {
                 Log.e(TAG, "Failed to join waiting list", e);
-                Toast.makeText(requireContext(), "Failed to join: " + e.getMessage(), Toast.LENGTH_LONG).show();
                 joinButton.setEnabled(true);
                 joinButton.setText("Join Waiting List");
+                joinButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFF3D8B87)); // Teal color
             }
         });
     }
@@ -840,9 +880,9 @@ public class EventDetailsFragment extends Fragment {
             repo.removeFromWaitingList(eventId, userId, new WaitingListRepository.OnWaitingListOperationListener() {
                 @Override
                 public void onSuccess() {
-                    Toast.makeText(requireContext(), "Successfully left waiting list", Toast.LENGTH_SHORT).show();
                     isInWaitingList = false;
                     joinButton.setText("Join Waiting List");
+                    joinButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFF3D8B87)); // Teal color
                     joinButton.setEnabled(true);
                     loadWaitingListCount();
                 }
