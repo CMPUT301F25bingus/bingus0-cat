@@ -1,6 +1,8 @@
 package com.example.eventmaster.ui.entrant.fragments;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -11,8 +13,11 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -30,12 +35,17 @@ import com.example.eventmaster.ui.entrant.adapters.EventListAdapter;
 import com.example.eventmaster.ui.shared.activities.ProfileActivity;
 import com.example.eventmaster.ui.shared.activities.QRScannerActivity;
 import com.example.eventmaster.utils.DeviceUtils;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -57,6 +67,22 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
 
     private List<Event> allEvents = new ArrayList<>();
 
+    // --- GEOLOCATION SUPPORT ---
+    private Event pendingGeolocationEvent; // Store event requiring location
+
+    private final ActivityResultLauncher<String> requestPermissionLauncher =
+            registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> {
+                if (granted) {
+                    if (pendingGeolocationEvent != null) {
+                        fetchLocationAndJoin(pendingGeolocationEvent);
+                    }
+                } else {
+                    Toast.makeText(requireContext(),
+                            "Location is required to join this event",
+                            Toast.LENGTH_SHORT).show();
+                }
+            });
+
     public EventListFragment() {
         // Required empty public constructor
     }
@@ -68,11 +94,11 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        
+
         // Initialize repositories
         eventRepository = new EventRepositoryFs();
         waitingListRepository = new WaitingListRepositoryFs();
-        
+
         // Get device-based user ID
         userId = DeviceUtils.getDeviceId(requireContext());
     }
@@ -123,8 +149,7 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
     private void setupSearch() {
         searchEditText.addTextChangedListener(new TextWatcher() {
             @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-            }
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
@@ -133,8 +158,7 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
             }
 
             @Override
-            public void afterTextChanged(Editable s) {
-            }
+            public void afterTextChanged(Editable s) {}
         });
     }
 
@@ -144,18 +168,15 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
     private void setupBottomNavigation() {
         bottomNavigationView.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
-            
-           if (itemId == R.id.nav_search) {
-                // Already on search/events screen
+
+            if (itemId == R.id.nav_search) {
                 return true;
             } else if (itemId == R.id.nav_profile) {
-                //Toast.makeText(requireContext(), "Profile - Coming soon", Toast.LENGTH_SHORT).show();
                 startActivity(new Intent(requireContext(), ProfileActivity.class));
                 return true;
             } else if (itemId == R.id.nav_notifications) {
-               Intent intent = new Intent(requireContext(), EntrantNotificationsActivity.class);
-               startActivity(intent);
-
+                Intent intent = new Intent(requireContext(), EntrantNotificationsActivity.class);
+                startActivity(intent);
                 return true;
             } else if (itemId == R.id.nav_scan_qr){
                 Intent i = new Intent(requireContext(), QRScannerActivity.class);
@@ -179,8 +200,8 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
 
             @Override
             public void onFailure(Exception e) {
-                Toast.makeText(requireContext(), 
-                        "Failed to load events: " + e.getMessage(), 
+                Toast.makeText(requireContext(),
+                        "Failed to load events: " + e.getMessage(),
                         Toast.LENGTH_SHORT).show();
                 updateEmptyState();
             }
@@ -205,11 +226,6 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
      */
     private void showFilterDialog() {
         Toast.makeText(requireContext(), "Filter options coming soon!", Toast.LENGTH_SHORT).show();
-        // TODO: Implement filter dialog with options like:
-        // - Sort by date
-        // - Filter by price range
-        // - Filter by location
-        // - Show only events with available spots
     }
 
     @Override
@@ -222,25 +238,33 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
 
     @Override
     public void onJoinButtonClick(Event event) {
+
+        // --- GEOLOCATION REQUIREMENT (matches EventDetailsFragment) ---
+        if (event.isGeolocationRequired()) {
+            pendingGeolocationEvent = event;
+            requestLocationPermissionThenJoin(event);
+            return;
+        }
+
         // Check if registration dates are available
         if (event.getRegistrationStartDate() == null || event.getRegistrationEndDate() == null) {
-            Toast.makeText(requireContext(), 
-                    "Registration dates not available yet", 
+            Toast.makeText(requireContext(),
+                    "Registration dates not available yet",
                     Toast.LENGTH_SHORT).show();
             return;
         }
-        
+
         // Check if registration is open
         Date now = new Date();
         if (now.before(event.getRegistrationStartDate())) {
-            Toast.makeText(requireContext(), 
-                    "Registration hasn't opened yet", 
+            Toast.makeText(requireContext(),
+                    "Registration hasn't opened yet",
                     Toast.LENGTH_SHORT).show();
             return;
         }
         if (now.after(event.getRegistrationEndDate())) {
-            Toast.makeText(requireContext(), 
-                    "Registration has closed", 
+            Toast.makeText(requireContext(),
+                    "Registration has closed",
                     Toast.LENGTH_SHORT).show();
             return;
         }
@@ -251,8 +275,8 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
                     @Override
                     public void onSuccess(boolean exists) {
                         if (exists) {
-                            Toast.makeText(requireContext(), 
-                                    "You're already in the waiting list", 
+                            Toast.makeText(requireContext(),
+                                    "You're already in the waiting list",
                                     Toast.LENGTH_SHORT).show();
                         } else {
                             joinWaitingList(event);
@@ -261,23 +285,86 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
 
                     @Override
                     public void onFailure(Exception e) {
-                        // If check fails, try to join anyway
                         joinWaitingList(event);
                     }
                 });
     }
 
+    // ---- GEOLOCATION JOIN LOGIC (NEW, same as EventDetailsFragment) ----
+
+    private void requestLocationPermissionThenJoin(Event event) {
+        if (ActivityCompat.checkSelfPermission(requireContext(),
+                Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+
+            requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION);
+            return;
+        }
+        fetchLocationAndJoin(event);
+    }
+
+    private void fetchLocationAndJoin(Event event) {
+        FusedLocationProviderClient client =
+                LocationServices.getFusedLocationProviderClient(requireContext());
+
+        if (ActivityCompat.checkSelfPermission(requireContext(),
+                Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(requireContext(),
+                        Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+
+        client.getLastLocation()
+                .addOnSuccessListener(location -> {
+                    if (location != null) {
+                        joinWaitingListWithLocation(event, location.getLatitude(), location.getLongitude());
+                    } else {
+                        Toast.makeText(requireContext(),
+                                "Unable to fetch location",
+                                Toast.LENGTH_SHORT).show();
+                    }
+                });
+    }
+
+    private void joinWaitingListWithLocation(Event event, double lat, double lng) {
+        String entryId = UUID.randomUUID().toString();
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("entryId", entryId);
+        data.put("eventId", event.getEventId());
+        data.put("userId", userId);
+        data.put("joinedAt", new Date());
+        data.put("lat", lat);
+        data.put("lng", lng);
+
+        FirebaseFirestore.getInstance()
+                .collection("events")
+                .document(event.getEventId())
+                .collection("waiting_list")   // MUST MATCH WaitingListRepositoryFs
+                .document(userId)
+                .set(data)
+                .addOnSuccessListener(unused -> {
+                    Toast.makeText(requireContext(),
+                            "Successfully joined! (Location included)",
+                            Toast.LENGTH_SHORT).show();
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(requireContext(),
+                            "Failed to join: " + e.getMessage(),
+                            Toast.LENGTH_SHORT).show();
+                });
+    }
+
     /**
-     * Adds the user to the event's waiting list.
+     * Adds the user to the event's waiting list (non-geolocation path).
      *
      * @param event The event to join
      */
     private void joinWaitingList(Event event) {
         String entryId = UUID.randomUUID().toString();
         WaitingListEntry entry = new WaitingListEntry(
-                entryId, 
-                event.getEventId(), 
-                userId, 
+                entryId,
+                event.getEventId(),
+                userId,
                 new Date()
         );
 
@@ -306,4 +393,3 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
         Toast.makeText(requireContext(), "QR Code for " + event.getName(), Toast.LENGTH_SHORT).show();
     }
 }
-
