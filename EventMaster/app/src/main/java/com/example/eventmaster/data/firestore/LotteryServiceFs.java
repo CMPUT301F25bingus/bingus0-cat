@@ -112,15 +112,16 @@ public class LotteryServiceFs implements LotteryService {
                                         Log.e(TAG, "❌ Failed to create invitation for " + e.getUserId(), ex));
                             writeTasks.add(invitationTask);
 
-                            // Send notification to winner
+                            // Send notification to winner (US 01.04.01)
                             Map<String, Object> notification = new HashMap<>();
                             notification.put("eventId", eventId);
-                            notification.put("recipientId", e.getUserId());
+                            notification.put("recipientUserId", e.getUserId()); // Fixed: use recipientUserId to match Notification model
+                            notification.put("senderUserId", "system"); // Organizer ID would be better, but system works for now
                             notification.put("type", "LOTTERY_WON");
-                            notification.put("title", "You've been selected!");
-                            notification.put("message", "Congratulations! You've been selected in the lottery. Please accept or decline your invitation.");
+                            notification.put("title", "🎉 You've been selected!");
+                            notification.put("message", "Congratulations! You've been chosen in the lottery for this event. Go to the event details to accept or decline your invitation.");
                             notification.put("isRead", false);
-                            notification.put("createdAt", Timestamp.now());
+                            notification.put("sentAt", Timestamp.now()); // Fixed: use sentAt to match Notification model
 
                             Task<Void> notificationTask = db.collection("notifications")
                                     .add(notification)
@@ -149,15 +150,16 @@ public class LotteryServiceFs implements LotteryService {
                                         Log.e(TAG, "❌ Failed to remove " + e.getUserId() + " from waiting_list", ex));
                             writeTasks.add(removeTask);
 
-                            // Send notification to loser
+                            // Send notification to loser (US 01.04.02)
                             Map<String, Object> notification = new HashMap<>();
                             notification.put("eventId", eventId);
-                            notification.put("recipientId", e.getUserId());
-                            notification.put("type", "LOTTERY_NOT_SELECTED");
+                            notification.put("recipientUserId", e.getUserId()); // Fixed: use recipientUserId to match Notification model
+                            notification.put("senderUserId", "system"); // Organizer ID would be better, but system works for now
+                            notification.put("type", "LOTTERY_LOST"); // Fixed: use LOTTERY_LOST to match Notification enum
                             notification.put("title", "Lottery Results");
                             notification.put("message", "Thank you for your interest. Unfortunately, you were not selected in this lottery.");
                             notification.put("isRead", false);
-                            notification.put("createdAt", Timestamp.now());
+                            notification.put("sentAt", Timestamp.now()); // Fixed: use sentAt to match Notification model
 
                             Task<Void> notificationTask = db.collection("notifications")
                                     .add(notification)

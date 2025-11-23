@@ -9,9 +9,8 @@ import com.example.eventmaster.R;
 import com.google.android.material.button.MaterialButton;
 
 /**
- * Admin "hub" screen that shows the four admin actions.
- * Only "Browse organizers" and "Browse profiles" are wired.
- * The other two show a placeholder toast.
+ * Admin "hub" screen that shows the admin actions.
+ * "Browse events" and "Browse images" are now wired.
  */
 public class AdminBrowseActivity extends AppCompatActivity {
     @Override protected void onCreate(Bundle savedInstanceState) {
@@ -21,6 +20,7 @@ public class AdminBrowseActivity extends AppCompatActivity {
         MaterialButton btnOrganizers = findViewById(R.id.btnOrganizers);
         MaterialButton btnEvents = findViewById(R.id.btnEvents);
         MaterialButton btnProfiles = findViewById(R.id.btnProfiles);
+        MaterialButton btnImages = findViewById(R.id.btnImages);
         MaterialButton btnNotifications = findViewById(R.id.btnNotifications);
 
         btnOrganizers.setOnClickListener(v ->
@@ -30,10 +30,13 @@ public class AdminBrowseActivity extends AppCompatActivity {
                 startActivity(new Intent(this, BrowseEntrantsActivity.class)));
 
         btnEvents.setOnClickListener(v ->
-                android.widget.Toast.makeText(this, "Browse Events not implemented", android.widget.Toast.LENGTH_SHORT).show());
+                startActivity(new Intent(this, AdminEventListActivity.class)));
+
+        btnImages.setOnClickListener(v ->
+                startActivity(new Intent(this, AdminImageListActivity.class)));
 
         btnNotifications.setOnClickListener(v ->
-                android.widget.Toast.makeText(this, "Notifications not implemented", android.widget.Toast.LENGTH_SHORT).show());
+                startActivity(new Intent(this, AdminNotificationLogActivity.class)));
     }
 }
 

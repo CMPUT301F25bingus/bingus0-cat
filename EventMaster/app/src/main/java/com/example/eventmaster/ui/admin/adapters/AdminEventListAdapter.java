@@ -32,10 +32,7 @@ public class AdminEventListAdapter extends RecyclerView.Adapter<AdminEventListAd
      */
     public interface OnAdminEventClickListener {
         void onEventClick(Event event);
-        void onViewEntrantsClick(Event event);
-        void onNotificationsClick(Event event);
-        void onEditEventClick(Event event);
-        void onCancelEventClick(Event event);
+        void onDeleteEventClick(Event event);
     }
 
     public AdminEventListAdapter(OnAdminEventClickListener listener) {
@@ -107,10 +104,7 @@ public class AdminEventListAdapter extends RecyclerView.Adapter<AdminEventListAd
         private final TextView eventDateText;
         private final TextView registrationDeadlineText;
         private final TextView joinedCountText;
-        private final MaterialButton viewEntrantsButton;
-        private final MaterialButton notificationsButton;
-        private final MaterialButton editEventButton;
-        private final MaterialButton cancelEventButton;
+        private final MaterialButton deleteEventButton;
 
         public AdminEventViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -119,10 +113,7 @@ public class AdminEventListAdapter extends RecyclerView.Adapter<AdminEventListAd
             eventDateText = itemView.findViewById(R.id.event_date_text);
             registrationDeadlineText = itemView.findViewById(R.id.registration_deadline_text);
             joinedCountText = itemView.findViewById(R.id.joined_count_text);
-            viewEntrantsButton = itemView.findViewById(R.id.view_entrants_button);
-            notificationsButton = itemView.findViewById(R.id.notifications_button);
-            editEventButton = itemView.findViewById(R.id.edit_event_button);
-            cancelEventButton = itemView.findViewById(R.id.cancel_event_button);
+            deleteEventButton = itemView.findViewById(R.id.delete_event_button);
         }
 
         public void bind(Event event, OnAdminEventClickListener listener) {
@@ -154,10 +145,7 @@ public class AdminEventListAdapter extends RecyclerView.Adapter<AdminEventListAd
 
             // Set click listeners
             itemView.setOnClickListener(v -> listener.onEventClick(event));
-            viewEntrantsButton.setOnClickListener(v -> listener.onViewEntrantsClick(event));
-            notificationsButton.setOnClickListener(v -> listener.onNotificationsClick(event));
-            editEventButton.setOnClickListener(v -> listener.onEditEventClick(event));
-            cancelEventButton.setOnClickListener(v -> listener.onCancelEventClick(event));
+            deleteEventButton.setOnClickListener(v -> listener.onDeleteEventClick(event));
         }
     }
 }
