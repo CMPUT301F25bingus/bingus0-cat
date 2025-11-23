@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="16dp"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="4dp"
+    app:cardBackgroundColor="#FFFFFF">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp">
+
+        <!-- Image Thumbnail -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/thumbnail_card"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="0dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <ImageView
+                android:id="@+id/image_thumbnail"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:background="#CCCCCC"
+                android:contentDescription="Image thumbnail" />
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- Image Path -->
+        <TextView
+            android:id="@+id/image_path"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="events/event123/poster.jpg"
+            android:textSize="14sp"
+            android:textColor="#666666"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="8dp"
+            android:maxLines="2"
+            android:ellipsize="end"
+            app:layout_constraintStart_toEndOf="@id/thumbnail_card"
+            app:layout_constraintTop_toTopOf="@id/thumbnail_card"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <!-- Delete Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/delete_image_button"
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:text="Delete Image"
+            android:textSize="14sp"
+            android:textColor="#FFFFFF"
+            app:cornerRadius="8dp"
+            android:backgroundTint="#D32F2F"
+            android:layout_marginTop="12dp"
+            app:layout_constraintTop_toBottomOf="@id/thumbnail_card"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</androidx.cardview.widget.CardView>
+

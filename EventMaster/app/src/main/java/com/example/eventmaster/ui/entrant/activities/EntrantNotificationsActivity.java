@@ -1,5 +1,6 @@
 package com.example.eventmaster.ui.entrant.activities;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.ProgressBar;
@@ -134,14 +135,67 @@ public class EntrantNotificationsActivity extends AppCompatActivity {
 
     /**
      * Loads notifications for the current user from Firestore.
+     * Queries with both Firebase Auth UID and deviceId to ensure all notifications are found.
      */
     private void loadNotifications() {
         showLoading(true);
-        Log.d(TAG, "Loading notifications for user: " + currentUserId);
+        String deviceId = DeviceUtils.getDeviceId(this);
+        Log.d(TAG, "Loading notifications for user: " + currentUserId + " (deviceId: " + deviceId + ")");
 
+        // Query with Firebase Auth UID first
         notificationService.getNotificationsForUser(
                 currentUserId,
-                this::handleNotificationsFetched,
+                notifications1 -> {
+                    // Also query with deviceId to catch legacy notifications
+                    if (deviceId != null && !deviceId.equals(currentUserId)) {
+                        notificationService.getNotificationsForUser(
+                                deviceId,
+                                notifications2 -> {
+                                    // Merge and deduplicate
+                                    Set<String> seenIds = new HashSet<>();
+                                    List<Notification> allNotifications = new ArrayList<>();
+                                    
+                                    if (notifications1 != null) {
+                                        for (Notification n : notifications1) {
+                                            if (n.getNotificationId() != null && !seenIds.contains(n.getNotificationId())) {
+                                                seenIds.add(n.getNotificationId());
+                                                allNotifications.add(n);
+                                            }
+                                        }
+                                    }
+                                    
+                                    if (notifications2 != null) {
+                                        for (Notification n : notifications2) {
+                                            if (n.getNotificationId() != null && !seenIds.contains(n.getNotificationId())) {
+                                                seenIds.add(n.getNotificationId());
+                                                allNotifications.add(n);
+                                            }
+                                        }
+                                    }
+                                    
+                                    // Sort by sentAt descending
+                                    allNotifications.sort((a, b) -> {
+                                        Date dateA = a.getSentAt();
+                                        Date dateB = b.getSentAt();
+                                        if (dateA == null && dateB == null) return 0;
+                                        if (dateA == null) return 1;
+                                        if (dateB == null) return -1;
+                                        return dateB.compareTo(dateA);
+                                    });
+                                    
+                                    handleNotificationsFetched(allNotifications);
+                                },
+                                error -> {
+                                    Log.e(TAG, "Failed to load notifications with deviceId: " + error);
+                                    // Still process notifications from Firebase Auth UID
+                                    handleNotificationsFetched(notifications1 != null ? notifications1 : new ArrayList<>());
+                                }
+                        );
+                    } else {
+                        // deviceId same as currentUserId, just use one query
+                        handleNotificationsFetched(notifications1 != null ? notifications1 : new ArrayList<>());
+                    }
+                },
                 this::handleLoadError
         );
     }
@@ -305,10 +359,12 @@ public class EntrantNotificationsActivity extends AppCompatActivity {
         builder.setMessage(notification.getMessage());
         builder.setPositiveButton("OK", (dialog, which) -> dialog.dismiss());
         
-        // For lottery win notifications, could add Accept/Decline buttons (US 01.05.02/01.05.03)
-        if (notification.getType() == Notification.NotificationType.LOTTERY_WON) {
+        // For lottery win notifications, add button to navigate to event details
+        if (notification.getType() == Notification.NotificationType.LOTTERY_WON && notification.getEventId() != null) {
             builder.setNeutralButton("View Event", (dialog, which) -> {
-                Toast.makeText(this, "Navigate to event details - Coming soon!", Toast.LENGTH_SHORT).show();
+                Intent intent = new Intent(this, EventDetailsActivity.class);
+                intent.putExtra(EventDetailsActivity.EXTRA_EVENT_ID, notification.getEventId());
+                startActivity(intent);
             });
         }
         

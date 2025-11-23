@@ -22,6 +22,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.eventmaster.R;
 import com.example.eventmaster.data.api.NotificationService;
 import com.example.eventmaster.data.firestore.NotificationServiceFs;
+import com.example.eventmaster.data.firestore.ProfileRepositoryFs;
 import com.example.eventmaster.model.Profile;
 import com.example.eventmaster.ui.organizer.adapters.*;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -30,7 +31,9 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Activity for displaying selected entrants who won the lottery.
@@ -78,14 +81,16 @@ public class SelectedEntrantsActivity extends AppCompatActivity {
 
     // Services
     private NotificationService notificationService;
+    private ProfileRepositoryFs profileRepo;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.organizer_activity_selected_entrants);
 
-        // Initialize service
+        // Initialize services
         notificationService = new NotificationServiceFs();
+        profileRepo = new ProfileRepositoryFs();
 
         // Initialize UI components
         initializeViews();
@@ -139,6 +144,9 @@ public class SelectedEntrantsActivity extends AppCompatActivity {
     private void loadSelectedEntrantsFromFirestore() {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
+        // Clear existing list before reloading to avoid duplicates
+        selectedEntrants.clear();
+
         // 1) Load selected entrants (status = ACTIVE)
         db.collection("events")
                 .document(eventId)
@@ -156,11 +164,38 @@ public class SelectedEntrantsActivity extends AppCompatActivity {
 
                     Log.d(TAG, "Found " + regSnap.size() + " selected entrants");
 
+                    // Track userIds we've already processed to avoid duplicates
+                    Set<String> processedUserIds = new HashSet<>();
+                    
                     for (DocumentSnapshot doc : regSnap.getDocuments()) {
+                        // Registration document ID is the userId (Firebase Auth UID)
+                        String userId = doc.getId(); // Document ID is the userId
+                        
+                        // Verify entrantId field matches (for debugging)
+                        String entrantId = doc.getString("entrantId");
+                        if (entrantId != null && !entrantId.isEmpty()) {
+                            if (!entrantId.equals(userId)) {
+                                Log.w(TAG, "Registration entrantId (" + entrantId + ") doesn't match document ID (" + userId + "), using entrantId");
+                                userId = entrantId;
+                            }
+                        }
+                        
+                        // Also check userId field as fallback
+                        String userIdField = doc.getString("userId");
+                        if (userIdField != null && !userIdField.isEmpty()) {
+                            userId = userIdField;
+                        }
+                        
+                        // Skip if we've already processed this userId (avoid duplicates)
+                        if (processedUserIds.contains(userId)) {
+                            Log.d(TAG, "Skipping duplicate registration for userId: " + userId + " (docId: " + doc.getId() + ")");
+                            continue;
+                        }
+                        
+                        processedUserIds.add(userId);
+                        Log.d(TAG, "Found selected registration - docId: " + doc.getId() + ", userId: " + userId);
 
-                        String deviceId = doc.getId(); // userId stored by entrant side
-
-                        loadProfileForSelectedEntrant(deviceId);
+                        loadProfileForSelectedEntrant(userId);
                     }
 
                 })
@@ -170,31 +205,44 @@ public class SelectedEntrantsActivity extends AppCompatActivity {
                 });
     }
 
-    private void loadProfileForSelectedEntrant(String deviceId) {
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
-
-        // 2) Find the matching profile by its deviceId field
-        db.collection("profiles")
-                .whereEqualTo("deviceId", deviceId)
-                .limit(1)
-                .get()
-                .addOnSuccessListener(profileSnap -> {
-
-                    if (!profileSnap.isEmpty()) {
-                        Profile profile = profileSnap.getDocuments().get(0).toObject(Profile.class);
-                        selectedEntrants.add(profile);
-                        Log.d(TAG, "Loaded profile for: " + profile.getName());
+    private void loadProfileForSelectedEntrant(String userId) {
+        // Load profile by userId (document ID = userId in profiles collection)
+        profileRepo.get(userId)
+                .addOnSuccessListener(profile -> {
+                    if (profile != null) {
+                        // Always ensure userId matches (critical for notifications)
+                        String profileUserId = profile.getUserId();
+                        if (profileUserId == null || profileUserId.isEmpty() || !profileUserId.equals(userId)) {
+                            Log.d(TAG, "Updating profile userId from '" + profileUserId + "' to '" + userId + "'");
+                            profile.setUserId(userId);
+                        }
+                        
+                        // Check if profile is already in the list (avoid duplicates)
+                        boolean alreadyExists = false;
+                        for (Profile p : selectedEntrants) {
+                            if (p.getUserId() != null && p.getUserId().equals(userId)) {
+                                alreadyExists = true;
+                                break;
+                            }
+                        }
+                        
+                        if (!alreadyExists) {
+                            selectedEntrants.add(profile);
+                            Log.d(TAG, "✓ Loaded profile for userId: " + userId + ", name: " + profile.getName());
+                        } else {
+                            Log.d(TAG, "Profile already in list for userId: " + userId);
+                        }
                     } else {
-                        Log.w(TAG, "No profile found for deviceId: " + deviceId);
+                        Log.w(TAG, "Profile not found for userId: " + userId);
                     }
-
-                    // Update the adapter each time a profile loads
+                    
                     adapter.updateEntrants(new ArrayList<>(selectedEntrants));
                     updateUI();
-
                 })
                 .addOnFailureListener(e -> {
-                    Log.e(TAG, "Failed loading profile for " + deviceId, e);
+                    Log.e(TAG, "✗ Failed loading profile by document ID for userId: " + userId, e);
+                    adapter.updateEntrants(new ArrayList<>(selectedEntrants));
+                    updateUI();
                 });
     }
 

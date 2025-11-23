@@ -90,81 +90,21 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintBottom_toBottomOf="@id/thumbnail_card" />
 
-        <!-- Admin Action Buttons Row 1 -->
-        <LinearLayout
-            android:id="@+id/actions_row_1"
+        <!-- Delete Event Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/delete_event_button"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
+            android:layout_height="40dp"
             android:layout_marginTop="12dp"
-            android:gravity="start"
+            android:text="Delete event 🗑️"
+            android:textSize="12sp"
+            android:textColor="#D32F2F"
+            app:cornerRadius="8dp"
+            android:backgroundTint="#FFEBEE"
             app:layout_constraintTop_toBottomOf="@id/thumbnail_card"
-            app:layout_constraintStart_toStartOf="parent">
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/view_entrants_button"
-                android:layout_width="0dp"
-                android:layout_height="40dp"
-                android:layout_weight="1"
-                android:text="[View Entrants 👥]"
-                android:textSize="12sp"
-                android:textColor="#000000"
-                app:cornerRadius="8dp"
-                android:backgroundTint="#E0E0E0"
-                android:layout_marginEnd="8dp"
-                style="@style/Widget.Material3.Button.OutlinedButton" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/notifications_button"
-                android:layout_width="0dp"
-                android:layout_height="40dp"
-                android:layout_weight="1"
-                android:text="[Notifications __]"
-                android:textSize="12sp"
-                android:textColor="#000000"
-                app:cornerRadius="8dp"
-                android:backgroundTint="#E0E0E0"
-                style="@style/Widget.Material3.Button.OutlinedButton" />
-
-        </LinearLayout>
-
-        <!-- Admin Action Buttons Row 2 -->
-        <LinearLayout
-            android:id="@+id/actions_row_2"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginTop="8dp"
-            android:gravity="start"
-            app:layout_constraintTop_toBottomOf="@id/actions_row_1"
-            app:layout_constraintStart_toStartOf="parent">
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/edit_event_button"
-                android:layout_width="0dp"
-                android:layout_height="40dp"
-                android:layout_weight="1"
-                android:text="[Edit event ✏️]"
-                android:textSize="12sp"
-                android:textColor="#1976D2"
-                app:cornerRadius="8dp"
-                android:backgroundTint="#E3F2FD"
-                android:layout_marginEnd="8dp"
-                style="@style/Widget.Material3.Button.OutlinedButton" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/cancel_event_button"
-                android:layout_width="0dp"
-                android:layout_height="40dp"
-                android:layout_weight="1"
-                android:text="[Cancel event ❌]"
-                android:textSize="12sp"
-                android:textColor="#D32F2F"
-                app:cornerRadius="8dp"
-                android:backgroundTint="#FFEBEE"
-                style="@style/Widget.Material3.Button.OutlinedButton" />
-
-        </LinearLayout>
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            style="@style/Widget.Material3.Button.OutlinedButton" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
