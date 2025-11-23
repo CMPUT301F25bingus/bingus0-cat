@@ -571,30 +571,44 @@ public class EventDetailsFragment extends Fragment {
     private void joinWaitingListWithLocation(double lat, double lng) {
         String entryId = UUID.randomUUID().toString();
 
-        Map<String, Object> data = new HashMap<>();
-        data.put("entryId", entryId);
-        data.put("eventId", eventId);
-        data.put("userId", userId);
-        data.put("joinedAt", new Date());
-        data.put("lat", lat);
-        data.put("lng", lng);
+//        Map<String, Object> data = new HashMap<>();
+//        data.put("entryId", entryId);
+//        data.put("eventId", eventId);
+//        data.put("userId", userId);
+//        data.put("joinedAt", new Date());
+//        data.put("lat", lat);
+//        data.put("lng", lng);
+        WaitingListEntry entry = new WaitingListEntry(
+                entryId,
+                eventId,
+                userId,
+                new Date()
+        );
+        entry.setProfile(currentProfile);  //ensure profile is set for organizer later
+        entry.setlat(lat);
+        entry.setlng(lng);
 
-        FirebaseFirestore.getInstance()
-                .collection("events")
-                .document(eventId)
-                .collection("waiting_list")
-                .document(userId)
-                .set(data)
-                .addOnSuccessListener(unused -> {
-                    Toast.makeText(requireContext(), "Joined event!", Toast.LENGTH_SHORT).show();
-                    isInWaitingList = true;
-                    joinButton.setText("Exit Waiting List");
-                    joinButton.setEnabled(true);
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(requireContext(), "Failed to join: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    joinButton.setEnabled(true);
-                });
+
+        ((WaitingListRepositoryFs) waitingListRepository)
+            .joinWithLimitCheck(entry, new WaitingListRepository.OnWaitingListOperationListener() {
+            @Override
+            public void onSuccess() {
+                Toast.makeText(requireContext(),
+                        "Successfully joined waiting list!",
+                        Toast.LENGTH_SHORT).show();
+
+                isInWaitingList = true;
+                loadEventDetails(); // refresh count & button state
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                Toast.makeText(requireContext(),
+                        e.getMessage(),
+                        Toast.LENGTH_LONG).show();
+                loadEventDetails();
+            }
+        });
     }
 
     /**

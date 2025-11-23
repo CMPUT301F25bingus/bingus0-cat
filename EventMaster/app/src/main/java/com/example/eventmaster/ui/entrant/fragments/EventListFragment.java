@@ -26,8 +26,10 @@ import com.example.eventmaster.R;
 import com.example.eventmaster.data.api.EventRepository;
 import com.example.eventmaster.data.api.WaitingListRepository;
 import com.example.eventmaster.data.firestore.EventRepositoryFs;
+import com.example.eventmaster.data.firestore.ProfileRepositoryFs;
 import com.example.eventmaster.data.firestore.WaitingListRepositoryFs;
 import com.example.eventmaster.model.Event;
+import com.example.eventmaster.model.Profile;
 import com.example.eventmaster.model.WaitingListEntry;
 import com.example.eventmaster.ui.entrant.activities.EntrantNotificationsActivity;
 import com.example.eventmaster.ui.entrant.activities.EventDetailsActivity;
@@ -56,8 +58,10 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
 
     private EventRepository eventRepository;
     private WaitingListRepository waitingListRepository;
+    private ProfileRepositoryFs profileRepo = new ProfileRepositoryFs();
     private EventListAdapter adapter;
     private String userId;
+    private Profile currentProfile;
 
     private RecyclerView recyclerView;
     private EditText searchEditText;
@@ -101,6 +105,17 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
 
         // Get device-based user ID
         userId = DeviceUtils.getDeviceId(requireContext());
+
+        // --- Load profile for attaching to waiting list entries ---
+        profileRepo.getByDeviceId(userId)
+                .addOnSuccessListener(profile -> {
+                    if (profile != null) currentProfile = profile;
+                    else {
+                        Profile newP = new Profile(userId, "Guest User", "", null);
+                        profileRepo.upsert(newP);
+                        currentProfile = newP;
+                    }
+                });
     }
 
     @Nullable
@@ -328,29 +343,31 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
     private void joinWaitingListWithLocation(Event event, double lat, double lng) {
         String entryId = UUID.randomUUID().toString();
 
-        Map<String, Object> data = new HashMap<>();
-        data.put("entryId", entryId);
-        data.put("eventId", event.getEventId());
-        data.put("userId", userId);
-        data.put("joinedAt", new Date());
-        data.put("lat", lat);
-        data.put("lng", lng);
+        WaitingListEntry entry = new WaitingListEntry(
+                entryId,
+                event.getEventId(),
+                userId,
+                new Date()
+        );
 
-        FirebaseFirestore.getInstance()
-                .collection("events")
-                .document(event.getEventId())
-                .collection("waiting_list")   // MUST MATCH WaitingListRepositoryFs
-                .document(userId)
-                .set(data)
-                .addOnSuccessListener(unused -> {
-                    Toast.makeText(requireContext(),
-                            "Successfully joined! (Location included)",
-                            Toast.LENGTH_SHORT).show();
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(requireContext(),
-                            "Failed to join: " + e.getMessage(),
-                            Toast.LENGTH_SHORT).show();
+        entry.setProfile(currentProfile);  // ⭐ PROFILE INCLUDED
+        entry.setlat(lat);
+        entry.setlng(lng);
+
+        ((WaitingListRepositoryFs) waitingListRepository)
+                .joinWithLimitCheck(entry, new WaitingListRepository.OnWaitingListOperationListener() {
+                    @Override
+                    public void onSuccess() {
+                        Toast.makeText(requireContext(),
+                                "Successfully joined with location!",
+                                Toast.LENGTH_SHORT).show();
+                    }
+                    @Override
+                    public void onFailure(Exception e) {
+                        Toast.makeText(requireContext(),
+                                "Failed to join: " + e.getMessage(),
+                                Toast.LENGTH_SHORT).show();
+                    }
                 });
     }
 
@@ -367,6 +384,8 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
                 userId,
                 new Date()
         );
+
+        entry.setProfile(currentProfile); //ensure profile detiasl are added to db
 
         waitingListRepository.addToWaitingList(entry,
                 new WaitingListRepository.OnWaitingListOperationListener() {

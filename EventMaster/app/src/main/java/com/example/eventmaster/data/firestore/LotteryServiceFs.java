@@ -137,6 +137,17 @@ public class LotteryServiceFs implements LotteryService {
 
                         // Process LOSERS (not selected)
                         for (WaitingListEntry e : notChosen) {
+                            // Add them to not_selected
+                            Task<Void> addNotSelectedTask = db.collection("events")
+                                    .document(eventId)
+                                    .collection("not_selected")
+                                    .document(e.getUserId())
+                                    .set(e)
+                                    .addOnSuccessListener(aVoid ->
+                                            Log.d(TAG, "📁 Added " + e.getUserId() + " to not_selected"))
+                                    .addOnFailureListener(ex ->
+                                            Log.e(TAG, "❌ Failed to add " + e.getUserId() + " to not_selected", ex));
+                            writeTasks.add(addNotSelectedTask);
                             // Remove from waiting_list
                             Task<Void> removeTask = db.collection("events")
                                     .document(eventId)

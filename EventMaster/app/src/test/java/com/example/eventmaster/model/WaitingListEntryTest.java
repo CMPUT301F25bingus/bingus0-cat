@@ -54,14 +54,14 @@ public class WaitingListEntryTest {
 
     @Test
     public void testGeolocation() {
-        assertNull(entry.getLatitude());
-        assertNull(entry.getLongitude());
+        assertNull(entry.getlat());
+        assertNull(entry.getlng());
 
-        entry.setLatitude(53.5461);
-        entry.setLongitude(-113.4938);
+        entry.setlat(53.5461);
+        entry.setlng(-113.4938);
 
-        assertEquals(Double.valueOf(53.5461), entry.getLatitude());
-        assertEquals(Double.valueOf(-113.4938), entry.getLongitude());
+        assertEquals(Double.valueOf(53.5461), entry.getlat());
+        assertEquals(Double.valueOf(-113.4938), entry.getlng());
     }
 
     @Test

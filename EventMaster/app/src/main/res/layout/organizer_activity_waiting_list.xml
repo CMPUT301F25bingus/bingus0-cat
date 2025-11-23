@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#5FB3AD">
+    android:background="#5EC1B6">
 
     <!-- TOP BAR (Unified Theme) -->
     <com.google.android.material.appbar.MaterialToolbar
@@ -53,8 +53,8 @@
         android:textSize="22sp"
         android:textStyle="bold"
         android:textAlignment="center"
-        android:textColor="@android:color/white"
-        android:background="#158482"
+        android:textColor="@android:color/black"
+        android:background="#B8D9D8"
         android:padding="12dp"
         android:layout_marginStart="24dp"
         android:layout_marginEnd="24dp"
