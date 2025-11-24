@@ -85,6 +85,73 @@ public class WaitingListEntryTest {
         WaitingListEntry emptyEntry = new WaitingListEntry();
         assertNotNull(emptyEntry);
     }
+
+    @Test
+    public void testNameEmailPhoneFields() {
+        entry.setEntrantName("Noor");
+        entry.setEmail("noor@example.com");
+        entry.setPhone("+1-555-666-7777");
+
+        assertEquals("Noor", entry.getEntrantName());
+        assertEquals("noor@example.com", entry.getEmail());
+        assertEquals("+1-555-666-7777", entry.getPhone());
+    }
+
+    @Test
+    public void testFullConstructor() {
+        Date now = new Date();
+
+        WaitingListEntry e = new WaitingListEntry(
+                "entry_999",
+                "event_999",
+                "user_999",
+                "Test User",
+                "test@example.com",
+                "555-1111",
+                now,
+                "waiting"
+        );
+
+        assertEquals("entry_999", e.getEntryId());
+        assertEquals("event_999", e.getEventId());
+        assertEquals("user_999", e.getUserId());
+        assertEquals("Test User", e.getEntrantName());
+        assertEquals("test@example.com", e.getEmail());
+        assertEquals("555-1111", e.getPhone());
+        assertEquals("waiting", e.getStatus());
+        assertEquals(now.getTime() / 1000, e.getJoinedDate().getSeconds());
+    }
+
+    @Test
+    public void testStatus_invalidValuesAcceptedAsRawString() {
+        entry.setStatus("THIS_IS_INVALID");
+        assertEquals("THIS_IS_INVALID", entry.getStatus());
+    }
+
+    @Test
+    public void testNullFieldsSafety() {
+        WaitingListEntry e = new WaitingListEntry();
+        assertNull(e.getEntryId());
+        assertNull(e.getEventId());
+        assertNull(e.getUserId());
+        assertNull(e.getEntrantName());
+        assertNull(e.getEmail());
+        assertNull(e.getPhone());
+    }
+
+    @Test
+    public void testToStringContainsUsefulInfo() {
+        String str = entry.toString();
+        assertNotNull(str);
+        assertTrue(str.length() > 0);
+    }
+
+    @Test
+    public void testJoinedDate_setNull() {
+        entry.setJoinedDate(null);
+        assertNull(entry.getJoinedDate());
+    }
+
 }
 
 
