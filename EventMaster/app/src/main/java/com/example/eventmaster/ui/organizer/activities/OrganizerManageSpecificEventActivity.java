@@ -1,5 +1,6 @@
 package com.example.eventmaster.ui.organizer.activities;
 
+import android.app.DatePickerDialog;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -27,6 +28,7 @@ import com.google.firebase.storage.StorageReference;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Calendar;
 import java.util.Date;
 
 public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
@@ -359,9 +361,18 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
                             .setPositiveButton("Run", (d, w) -> {
                                 LotteryServiceFs lottery = new LotteryServiceFs();
                                 lottery.drawLottery(eventId, capacity)
-                                        .addOnSuccessListener(aVoid ->
-                                                Toast.makeText(this, "Lottery completed!", Toast.LENGTH_SHORT).show()
-                                        )
+                                        .addOnSuccessListener(aVoid -> {
+
+                                            Toast.makeText(
+                                                    this,
+                                                    "Lottery completed! Invitations sent.",
+                                                    Toast.LENGTH_SHORT
+                                            ).show();
+
+                                            // 👉 NOW ask for reply-by date
+                                            showReplyByDatePicker();
+
+                                        })
                                         .addOnFailureListener(e ->
                                                 Toast.makeText(this, "Lottery failed: " + e.getMessage(), Toast.LENGTH_LONG).show()
                                         );
@@ -374,7 +385,7 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
                 );
     }
 
-    // 🔥 FULL FIX: Hide the overlay when back is pressed
+    // Hide the overlay when back is pressed
     @Override
     public void onBackPressed() {
         if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
@@ -384,4 +395,65 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
             super.onBackPressed();
         }
     }
+    private void showReplyByDatePicker() {
+        final Calendar calendar = Calendar.getInstance();
+
+        DatePickerDialog picker = new DatePickerDialog(
+                this,
+                (view, year, month, dayOfMonth) -> {
+
+                    Calendar selected = Calendar.getInstance();
+                    selected.set(Calendar.YEAR, year);
+                    selected.set(Calendar.MONTH, month);
+                    selected.set(Calendar.DAY_OF_MONTH, dayOfMonth);
+                    selected.set(Calendar.HOUR_OF_DAY, 23);
+                    selected.set(Calendar.MINUTE, 59);
+                    selected.set(Calendar.SECOND, 59);
+
+                    Date replyByDate = selected.getTime();
+
+                    saveReplyByDateToInvitations(replyByDate);
+                },
+                calendar.get(Calendar.YEAR),
+                calendar.get(Calendar.MONTH),
+                calendar.get(Calendar.DAY_OF_MONTH)
+        );
+
+        picker.setTitle("Select Reply-By Date for Invitations");
+        picker.show();
+    }
+
+    private void saveReplyByDateToInvitations(Date replyByDate) {
+
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        db.collection("events")
+                .document(eventId)
+                .collection("invitations")
+                .get()
+                .addOnSuccessListener(snap -> {
+
+                    db.runBatch(batch -> {
+                        for (var doc : snap.getDocuments()) {
+                            batch.update(doc.getReference(), "replyBy", replyByDate);
+                        }
+                    }).addOnSuccessListener(unused ->
+                            Toast.makeText(
+                                    this,
+                                    "Reply-by date set for all invitations!",
+                                    Toast.LENGTH_LONG
+                            ).show()
+                    ).addOnFailureListener(e ->
+                            Toast.makeText(
+                                    this,
+                                    "Failed to update invitations: " + e.getMessage(),
+                                    Toast.LENGTH_LONG
+                            ).show()
+                    );
+
+                });
+    }
+
+
+
 }

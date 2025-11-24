@@ -33,11 +33,14 @@ import com.example.eventmaster.model.Profile;
 import com.example.eventmaster.model.WaitingListEntry;
 import com.example.eventmaster.utils.DeviceUtils;
 import com.google.android.material.button.MaterialButton;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
+import com.google.firebase.firestore.SetOptions;
+import com.google.firebase.firestore.WriteBatch;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -98,6 +101,10 @@ public class EventDetailsFragment extends Fragment {
     
     // Firestore listeners for real-time updates
     private ListenerRegistration invitationListener;
+
+    //when invite is recived show time left to reply
+    private TextView inviteCountdownText;
+
 
     /** Factory method */
     public static EventDetailsFragment newInstance(String eventId) {
@@ -188,6 +195,7 @@ public class EventDetailsFragment extends Fragment {
 
         inviteInclude = view.findViewById(R.id.invitation_include);
         inviteStatusText = view.findViewById(R.id.invite_status_text);
+        inviteCountdownText = view.findViewById(R.id.invite_countdown_text);
         btnAccept = view.findViewById(R.id.btnAccept);
         btnDecline = view.findViewById(R.id.btnDecline);
 
@@ -269,6 +277,19 @@ public class EventDetailsFragment extends Fragment {
                         if (inv != null) {
                             inv.setId(snapshots.getDocuments().get(0).getId());
                             Log.d(TAG, "📩 Invitation status changed: " + inv.getStatus());
+
+                            //AUTO-EXPIRE INVITATION IF DEADLINE PASSED
+                            if (inv.getReplyBy() != null && "PENDING".equals(inv.getStatus())) {
+
+                                Date now = new Date();
+                                Date deadline = inv.getReplyBy();
+
+                                if (now.after(deadline)) {
+                                    autoExpireInvitation(inv);
+                                    return; // stop normal flow (DO NOT show normal invite UI)
+                                }
+                            }
+
                             showInvitationInclude(inv);
                         } else {
                             showJoinButtonWithState();
@@ -283,6 +304,15 @@ public class EventDetailsFragment extends Fragment {
     private void showInvitationInclude(@NonNull Invitation inv) {
         inviteInclude.setVisibility(View.VISIBLE);
         joinButton.setVisibility(View.GONE);
+
+        // SHOW COUNTDOWN TIMER (only when pending & replyBy set)
+        if (inv.getReplyBy() != null && "PENDING".equals(inv.getStatus())) {
+            inviteCountdownText.setVisibility(View.VISIBLE);
+            inviteCountdownText.setText(getCountdownText(inv.getReplyBy()));
+        } else {
+            inviteCountdownText.setVisibility(View.GONE);
+        }
+
 
         String status = String.valueOf(inv.getStatus());
         switch (status) {
@@ -327,13 +357,35 @@ public class EventDetailsFragment extends Fragment {
                 break;
 
             default:
-                inviteStatusText.setText("Invitation declined");
+                if (inv.getStatus().equals("CANCELLED_BY_ORGANIZER")) {
+                    inviteStatusText.setText("Did not meet the reply deadline");
+                } else {
+                    inviteStatusText.setText("Invitation declined");
+                }
                 inviteStatusText.setVisibility(View.VISIBLE);
                 btnAccept.setEnabled(false);
                 btnDecline.setEnabled(false);
                 break;
         }
     }
+
+    private String getCountdownText(Date replyBy) {
+        long now = System.currentTimeMillis();
+        long diff = replyBy.getTime() - now;
+
+        if (diff <= 0) {
+            return "Reply deadline passed";
+        }
+
+        long days = diff / (1000 * 60 * 60 * 24);
+        long hours = (diff / (1000 * 60 * 60)) % 24;
+        long minutes = (diff / (1000 * 60)) % 60;
+
+        if (days > 0) return days + " day" + (days == 1 ? "" : "s") + " left to reply";
+        if (hours > 0) return hours + " hour" + (hours == 1 ? "" : "s") + " left to reply";
+        return minutes + " minute" + (minutes == 1 ? "" : "s") + " left to reply";
+    }
+
 
     private void setInviteButtonsEnabled(boolean enabled) {
         btnAccept.setEnabled(enabled);
@@ -343,7 +395,7 @@ public class EventDetailsFragment extends Fragment {
     private void showJoinButtonWithState() {
         inviteInclude.setVisibility(View.GONE);
         joinButton.setVisibility(View.VISIBLE);
-        checkIfUserInWaitingList();
+        checkNotSelected();
     }
 
     /** Displays event details in the UI. */
@@ -733,4 +785,88 @@ public class EventDetailsFragment extends Fragment {
     private void toast(String msg) {
         Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show();
     }
+
+
+    /**
+     * if no responce automtically cancel entrant's invite
+     * */
+    private void autoExpireInvitation(Invitation inv) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        String invitationId = inv.getId();
+        String entrantId = inv.getEntrantId();
+
+        // 1) Cancel registration (same as organizer button logic)
+        Map<String, Object> reg = new HashMap<>();
+        reg.put("eventId", eventId);
+        reg.put("entrantId", entrantId);
+        reg.put("status", "CANCELLED_BY_ORGANIZER");
+        reg.put("cancelledAtUtc", new Date());
+
+        DocumentReference regRef = db.collection("events")
+                .document(eventId)
+                .collection("registrations")
+                .document(entrantId);
+
+        // 2) Update the invitation status
+        DocumentReference invRef = db.collection("events")
+                .document(eventId)
+                .collection("invitations")
+                .document(invitationId);
+
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("status", "CANCELLED_BY_ORGANIZER");
+        updates.put("autoExpiredAt", new Date());
+
+        // 3) Remove from chosen_list (same as organizer)
+        DocumentReference chosenRef = db.collection("events")
+                .document(eventId)
+                .collection("chosen_list")
+                .document(entrantId);
+
+        WriteBatch batch = db.batch();
+
+        batch.set(regRef, reg, SetOptions.merge());
+        batch.update(invRef, updates);
+        batch.delete(chosenRef);
+
+        batch.commit()
+                .addOnSuccessListener(v -> {
+                    inviteStatusText.setVisibility(View.VISIBLE);
+                    inviteStatusText.setText("Did not meet reply deadline");
+
+                    inviteCountdownText.setVisibility(View.GONE);
+
+                    btnAccept.setEnabled(false);
+                    btnDecline.setEnabled(false);
+                })
+                .addOnFailureListener(e -> Log.e("AutoExpire", "Failed to expire invitation", e));
+    }
+
+    //Want to check if they are not selected when the lottery is ran... if that is the case, button should reflect that
+    private void checkNotSelected() {
+        FirebaseFirestore.getInstance()
+                .collection("events")
+                .document(eventId)
+                .collection("not_selected")
+                .document(userId)
+                .get()
+                .addOnSuccessListener(doc -> {
+                    if (doc.exists()) {
+                        // User was NOT SELECTED in the last lottery
+                        joinButton.setText("Unfortunately not selected for now");
+                        joinButton.setEnabled(false);
+                    } else {
+                        // If not in not_selected, continue normal WL check
+                        checkIfUserInWaitingList();
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Failed to check not_selected collection", e);
+                    checkIfUserInWaitingList();
+                });
+    }
+
+
+
 }
