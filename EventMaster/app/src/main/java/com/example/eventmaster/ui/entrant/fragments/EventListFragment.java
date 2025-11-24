@@ -23,6 +23,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.ConcatAdapter;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -37,6 +38,8 @@ import com.example.eventmaster.ui.entrant.activities.EntrantHistoryActivity;
 import com.example.eventmaster.ui.entrant.activities.EntrantNotificationsActivity;
 import com.example.eventmaster.ui.entrant.activities.EventDetailsActivity;
 import com.example.eventmaster.ui.entrant.adapters.EventListAdapter;
+import com.example.eventmaster.ui.entrant.adapters.StatusFilterAdapter;
+import com.example.eventmaster.ui.entrant.model.StatusFilter;
 import com.example.eventmaster.ui.shared.activities.ProfileActivity;
 import com.example.eventmaster.ui.shared.activities.QRScannerActivity;
 import com.example.eventmaster.utils.DeviceUtils;
@@ -67,17 +70,120 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
     private ImageButton qrScannerButton;
     private TextView emptyStateText;
     private BottomNavigationView bottomNavigationView;
+    private StatusFilterAdapter statusFilterAdapter;
+    private ConcatAdapter concatAdapter;
 
     private List<Event> allEvents = new ArrayList<>();
     
     // Filter state variables
     private List<Event> filteredEvents = new ArrayList<>();
+    private List<Event> statusFilteredEvents = new ArrayList<>();
     private String sortOrder = "newest"; // "newest" or "oldest"
     private Double maxPrice = null; // null means no price limit
     private String locationFilter = null;
     private boolean onlyAvailableSpots = false;
+    private StatusFilter currentStatusFilter = StatusFilter.ALL;
     
     private static final String TAG = "EventListFragment";
+
+    private void selectStatusFilter(StatusFilter newFilter) {
+        if (currentStatusFilter == newFilter) {
+            return;
+        }
+        currentStatusFilter = newFilter;
+        if (statusFilterAdapter != null) {
+            statusFilterAdapter.setCurrentFilter(currentStatusFilter);
+        }
+        applyStatusFilterAndRefresh();
+    }
+
+    private void applyStatusFilterAndRefresh() {
+        if (filteredEvents == null) {
+            filteredEvents = new ArrayList<>();
+        }
+        statusFilteredEvents = new ArrayList<>();
+        Date now = new Date();
+        for (Event event : filteredEvents) {
+            EventLifecycleState state = resolveLifecycleState(event, now);
+            if (matchesCurrentFilter(state)) {
+                statusFilteredEvents.add(event);
+            }
+        }
+
+        CharSequence query = searchEditText != null ? searchEditText.getText() : null;
+        if (query != null && query.length() > 0) {
+            adapter.filter(query.toString(), statusFilteredEvents);
+        } else {
+            adapter.setEvents(statusFilteredEvents);
+        }
+        updateEmptyState();
+    }
+
+    private boolean matchesCurrentFilter(EventLifecycleState state) {
+        if (currentStatusFilter == StatusFilter.ALL) return true;
+        if (currentStatusFilter == StatusFilter.OPEN && state == EventLifecycleState.OPEN) return true;
+        if (currentStatusFilter == StatusFilter.CLOSED && state == EventLifecycleState.CLOSED) return true;
+        return currentStatusFilter == StatusFilter.DONE && state == EventLifecycleState.DONE;
+    }
+
+    private EventLifecycleState resolveLifecycleState(Event event, Date referenceDate) {
+        if (event == null) return EventLifecycleState.OPEN;
+
+        String status = event.getStatus();
+        if (status != null) {
+            String normalized = status.trim().toUpperCase();
+            if ("DONE".equals(normalized) || "COMPLETED".equals(normalized)) {
+                return EventLifecycleState.DONE;
+            }
+            if ("CLOSED".equals(normalized)) {
+                return EventLifecycleState.CLOSED;
+            }
+        }
+
+        Date eventDate = event.getEventDate();
+        if (eventDate != null && !eventDate.after(referenceDate)) {
+            return EventLifecycleState.DONE;
+        }
+
+        Date regEnd = event.getRegistrationEndDate();
+        if (regEnd != null && regEnd.before(referenceDate)) {
+            return EventLifecycleState.CLOSED;
+        }
+
+        return EventLifecycleState.OPEN;
+    }
+
+    private void updateStatusCounts() {
+        if (statusFilterAdapter == null) return;
+        int total = allEvents != null ? allEvents.size() : 0;
+        int open = 0;
+        int closed = 0;
+        int done = 0;
+        Date now = new Date();
+        if (allEvents != null) {
+            for (Event event : allEvents) {
+                EventLifecycleState state = resolveLifecycleState(event, now);
+                switch (state) {
+                    case DONE:
+                        done++;
+                        break;
+                    case CLOSED:
+                        closed++;
+                        break;
+                    case OPEN:
+                    default:
+                        open++;
+                        break;
+                }
+            }
+        }
+
+        statusFilterAdapter.setCounts(total, open, closed, done);
+    }
+
+    private enum EventLifecycleState {
+        OPEN, CLOSED, DONE
+    }
 
     public EventListFragment() {
         // Required empty public constructor
@@ -139,7 +245,9 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
      */
     private void setupRecyclerView() {
         adapter = new EventListAdapter(this);
-        recyclerView.setAdapter(adapter);
+        statusFilterAdapter = new StatusFilterAdapter(this::selectStatusFilter);
+        concatAdapter = new ConcatAdapter(statusFilterAdapter, adapter);
+        recyclerView.setAdapter(concatAdapter);
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
     }
 
@@ -154,23 +262,14 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                // Search works on filtered events (applies after filters)
-                String query = s.toString().trim().toLowerCase();
-                
-                // Check if any filters are active
-                boolean filtersActive = maxPrice != null || 
-                                       (locationFilter != null && !locationFilter.isEmpty()) || 
-                                       onlyAvailableSpots || 
-                                       !sortOrder.equals("newest");
-                
-                // Use filtered events if filters are active, otherwise use all events
-                List<Event> eventsToSearch = filtersActive ? filteredEvents : allEvents;
-                
+                String query = s.toString().trim();
+                List<Event> eventsToSearch = statusFilteredEvents.isEmpty()
+                        ? filteredEvents
+                        : statusFilteredEvents;
+
                 if (query.isEmpty()) {
-                    // No search query, show filtered results (or all if no filters)
                     adapter.setEvents(eventsToSearch);
                 } else {
-                    // Apply search on filtered results
                     adapter.filter(query, eventsToSearch);
                 }
                 updateEmptyState();
@@ -456,12 +555,11 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
             int comparison = date1.compareTo(date2);
             return sortOrder.equals("newest") ? -comparison : comparison;
         });
+
+        updateStatusCounts();
+        applyStatusFilterAndRefresh();
         
-        // Update adapter with filtered results
-        adapter.setEvents(filteredEvents);
-        updateEmptyState();
-        
-        Log.d(TAG, "Applied filters - showing " + filteredEvents.size() + " of " + allEvents.size() + " events");
+        Log.d(TAG, "Applied filters - showing " + filteredEvents.size() + " of " + allEvents.size() + " events before status filter");
     }
 
     @Override

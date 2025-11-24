@@ -2,33 +2,25 @@ package com.example.eventmaster.ui.shared.activities;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.widget.Button;
+import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.eventmaster.R;
-import com.example.eventmaster.data.api.EventReadService;
-import com.example.eventmaster.data.api.RegistrationService;
-import com.example.eventmaster.data.firestore.EventReadServiceFs;
 import com.example.eventmaster.data.firestore.ProfileRepositoryFs;
-import com.example.eventmaster.data.firestore.RegistrationServiceFs;
-import com.example.eventmaster.model.Event;
-import com.example.eventmaster.model.Registration;
-import com.example.eventmaster.ui.shared.adapters.HistoryAdapter;
+import com.example.eventmaster.model.Profile;
 import com.google.android.material.appbar.MaterialToolbar;
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.FirebaseFirestore;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * ProfileActivity
@@ -46,19 +38,17 @@ public class ProfileActivity extends AppCompatActivity {
 
     // === Data repositories ===
     private final ProfileRepositoryFs profileRepo = new ProfileRepositoryFs();
-    private final RegistrationService regSvc =
-            new RegistrationServiceFs(FirebaseFirestore.getInstance());
-    private final EventReadService eventRead = new EventReadServiceFs();
-
     // Temporary fallback ID; replaced by FirebaseAuth UID if logged in
     private String currentId = "demoUser123";
 
     // === UI elements ===
-    private TextView tvName, tvEmail, tvPhone, tvBanned;
-    private Button btnEdit, btnDelete, btnLogout;
-    private RecyclerView rvHistory;
-    private HistoryAdapter historyAdapter;
+    private TextView tvHeroName, tvHeroEmail, tvBanned;
+    private TextInputLayout layoutName, layoutEmail, layoutPhone;
+    private TextInputEditText inputName, inputEmail, inputPhone, inputDeviceId;
+    private MaterialButton btnEdit, btnCancelEdit, btnDelete, btnLogout;
     private com.google.android.material.bottomnavigation.BottomNavigationView bottomNavigationView;
+    private Profile currentProfile;
+    private boolean isEditing = false;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -70,12 +60,9 @@ public class ProfileActivity extends AppCompatActivity {
         if (toolbar != null) {
             // Make it act as the app bar
             setSupportActionBar(toolbar);
-            // Enable back arrow in the top-left corner
             if (getSupportActionBar() != null) {
-                getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+                getSupportActionBar().setDisplayHomeAsUpEnabled(false);
             }
-            // When arrow clicked → return to previous screen
-            toolbar.setNavigationOnClickListener(v -> onBackPressed());
         }
 
         // 🔹 Use real UID if Firebase Auth user exists
@@ -84,33 +71,42 @@ public class ProfileActivity extends AppCompatActivity {
         }
 
         // 🔹 Bind layout views
-        tvName   = findViewById(R.id.tvName);
-        tvEmail  = findViewById(R.id.tvEmail);
-        tvPhone  = findViewById(R.id.tvPhone);
+        tvHeroName = findViewById(R.id.tvHeroName);
+        tvHeroEmail = findViewById(R.id.tvHeroEmail);
         tvBanned = findViewById(R.id.tvBanned);
+        layoutName = findViewById(R.id.layoutName);
+        layoutEmail = findViewById(R.id.layoutEmail);
+        layoutPhone = findViewById(R.id.layoutPhone);
+        inputName = findViewById(R.id.inputName);
+        inputEmail = findViewById(R.id.inputEmail);
+        inputPhone = findViewById(R.id.inputPhone);
+        inputDeviceId = findViewById(R.id.inputDeviceId);
         btnEdit  = findViewById(R.id.btnEdit);
+        btnCancelEdit = findViewById(R.id.btnCancelEdit);
         btnDelete= findViewById(R.id.btnDelete);
         btnLogout = findViewById(R.id.btnLogout);
-        rvHistory = findViewById(R.id.rvHistory);
         bottomNavigationView = findViewById(R.id.bottom_navigation);
 
-        // 🔹 Edit button → open EditProfileActivity
-        btnEdit.setOnClickListener(v ->
-                startActivity(new Intent(this, EditProfileActivity.class)
-                        .putExtra("profileId", currentId)));
+        setFieldsEditable(false);
+        if (inputDeviceId != null) {
+            inputDeviceId.setEnabled(false);
+            inputDeviceId.setFocusable(false);
+        }
+
+        btnEdit.setOnClickListener(v -> {
+            if (isEditing) {
+                saveProfileEdits();
+            } else {
+                enterEditMode();
+            }
+        });
+        btnCancelEdit.setOnClickListener(v -> exitEditMode(true));
 
         // 🔹 Delete button → confirm, then delete profile
         btnDelete.setOnClickListener(v -> confirmDelete());
 
         // 🔹 Logout button → sign out and go to role selection
         btnLogout.setOnClickListener(v -> handleLogout());
-
-        // 🔹 Setup RecyclerView for history
-        if (rvHistory != null) {
-            rvHistory.setLayoutManager(new LinearLayoutManager(this));
-            historyAdapter = new HistoryAdapter();
-            rvHistory.setAdapter(historyAdapter);
-        }
 
         // Setup bottom navigation (for entrants)
         setupBottomNavigation();
@@ -149,9 +145,8 @@ public class ProfileActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        // Refresh profile + history every time user returns
+        // Refresh profile every time user returns
         loadProfile();
-        loadHistory();
     }
 
     // === PROFILE SECTION ===
@@ -162,13 +157,17 @@ public class ProfileActivity extends AppCompatActivity {
      */
     private void loadProfile() {
         profileRepo.get(currentId, p -> {
-            tvName.setText(ns(p.getName()));
-            tvEmail.setText(ns(p.getEmail()));
-            tvPhone.setText(ns(p.getPhone()));
-            boolean banned = p.getBanned();
-            tvBanned.setText(banned ? "BANNED" : "");
-            tvBanned.setVisibility(banned ? TextView.VISIBLE : TextView.GONE);
-        }, e -> tvName.setText("Error: " + e.getMessage()));
+            currentProfile = p;
+            if (isEditing) {
+                exitEditMode(false);
+            }
+            applyProfile(p);
+        }, e -> {
+            if (tvHeroName != null) {
+                tvHeroName.setText("Error");
+            }
+            Toast.makeText(this, "Failed to load profile", Toast.LENGTH_SHORT).show();
+        });
     }
 
     /**
@@ -181,7 +180,12 @@ public class ProfileActivity extends AppCompatActivity {
                 .setMessage("This removes your profile from the system.")
                 .setNegativeButton("Cancel", null)
                 .setPositiveButton("Delete", (d, which) ->
-                        profileRepo.delete(currentId, v -> finish(), err -> {}))
+                        profileRepo.delete(
+                                currentId,
+                                v -> handleLogoutAndNavigateHome(),
+                                err -> android.widget.Toast.makeText(this,
+                                        "Delete failed: " + err.getMessage(),
+                                        android.widget.Toast.LENGTH_LONG).show()))
                 .show();
     }
 
@@ -193,96 +197,20 @@ public class ProfileActivity extends AppCompatActivity {
                 .setTitle("Log Out?")
                 .setMessage("Are you sure you want to log out?")
                 .setNegativeButton("Cancel", null)
-                .setPositiveButton("Log Out", (d, which) -> {
-                    // Sign out from Firebase Auth
-                    FirebaseAuth.getInstance().signOut();
-                    
-                    // Navigate to role selection screen (MainActivity)
-                    Intent intent = new Intent(this, com.example.eventmaster.MainActivity.class);
-                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                    startActivity(intent);
-                    finish();
-                })
+                .setPositiveButton("Log Out", (d, which) -> handleLogoutAndNavigateHome())
                 .show();
     }
 
-    // === HISTORY SECTION ===
-
     /**
-     * Loads the list of events the entrant has registered for.
-     * Fetches registration documents → maps each to an event title.
+     * Centralized sign-out and navigation logic used by logout & delete flows.
      */
-    private void loadHistory() {
-        if (rvHistory == null || historyAdapter == null) return;
+    private void handleLogoutAndNavigateHome() {
+        FirebaseAuth.getInstance().signOut();
 
-        // Clear adapter while loading
-        historyAdapter.replace(new ArrayList<>());
-
-        regSvc.listByEntrant(currentId)
-                .addOnSuccessListener(regs -> {
-                    List<Registration> regsFinal =
-                            (regs == null) ? new ArrayList<>() : new ArrayList<>(regs);
-
-                    // Collect event IDs from registrations
-                    Map<String, Event> cache = new HashMap<>();
-                    List<String> eventIds = new ArrayList<>();
-                    for (Registration r : regsFinal) {
-                        String eid = r.getEventId();
-                        if (eid != null && !cache.containsKey(eid)) {
-                            cache.put(eid, null);
-                            eventIds.add(eid);
-                        }
-                    }
-
-                    // No event references → display basic rows
-                    if (eventIds.isEmpty()) {
-                        List<HistoryAdapter.Row> rows = new ArrayList<>();
-                        for (Registration r : regsFinal) {
-                            rows.add(new HistoryAdapter.Row(r, null));
-                        }
-                        historyAdapter.replace(rows);
-                        return;
-                    }
-
-                    // Asynchronously fetch each event’s info
-                    AtomicInteger done = new AtomicInteger(0);
-                    int total = eventIds.size();
-
-                    for (String eventId : eventIds) {
-                        eventRead.get(eventId)
-                                .addOnSuccessListener(e -> {
-                                    cache.put(eventId, e);
-                                    if (done.incrementAndGet() == total) {
-                                        bindHistory(regsFinal, cache);
-                                    }
-                                })
-                                .addOnFailureListener(err -> {
-                                    if (done.incrementAndGet() == total) {
-                                        bindHistory(regsFinal, cache);
-                                    }
-                                });
-                    }
-                })
-                .addOnFailureListener(e ->
-                        android.widget.Toast.makeText(this,
-                                "History load failed: " + e.getMessage(),
-                                android.widget.Toast.LENGTH_LONG).show());
-    }
-
-    /**
-     * Once all events fetched → build and bind rows to RecyclerView.
-     */
-    private void bindHistory(List<Registration> regs, Map<String, Event> cache) {
-        List<HistoryAdapter.Row> rows = new ArrayList<>();
-        for (Registration r : regs) {
-            Event e = cache.get(r.getEventId());
-            String title = (e == null) ? null : e.getTitle();
-            rows.add(new HistoryAdapter.Row(r, title));
-        }
-
-        // Sort newest first
-        rows.sort((a, b) -> Long.compare(b.reg.getCreatedAtUtc(), a.reg.getCreatedAtUtc()));
-        historyAdapter.replace(rows);
+        Intent intent = new Intent(this, com.example.eventmaster.MainActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
     }
 
     // === Utility ===
@@ -292,5 +220,122 @@ public class ProfileActivity extends AppCompatActivity {
      */
     private String ns(String s) {
         return (s == null || s.trim().isEmpty()) ? "—" : s;
+    }
+
+    private void applyProfile(Profile profile) {
+        if (profile == null) return;
+        String heroName = ns(profile.getName());
+        String heroEmail = ns(profile.getEmail());
+        String rawName = profile.getName() != null ? profile.getName() : "";
+        String rawEmail = profile.getEmail() != null ? profile.getEmail() : "";
+        String rawPhone = profile.getPhone() != null ? profile.getPhone() : "";
+        String device = profile.getDeviceId();
+        if (device == null || device.trim().isEmpty()) {
+            device = currentId;
+        }
+
+        if (tvHeroName != null) tvHeroName.setText(heroName);
+        if (tvHeroEmail != null) tvHeroEmail.setText(heroEmail);
+        if (inputName != null) inputName.setText(rawName);
+        if (inputEmail != null) inputEmail.setText(rawEmail);
+        if (inputPhone != null) inputPhone.setText(rawPhone);
+        if (inputDeviceId != null) inputDeviceId.setText(device);
+
+        boolean banned = profile.getBanned();
+        if (tvBanned != null) {
+            tvBanned.setVisibility(banned ? View.VISIBLE : View.GONE);
+            tvBanned.setText(banned ? "BANNED" : "");
+        }
+    }
+
+    private void setFieldsEditable(boolean editable) {
+        TextInputLayout[] layouts = {layoutName, layoutEmail, layoutPhone};
+        TextInputEditText[] fields = {inputName, inputEmail, inputPhone};
+        for (TextInputLayout layout : layouts) {
+            if (layout != null) layout.setEnabled(editable);
+        }
+        for (TextInputEditText field : fields) {
+            if (field == null) continue;
+            field.setEnabled(editable);
+            field.setFocusable(editable);
+            field.setFocusableInTouchMode(editable);
+            field.setCursorVisible(editable);
+        }
+    }
+
+    private void enterEditMode() {
+        isEditing = true;
+        btnEdit.setText("Save");
+        btnEdit.setIcon(null);
+        if (btnCancelEdit != null) {
+            btnCancelEdit.setVisibility(View.VISIBLE);
+        }
+        setFieldsEditable(true);
+        if (inputName != null) {
+            inputName.requestFocus();
+            inputName.setSelection(inputName.getText() != null ? inputName.getText().length() : 0);
+        }
+    }
+
+    private void exitEditMode(boolean resetFields) {
+        isEditing = false;
+        btnEdit.setText("Edit");
+        btnEdit.setIconResource(R.drawable.ic_edit_24);
+        if (btnCancelEdit != null) {
+            btnCancelEdit.setVisibility(View.GONE);
+        }
+        setFieldsEditable(false);
+        if (resetFields && currentProfile != null) {
+            applyProfile(currentProfile);
+        }
+    }
+
+    private void saveProfileEdits() {
+        if (inputName == null || inputEmail == null || currentId == null) return;
+        String name = textOrEmpty(inputName);
+        String email = textOrEmpty(inputEmail);
+        String phone = textOrEmpty(inputPhone);
+
+        if (name.isEmpty()) {
+            inputName.setError("Required");
+            inputName.requestFocus();
+            return;
+        }
+        if (email.isEmpty()) {
+            inputEmail.setError("Required");
+            inputEmail.requestFocus();
+            return;
+        }
+
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("name", name);
+        updates.put("email", email);
+        updates.put("phoneNumber", phone);
+
+        btnEdit.setEnabled(false);
+        profileRepo.update(currentId, updates)
+                .addOnSuccessListener(v -> {
+                    btnEdit.setEnabled(true);
+                    if (currentProfile == null) {
+                        currentProfile = new Profile();
+                        currentProfile.setUserId(currentId);
+                    }
+                    currentProfile.setName(name);
+                    currentProfile.setEmail(email);
+                    currentProfile.setPhone(phone);
+                    applyProfile(currentProfile);
+                    exitEditMode(false);
+                    Toast.makeText(this, "Profile updated", Toast.LENGTH_SHORT).show();
+                })
+                .addOnFailureListener(err -> {
+                    btnEdit.setEnabled(true);
+                    Toast.makeText(this, "Update failed: " + err.getMessage(), Toast.LENGTH_LONG).show();
+                });
+    }
+
+    private String textOrEmpty(TextInputEditText editText) {
+        return editText != null && editText.getText() != null
+                ? editText.getText().toString().trim()
+                : "";
     }
 }
