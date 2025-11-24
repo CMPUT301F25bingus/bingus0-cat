@@ -40,7 +40,7 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintBottom_toBottomOf="parent" />
-            
+
         </androidx.constraintlayout.widget.ConstraintLayout>
     </com.google.android.material.appbar.MaterialToolbar>
 
@@ -94,12 +94,16 @@
             android:textColor="@android:color/black"
             android:layout_marginBottom="14dp" />
 
-        <!-- BUTTON ROW -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginTop="8dp">
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:weightSum="2">
+            android:orientation="horizontal">
 
             <!-- SEND NOTIFICATION -->
             <TextView
@@ -134,6 +138,19 @@
                 android:layout_marginStart="8dp"
                 android:clickable="true"
                 android:focusable="true"/>
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/textSendNotificationNotSelected"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Send Notification to Not Selected 📩"
+            android:textColor="#D32F2F"
+            android:textStyle="italic"
+            android:clickable="true"
+            android:focusable="true" />
+
 
         </LinearLayout>
     </LinearLayout>

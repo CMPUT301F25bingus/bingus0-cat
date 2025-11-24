@@ -25,6 +25,9 @@ public interface EventRepository {
     /** Sets status=PUBLISHED (or whatever publish semantics your impl uses). */
     Task<Void> publish(String eventId);
 
+    /** Deletes an event by ID. */
+    Task<Void> delete(String eventId);
+
     // ---------- Read operations (Task-based) ----------
     /** Retrieves all events as a Task. */
     Task<List<Event>> getAllEvents();
