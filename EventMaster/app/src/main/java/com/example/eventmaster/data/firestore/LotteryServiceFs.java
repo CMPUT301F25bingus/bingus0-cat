@@ -32,6 +32,31 @@ public class LotteryServiceFs implements LotteryService {
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
     private static final String TAG = "LotteryServiceFs";
 
+    /**
+     * Runs the lottery for a given event.
+     *
+     * This method performs the following steps:
+     *
+     * 1. Fetch all documents under events/{eventId}/waiting_list.
+     * 2. Shuffle the list to ensure fairness.
+     * 3. Select the top N entrants as winners.
+     * 4. Mark the rest as non-selected.
+     * 5. For each winner:
+     *    - Add to chosen_list
+     *    - Remove from waiting_list
+     *    - Create a PENDING invitation document
+     *    - Send a "you won" notification
+     * 6. For each non-selected entrant:
+     *    - Add to not_selected
+     *    - Remove from waiting_list
+     *    - Send a "not selected" notification
+     *
+     * All writes are added to a list of Tasks and executed together.
+     *
+     * @param eventId ID of the event running the lottery
+     * @param numberToSelect number of winners to choose
+     * @return Task that completes when all Firestore operations are finished
+     */
     @Override
     public Task<Void> drawLottery(String eventId, int numberToSelect) {
         return db.collection("events")

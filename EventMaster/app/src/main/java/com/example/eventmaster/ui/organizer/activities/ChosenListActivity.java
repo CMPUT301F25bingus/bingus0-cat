@@ -21,6 +21,12 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Activity that displays all entrants who were chosen by the lottery.
+ * This screen allows the organizer to view selected entrants and cancel all
+ * pending invitations if needed. Cancelling pending invitations will move those
+ * entrants into the cancelled entrants list and clear the chosen_list collection.
+ */
 public class ChosenListActivity extends AppCompatActivity {
 
     private static final String TAG = "ChosenListActivity";
@@ -67,6 +73,12 @@ public class ChosenListActivity extends AppCompatActivity {
         loadChosenList(eventId);
     }
 
+    /**
+     * Loads all entrants currently in the chosen_list collection for the event.
+     * Updates the UI list and total count.
+     *
+     * @param eventId The Firestore event ID.
+     */
     private void loadChosenList(String eventId) {
         repo.getChosenList(eventId, new WaitingListRepositoryFs.OnListLoadedListener() {
             @Override
@@ -86,6 +98,12 @@ public class ChosenListActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Cancels all invitations that are still pending. This changes the registration
+     * status to CANCELLED_BY_ORGANIZER, updates the invitation document, and then
+     * clears the chosen_list collection. Used when the organizer wants to revoke
+     * all outstanding invites at once.
+     */
     private void cancelAllPendingInvitations() {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
@@ -138,6 +156,12 @@ public class ChosenListActivity extends AppCompatActivity {
                 });
     }
 
+    /**
+     * Deletes all documents inside the chosen_list collection after pending
+     * invitations are cancelled. Afterwards, the chosen list UI is refreshed.
+     *
+     * @param eventId The Firestore event ID.
+     */
     private void deleteChosenListCollection(String eventId) {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 

@@ -27,6 +27,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+
+/**
+ * Activity that displays all entrants who are no longer participating in the event
+ * due to cancelled registrations. A registration is considered cancelled when its
+ * status is either CANCELLED_BY_ORGANIZER or CANCELLED_BY_ENTRANT.
+ *
+ * This screen loads the cancelled entrants, retrieves their profile information,
+ * shows the total number of cancelled users, and allows the organizer to run
+ * a replacement lottery. The replacement lottery randomly selects new entrants
+ * from the not_selected list and issues new invitations to them.
+ */
+
 public class CancelledEntrantsActivity extends AppCompatActivity {
 
     private static final String TAG = "CancelledEntrants";
@@ -42,6 +54,11 @@ public class CancelledEntrantsActivity extends AppCompatActivity {
     private final List<String> cancelledStatuses = new ArrayList<>();
     private TextView textDrawReplacement;
 
+
+    /**
+     * Initializes the screen, retrieves the eventId,
+     * sets up the RecyclerView and toolbar, and loads cancelled entrants.
+     */
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -77,6 +94,11 @@ public class CancelledEntrantsActivity extends AppCompatActivity {
         loadCancelledFromFirestore();
     }
 
+    /**
+     * Fetches all entrants whose registration status indicates cancellation.
+     * After fetching the registration documents, it loads each user's profile
+     * so their name and details can be shown in the list.
+     */
     private void loadCancelledFromFirestore() {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
@@ -117,6 +139,12 @@ public class CancelledEntrantsActivity extends AppCompatActivity {
                 });
     }
 
+    /**
+     * Loads a single cancelled entrant’s profile using their deviceId.
+     * When the profile is loaded successfully, the UI list is updated.
+     *
+     * @param deviceId The user’s deviceId and Firestore document ID.
+     */
     private void loadProfile(String deviceId) {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
@@ -144,10 +172,21 @@ public class CancelledEntrantsActivity extends AppCompatActivity {
                 );
     }
 
+    /**
+     * Updates the on-screen count of cancelled entrants.
+     */
     private void updateCount() {
         totalCountText.setText("Total cancelled entrants: " + cancelledProfiles.size());
     }
 
+    /**
+     * Runs the replacement lottery. This randomly selects users from the
+     * not_selected collection (who were not chosen originally), creates new
+     * invitations for them, sends notifications, adds them to chosen_list,
+     * and removes them from not_selected.
+     *
+     * This is used when spots open up due to cancellations.
+     */
     private void runReplacementLottery() {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 

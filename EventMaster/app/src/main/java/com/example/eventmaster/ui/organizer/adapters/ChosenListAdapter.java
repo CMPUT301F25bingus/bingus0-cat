@@ -14,6 +14,14 @@ import com.example.eventmaster.model.WaitingListEntry;
 
 import java.util.List;
 
+/**
+ * RecyclerView adapter for displaying all entrants who were selected
+ * by the lottery. Each list item shows the entrant’s name, email,
+ * and phone number, pulling information from both WaitingListEntry
+ * and the Profile object when available.
+ *
+ * The adapter supports dynamic updates when the chosen list changes.
+ */
 public class ChosenListAdapter extends RecyclerView.Adapter<ChosenListAdapter.ViewHolder> {
 
     private List<WaitingListEntry> chosenList;
@@ -22,6 +30,11 @@ public class ChosenListAdapter extends RecyclerView.Adapter<ChosenListAdapter.Vi
         this.chosenList = chosenList;
     }
 
+    /**
+     * Updates the adapter with a new list of chosen entrants and refreshes the view.
+     *
+     * @param newList the updated list of WaitingListEntry objects.
+     */
     public void updateList(List<WaitingListEntry> newList) {
         this.chosenList = newList;
         notifyDataSetChanged();

@@ -31,6 +31,23 @@ import java.io.InputStream;
 import java.util.Calendar;
 import java.util.Date;
 
+/**
+ * Activity used by organizers to view and manage a specific event.
+ * This screen loads event details, displays the poster, capacity,
+ * date range, pricing, organizer name, and allows quick access to
+ * all associated management tools.
+ *
+ * The organizer can:
+ * - View entrants through the Entrants Hub
+ * - Run the lottery once registration has closed
+ * - Edit the event poster
+ * - View the event location on a map (if geolocation is enabled)
+ * - Open a fragment overlay for additional management tools
+ * - Assign reply-by dates to invitations after running the lottery
+ *
+ * The activity retrieves the selected event using the eventId passed
+ * through the Intent and keeps all UI in sync with Firestore.
+ */
 public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
 
     public static final String EXTRA_EVENT_ID = "eventId";
@@ -144,6 +161,11 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
                 }
             });
 
+    /**
+     * Loads all event details from Firestore and populates the UI.
+     * This includes poster, title, organizer name, capacity, dates,
+     * description, event type, and lottery button availability.
+     */
     private void loadEventDetails() {
         FirebaseFirestore.getInstance()
                 .collection("events")
@@ -260,7 +282,12 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
                         Toast.makeText(this, "Failed to load event: " + e.getMessage(), Toast.LENGTH_SHORT).show()
                 );
     }
-
+    /**
+     * Uploads a new poster image to Firebase Storage, retrieves its
+     * download URL, and updates the event document in Firestore.
+     *
+     * @param uri the selected image file chosen by the organizer.
+     */
     private void uploadUpdatedPoster(Uri uri) {
         if (uri == null) return;
 
@@ -296,7 +323,13 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
             Toast.makeText(this, "Failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
-
+    /**
+     * Reads the contents of a given Uri into a byte array so it
+     * can be uploaded to Firebase Storage.
+     *
+     * @param uri the selected image file
+     * @return all bytes from the file
+     */
     private byte[] readAllBytes(Uri uri) throws IOException {
         try (InputStream in = getContentResolver().openInputStream(uri);
              ByteArrayOutputStream out = new ByteArrayOutputStream()) {
@@ -310,6 +343,10 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Opens the Entrants Hub fragment, which provides shortcuts
+     * to the selected, cancelled, and waiting list views.
+     */
     private void openEntrantsHub() {
         fragmentContainer.setVisibility(View.VISIBLE);
         fragmentContainer.bringToFront();
@@ -336,6 +373,12 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
         startActivity(i);
     }
 
+    /**
+     * Initiates the event lottery once registration is closed.
+     * A confirmation dialog is shown, then the LotteryService is
+     * used to select winners and send invitations. Afterward,
+     * the organizer is prompted to set a reply-by date.
+     */
     private void runLottery() {
         FirebaseFirestore.getInstance()
                 .collection("events")
@@ -395,6 +438,11 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
             super.onBackPressed();
         }
     }
+
+    /**
+     * Shows a date picker that lets the organizer choose the reply-by
+     * deadline for all invitations created by the lottery.
+     */
     private void showReplyByDatePicker() {
         final Calendar calendar = Calendar.getInstance();
 
@@ -423,6 +471,13 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
         picker.show();
     }
 
+    /**
+     * Saves the selected reply-by date into every invitation document
+     * under the event. This ensures all chosen entrants share the same
+     * deadline for responding.
+     *
+     * @param replyByDate the date selected in the picker dialog.
+     */
     private void saveReplyByDateToInvitations(Date replyByDate) {
 
         FirebaseFirestore db = FirebaseFirestore.getInstance();

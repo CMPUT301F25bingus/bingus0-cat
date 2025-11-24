@@ -144,6 +144,11 @@ public class EventDetailsFragment extends Fragment {
         Log.d(TAG, "onCreate: eventId=" + eventId + ", userId=" + userId);
     }
 
+    /**
+     * Retrieves the user's profile using the device ID. If no existing profile
+     * is found, a default "Guest User" profile is created and saved. This ensures
+     * that every entrant interacting with the system has a valid profile record.
+     */
     private void loadUserProfile() {
         profileRepo.getByDeviceId(userId)
                 .addOnSuccessListener(profile -> {
@@ -238,7 +243,6 @@ public class EventDetailsFragment extends Fragment {
             public void onSuccess(Event event) {
                 currentEvent = event;
                 displayEventDetails(event);
-//                loadWaitingListCount();
                 loadWaitingListCountWithLimit(event);
 
             }
@@ -251,7 +255,10 @@ public class EventDetailsFragment extends Fragment {
         });
     }
 
-    /** Sets up real-time listener for invitation changes */
+    /** Sets up real-time listener for invitation changes
+     * If an invitation exists, the invitation UI is shown. If no invitation
+     * is found, the join waiting list button is shown. Automatically calls
+     *the expiration handler if the reply-by deadline has passed. */
     private void decideInviteOrJoin() {
         // Remove old listener if it exists
         if (invitationListener != null) {
@@ -301,6 +308,13 @@ public class EventDetailsFragment extends Fragment {
                 });
     }
 
+    /**
+     * Populates the invitation action UI based on the current invitation status.
+     * Handles pending, accepted, declined, and organizer-cancelled states.
+     * Enables and disables Accept/Decline buttons appropriately.
+     *
+     * @param inv the invitation object retrieved from Firestore
+     */
     private void showInvitationInclude(@NonNull Invitation inv) {
         inviteInclude.setVisibility(View.VISIBLE);
         joinButton.setVisibility(View.GONE);
@@ -369,6 +383,13 @@ public class EventDetailsFragment extends Fragment {
         }
     }
 
+    /**
+     * Generates a countdown message showing the remaining
+     * time an entrant has to respond to an invitation.
+     *
+     * @param replyBy the reply deadline timestamp
+     * @return a formatted string such as "2 days left to reply"
+     */
     private String getCountdownText(Date replyBy) {
         long now = System.currentTimeMillis();
         long diff = replyBy.getTime() - now;
@@ -386,12 +407,21 @@ public class EventDetailsFragment extends Fragment {
         return minutes + " minute" + (minutes == 1 ? "" : "s") + " left to reply";
     }
 
-
+    /**
+     * Enables or disables both Accept and Decline buttons in the invitation UI.
+     *
+     * @param enabled true to enable buttons, false to disable them
+     */
     private void setInviteButtonsEnabled(boolean enabled) {
         btnAccept.setEnabled(enabled);
         btnDecline.setEnabled(enabled);
     }
 
+    /**
+     * Hides the invitation UI and displays the join waiting list button.
+     * Also checks if the user appears in the not_selected list, which updates
+     * the button text accordingly.
+     */
     private void showJoinButtonWithState() {
         inviteInclude.setVisibility(View.GONE);
         joinButton.setVisibility(View.VISIBLE);
@@ -477,7 +507,14 @@ public class EventDetailsFragment extends Fragment {
         }
     }
 
-    /** Loads waiting list count AND applies waitingListLimit rules properly. */
+    /**
+     * Loads the number of users currently in the waiting list and updates
+     * the UI to reflect whether the entrant may join, exit, or is blocked
+     * due to a full waiting list. Applies waiting list limit rules defined
+     * by the organizer.
+     *
+     * @param event the event containing waiting list configuration
+     */
     private void loadWaitingListCountWithLimit(Event event) {
 
         Integer waitingLimit = event.getWaitingListLimit();   // null = unlimited
@@ -537,6 +574,11 @@ public class EventDetailsFragment extends Fragment {
         Toast.makeText(requireContext(), "Favorite feature coming soon!", Toast.LENGTH_SHORT).show();
     }
 
+    /**
+     * Checks whether the user is currently in the event's waiting list.
+     * Updates the join button text and enabled state to match the user's
+     * status.
+     */
     private void checkIfUserInWaitingList() {
         if (eventId == null || userId == null) {
             Log.w(TAG, "checkIfUserInWaitingList  skipped: NULL id(s).");
@@ -664,7 +706,9 @@ public class EventDetailsFragment extends Fragment {
     }
 
     /**
-     * Handle joining the waiting list
+     * Handles the standard process of joining the waiting list when no
+     * geolocation requirement exists. Validates registration dates, event
+     * data, and user identity before creating a waiting list entry.
      */
     private void handleJoinWaitingList() {
         // --- GEOLOCATION REQUIREMENT CHECK ---
@@ -788,8 +832,15 @@ public class EventDetailsFragment extends Fragment {
 
 
     /**
-     * if no responce automtically cancel entrant's invite
-     * */
+     * Automatically updates an invitation to CANCELLED_BY_ORGANIZER when
+     * the reply-by deadline is missed. Performs a Firestore batch operation
+     * that:
+     * 1) Cancels the registration
+     * 2) Updates the invitation document
+     * 3) Removes the entrant from the chosen_list collection
+     *
+     * @param inv the invitation that has expired
+     */
     private void autoExpireInvitation(Invitation inv) {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
@@ -843,7 +894,9 @@ public class EventDetailsFragment extends Fragment {
                 .addOnFailureListener(e -> Log.e("AutoExpire", "Failed to expire invitation", e));
     }
 
-    //Want to check if they are not selected when the lottery is ran... if that is the case, button should reflect that
+    /**
+     * Want to check if they are not selected when the lottery is ran... if that is the case, button should reflect that
+     */
     private void checkNotSelected() {
         FirebaseFirestore.getInstance()
                 .collection("events")
