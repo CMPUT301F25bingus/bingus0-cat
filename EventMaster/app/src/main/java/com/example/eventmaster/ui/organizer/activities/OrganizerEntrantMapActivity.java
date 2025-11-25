@@ -51,7 +51,7 @@ public class OrganizerEntrantMapActivity extends AppCompatActivity {
         FirebaseFirestore.getInstance()
                 .collection("events")
                 .document(eventId)
-                .collection("waitingList")
+                .collection("waiting_list")
                 .get()
                 .addOnSuccessListener(snaps -> {
                     List<GeoPoint> allPoints = new ArrayList<>();

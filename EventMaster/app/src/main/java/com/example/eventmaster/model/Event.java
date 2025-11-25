@@ -46,7 +46,7 @@ public class Event {
     private @Nullable Integer waitingListLimit; // null = unlimited
     private boolean geolocationRequired;
     private double price;                       // 0.0 = free
-
+    private String eventType;
     // Lifecycle
     private String status = "DRAFT";            // DRAFT | PUBLISHED | CLOSED ...
 
@@ -201,6 +201,11 @@ public class Event {
     @NonNull public String getName() { return name == null ? "" : name; }
     public void setName(@NonNull String name) { this.name = name; }
 
+    @Nullable
+    public String getEventType() { return eventType; }
+
+    public void setEventType(@Nullable String eventType) { this.eventType = eventType;}
+
     @Nullable public String getDescription() { return description; }
     public void setDescription(@Nullable String description) { this.description = description; }
 
@@ -297,7 +302,9 @@ public class Event {
                 Objects.equals(organizerId, e.organizerId) &&
                 Objects.equals(organizerName, e.organizerName) &&
                 Objects.equals(waitingListLimit, e.waitingListLimit) &&
+                Objects.equals(eventType, e.eventType) &&
                 Objects.equals(status, e.status);
+
     }
 
     @Override
@@ -305,6 +312,7 @@ public class Event {
         return Objects.hash(name, description, location, eventDate,
                 registrationOpen, registrationClose, posterUrl, qrUrl,
                 organizerId, organizerName, capacity, waitingListLimit,
-                geolocationRequired, price, status);
+                geolocationRequired, price, status, eventType);
+
     }
 }
