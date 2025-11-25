@@ -5,6 +5,7 @@ import android.util.Log;
 import com.example.eventmaster.data.api.NotificationService;
 import com.example.eventmaster.model.Notification;
 import com.example.eventmaster.model.Profile;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
@@ -12,6 +13,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -419,121 +421,244 @@ public class NotificationServiceFs implements NotificationService {
             String userId,
             OnNotificationHistoryListener onSuccess,
             OnFailureListener onFailure) {
-        
+
         Log.d(TAG, "Fetching notifications for user: " + userId);
-        
-        // Query for notifications with recipientUserId OR legacy recipientId
-        // Firestore doesn't support OR queries directly, so we need to query both and merge
-        com.google.android.gms.tasks.Task<com.google.firebase.firestore.QuerySnapshot> task1 = 
-                firestore.collection(COLLECTION_NOTIFICATIONS)
-                        .whereEqualTo("recipientUserId", userId)
-                        .get();
-        
-        com.google.android.gms.tasks.Task<com.google.firebase.firestore.QuerySnapshot> task2 = 
-                firestore.collection(COLLECTION_NOTIFICATIONS)
-                        .whereEqualTo("recipientId", userId) // Legacy field
-                        .get();
-        
-        Tasks.whenAllComplete(task1, task2)
-                .addOnSuccessListener(taskList -> {
-                    List<Notification> allNotifications = new ArrayList<>();
-                    Set<String> seenIds = new HashSet<>(); // Avoid duplicates
-                    
-                    // Process recipientUserId results
-                    if (task1.isSuccessful() && task1.getResult() != null) {
-                        for (com.google.firebase.firestore.DocumentSnapshot doc : task1.getResult().getDocuments()) {
-                            if (!seenIds.contains(doc.getId())) {
-                                seenIds.add(doc.getId());
-                                Notification notif = parseNotification(doc);
-                                if (notif != null) {
-                                    allNotifications.add(notif);
+
+        firestore.collection(COLLECTION_NOTIFICATIONS)
+                .whereEqualTo("recipientUserId", userId)      // primary field
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    List<Notification> all = new ArrayList<>();
+
+                    for (var doc : snapshot.getDocuments()) {
+                        Notification n = parseNotification(doc);
+                        if (n != null) all.add(n);
+                    }
+
+                    // SECOND: query legacy recipientId only if needed
+                    firestore.collection(COLLECTION_NOTIFICATIONS)
+                            .whereEqualTo("recipientId", userId)
+                            .get()
+                            .addOnSuccessListener(snapshot2 -> {
+
+                                for (var doc : snapshot2.getDocuments()) {
+                                    String id = doc.getId();
+                                    boolean exists = false;
+
+                                    for (Notification n : all) {
+                                        if (n.getNotificationId().equals(id)) {
+                                            exists = true;
+                                            break;
+                                        }
+                                    }
+
+                                    if (!exists) {
+                                        Notification leg = parseNotification(doc);
+                                        if (leg != null) all.add(leg);
+                                    }
                                 }
-                            }
-                        }
-                        Log.d(TAG, "Found " + task1.getResult().size() + " notifications with recipientUserId=" + userId);
-                    }
-                    
-                    // Process legacy recipientId results
-                    if (task2.isSuccessful() && task2.getResult() != null) {
-                        for (com.google.firebase.firestore.DocumentSnapshot doc : task2.getResult().getDocuments()) {
-                            if (!seenIds.contains(doc.getId())) {
-                                seenIds.add(doc.getId());
-                                Notification notif = parseNotification(doc);
-                                if (notif != null) {
-                                    allNotifications.add(notif);
-                                }
-                            }
-                        }
-                        Log.d(TAG, "Found " + task2.getResult().size() + " notifications with recipientId=" + userId);
-                    }
-                    
-                    // Sort by sentAt descending
-                    allNotifications.sort((a, b) -> {
-                        Date dateA = a.getSentAt();
-                        Date dateB = b.getSentAt();
-                        if (dateA == null && dateB == null) return 0;
-                        if (dateA == null) return 1;
-                        if (dateB == null) return -1;
-                        return dateB.compareTo(dateA); // Descending order
-                    });
-                    
-                    Log.d(TAG, "Retrieved " + allNotifications.size() + " total notifications for user: " + userId);
-                    if (onSuccess != null) {
-                        onSuccess.onSuccess(allNotifications);
-                    }
+
+                                all.sort((a, b) -> {
+                                    Date da = a.getSentAt(), db = b.getSentAt();
+                                    if (da == null) return 1;
+                                    if (db == null) return -1;
+                                    return db.compareTo(da);
+                                });
+
+                                onSuccess.onSuccess(all);
+                            })
+                            .addOnFailureListener(e -> {
+                                Log.e(TAG, "Legacy recipientId query failed", e);
+                                onSuccess.onSuccess(all);  // fallback
+                            });
                 })
                 .addOnFailureListener(e -> {
-                    Log.e(TAG, "Failed to fetch notifications for userId: " + userId, e);
-                    if (onFailure != null) {
-                        onFailure.onFailure(e.getMessage());
-                    }
+                    Log.e(TAG, "Failed to query notifications", e);
+                    onFailure.onFailure(e.getMessage());
                 });
     }
+
+
+//    @Override
+//    public void getNotificationsForUser(
+//            String userId,
+//            OnNotificationHistoryListener onSuccess,
+//            OnFailureListener onFailure) {
+//
+//        Log.d(TAG, "Fetching notifications for user: " + userId);
+//
+//        // Query for notifications with recipientUserId OR legacy recipientId
+//        // Firestore doesn't support OR queries directly, so we need to query both and merge
+//        com.google.android.gms.tasks.Task<com.google.firebase.firestore.QuerySnapshot> task1 =
+//                firestore.collection(COLLECTION_NOTIFICATIONS)
+//                        .whereEqualTo("recipientUserId", userId)
+//                        .get();
+//
+//        com.google.android.gms.tasks.Task<com.google.firebase.firestore.QuerySnapshot> task2 =
+//                firestore.collection(COLLECTION_NOTIFICATIONS)
+//                        .whereEqualTo("recipientId", userId) // Legacy field
+//                        .get();
+//
+//        Tasks.whenAllComplete(task1, task2)
+//                .addOnSuccessListener(taskList -> {
+//                    List<Notification> allNotifications = new ArrayList<>();
+//                    Set<String> seenIds = new HashSet<>(); // Avoid duplicates
+//
+//                    // Process recipientUserId results
+//                    if (task1.isSuccessful() && task1.getResult() != null) {
+//                        for (com.google.firebase.firestore.DocumentSnapshot doc : task1.getResult().getDocuments()) {
+//                            if (!seenIds.contains(doc.getId())) {
+//                                seenIds.add(doc.getId());
+//                                Notification notif = parseNotification(doc);
+//                                if (notif != null) {
+//                                    allNotifications.add(notif);
+//                                }
+//                            }
+//                        }
+//                        Log.d(TAG, "Found " + task1.getResult().size() + " notifications with recipientUserId=" + userId);
+//                    }
+//
+//                    // Process legacy recipientId results
+//                    if (task2.isSuccessful() && task2.getResult() != null) {
+//                        for (com.google.firebase.firestore.DocumentSnapshot doc : task2.getResult().getDocuments()) {
+//                            if (!seenIds.contains(doc.getId())) {
+//                                seenIds.add(doc.getId());
+//                                Notification notif = parseNotification(doc);
+//                                if (notif != null) {
+//                                    allNotifications.add(notif);
+//                                }
+//                            }
+//                        }
+//                        Log.d(TAG, "Found " + task2.getResult().size() + " notifications with recipientId=" + userId);
+//                    }
+//
+//                    // Sort by sentAt descending
+//                    allNotifications.sort((a, b) -> {
+//                        Date dateA = a.getSentAt();
+//                        Date dateB = b.getSentAt();
+//                        if (dateA == null && dateB == null) return 0;
+//                        if (dateA == null) return 1;
+//                        if (dateB == null) return -1;
+//                        return dateB.compareTo(dateA); // Descending order
+//                    });
+//
+//                    Log.d(TAG, "Retrieved " + allNotifications.size() + " total notifications for user: " + userId);
+//                    if (onSuccess != null) {
+//                        onSuccess.onSuccess(allNotifications);
+//                    }
+//                })
+//                .addOnFailureListener(e -> {
+//                    Log.e(TAG, "Failed to fetch notifications for userId: " + userId, e);
+//                    if (onFailure != null) {
+//                        onFailure.onFailure(e.getMessage());
+//                    }
+//                });
+//    }
     
     /**
      * Parses a single Firestore document into a Notification object.
      */
-    private Notification parseNotification(com.google.firebase.firestore.DocumentSnapshot doc) {
+//    private Notification parseNotification(com.google.firebase.firestore.DocumentSnapshot doc) {
+//        try {
+//            Notification notification = doc.toObject(Notification.class);
+//            if (notification == null) {
+//                return null;
+//            }
+//
+//            // Ensure notificationId is set
+//            if (notification.getNotificationId() == null || notification.getNotificationId().isEmpty()) {
+//                notification.setNotificationId(doc.getId());
+//            }
+//
+//            // Handle legacy field names (recipientId -> recipientUserId)
+//            if (notification.getRecipientUserId() == null || notification.getRecipientUserId().isEmpty()) {
+//                String legacyRecipientId = doc.getString("recipientId");
+//                if (legacyRecipientId != null && !legacyRecipientId.isEmpty()) {
+//                    Log.d(TAG, "Found legacy recipientId field: " + legacyRecipientId + " for notification: " + doc.getId());
+//                    notification.setRecipientUserId(legacyRecipientId);
+//                }
+//            }
+//
+//            // Handle sentAt field - convert Timestamp to Date if needed
+//            if (notification.getSentAt() == null) {
+//                com.google.firebase.Timestamp timestamp = doc.getTimestamp("sentAt");
+//                if (timestamp != null) {
+//                    notification.setSentAt(timestamp.toDate());
+//                } else {
+//                    // Try createdAt as fallback
+//                    timestamp = doc.getTimestamp("createdAt");
+//                    if (timestamp != null) {
+//                        notification.setSentAt(timestamp.toDate());
+//                    }
+//                }
+//            }
+//
+//            return notification;
+//        } catch (Exception e) {
+//            Log.e(TAG, "Error parsing notification document: " + doc.getId(), e);
+//            return null;
+//        }
+//    }
+    private Notification parseNotification(DocumentSnapshot doc) {
         try {
-            Notification notification = doc.toObject(Notification.class);
-            if (notification == null) {
-                return null;
+            Notification notification = new Notification();
+
+            // ---------- ID ----------
+            notification.setNotificationId(doc.getId());
+
+            // ---------- Recipient ID ----------
+            String recipient = doc.getString("recipientUserId");
+            if (recipient == null || recipient.isEmpty()) {
+                recipient = doc.getString("recipientId");  // Legacy fallback
             }
-            
-            // Ensure notificationId is set
-            if (notification.getNotificationId() == null || notification.getNotificationId().isEmpty()) {
-                notification.setNotificationId(doc.getId());
-            }
-            
-            // Handle legacy field names (recipientId -> recipientUserId)
-            if (notification.getRecipientUserId() == null || notification.getRecipientUserId().isEmpty()) {
-                String legacyRecipientId = doc.getString("recipientId");
-                if (legacyRecipientId != null && !legacyRecipientId.isEmpty()) {
-                    Log.d(TAG, "Found legacy recipientId field: " + legacyRecipientId + " for notification: " + doc.getId());
-                    notification.setRecipientUserId(legacyRecipientId);
+            notification.setRecipientUserId(recipient);
+
+            // ---------- Event ID ----------
+            notification.setEventId(doc.getString("eventId"));
+
+            // ---------- Sender ----------
+            notification.setSenderUserId(doc.getString("senderUserId"));
+
+            // ---------- Title & Message ----------
+            notification.setTitle(doc.getString("title"));
+            notification.setMessage(doc.getString("message"));
+
+            // ---------- Type (very important fix) ----------
+            String typeStr = doc.getString("type");
+            Notification.NotificationType parsedType = Notification.NotificationType.GENERAL;
+
+            if (typeStr != null) {
+                try {
+                    parsedType = Notification.NotificationType.valueOf(typeStr.toUpperCase(Locale.ROOT));
+                } catch (Exception e) {
+                    Log.w(TAG, "Unknown notification type: " + typeStr + " → using GENERAL");
                 }
             }
-            
-            // Handle sentAt field - convert Timestamp to Date if needed
-            if (notification.getSentAt() == null) {
-                com.google.firebase.Timestamp timestamp = doc.getTimestamp("sentAt");
-                if (timestamp != null) {
-                    notification.setSentAt(timestamp.toDate());
-                } else {
-                    // Try createdAt as fallback
-                    timestamp = doc.getTimestamp("createdAt");
-                    if (timestamp != null) {
-                        notification.setSentAt(timestamp.toDate());
-                    }
-                }
+            notification.setType(parsedType);
+
+            // ---------- Timestamp handling ----------
+            Date sentAt = null;
+            if (doc.getTimestamp("sentAt") != null) {
+                sentAt = doc.getTimestamp("sentAt").toDate();
+            } else if (doc.getTimestamp("createdAt") != null) {
+                sentAt = doc.getTimestamp("createdAt").toDate();
+            } else {
+                sentAt = new Date(); // fallback
             }
-            
+            notification.setSentAt(sentAt);
+
+            // ---------- Read Status ----------
+            Boolean isRead = doc.getBoolean("isRead");
+            notification.setRead(isRead != null && isRead);
+
             return notification;
+
         } catch (Exception e) {
-            Log.e(TAG, "Error parsing notification document: " + doc.getId(), e);
+            Log.e(TAG, "Error parsing notification: " + doc.getId(), e);
             return null;
         }
     }
+
 
     /**
      * Parses Firestore documents into Notification objects, handling field name variations.

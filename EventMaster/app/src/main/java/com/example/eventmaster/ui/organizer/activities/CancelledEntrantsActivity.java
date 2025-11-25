@@ -2,7 +2,6 @@ package com.example.eventmaster.ui.organizer.activities;
 
 import android.os.Bundle;
 import android.util.Log;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -16,6 +15,7 @@ import com.example.eventmaster.R;
 import com.example.eventmaster.data.api.NotificationService;
 import com.example.eventmaster.data.firestore.NotificationServiceFs;
 import com.example.eventmaster.data.firestore.ProfileRepositoryFs;
+import com.example.eventmaster.model.Event;
 import com.example.eventmaster.model.Profile;
 import com.example.eventmaster.model.WaitingListEntry;
 import com.example.eventmaster.ui.organizer.adapters.CancelledEntrantsAdapter;
@@ -29,21 +29,23 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.Map;
 
-
 /**
- * Activity that displays all entrants who are no longer participating in the event
- * due to cancelled registrations. A registration is considered cancelled when its
- * status is either CANCELLED_BY_ORGANIZER or CANCELLED_BY_ENTRANT.
+ * Screen showing all cancelled entrants for an event.
+ * Cancelled entrants include:
+ *  - CANCELLED_BY_ORGANIZER
+ *  - CANCELLED_BY_ENTRANT
  *
- * This screen loads the cancelled entrants, retrieves their profile information,
- * shows the total number of cancelled users, and allows the organizer to run
- * a replacement lottery. The replacement lottery randomly selects new entrants
- * from the not_selected list and issues new invitations to them.
+ * Features:
+ *  - Display cancelled entrants
+ *  - Send mass notifications to cancelled entrants
+ *  - Run replacement lottery
+ *  - Resolve profile fallbacks correctly using:
+ *      1. userId (trusted)
+ *      2. entrantId
+ *      3. deviceId (legacy)
  */
-
 public class CancelledEntrantsActivity extends AppCompatActivity {
 
     private static final String TAG = "CancelledEntrants";
@@ -62,20 +64,13 @@ public class CancelledEntrantsActivity extends AppCompatActivity {
     // Services
     private NotificationService notificationService;
     private ProfileRepositoryFs profileRepo;
-    private TextView textDrawReplacement;
 
-
-    /**
-     * Initializes the screen, retrieves the eventId,
-     * sets up the RecyclerView and toolbar, and loads cancelled entrants.
-     */
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.organizer_activity_cancelled_entrants);
 
         eventId = getIntent().getStringExtra("eventId");
-
         if (eventId == null || eventId.trim().isEmpty()) {
             Toast.makeText(this, "Missing event ID", Toast.LENGTH_SHORT).show();
             finish();
@@ -84,7 +79,6 @@ public class CancelledEntrantsActivity extends AppCompatActivity {
 
         recyclerView = findViewById(R.id.cancelled_entrants_recycler_view);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
-
         adapter = new CancelledEntrantsAdapter();
         recyclerView.setAdapter(adapter);
 
@@ -92,19 +86,13 @@ public class CancelledEntrantsActivity extends AppCompatActivity {
         backButton = findViewById(R.id.back_button_container);
         sendNotificationButton = findViewById(R.id.textSendNotification);
 
-        // Initialize services
         notificationService = new NotificationServiceFs();
         profileRepo = new ProfileRepositoryFs();
 
         backButton.setOnClickListener(v -> finish());
-
-        // Setup send notification button
         sendNotificationButton.setOnClickListener(v -> handleSendNotificationClick());
 
-        findViewById(R.id.textDrawReplacement).setOnClickListener(v -> {
-            runReplacementLottery();
-        });
-
+        findViewById(R.id.textDrawReplacement).setOnClickListener(v -> runReplacementLottery());
 
         TextView title = findViewById(R.id.cancelledEntrantsTitle);
         if (title != null) title.setText("Cancelled Entrants");
@@ -113,99 +101,112 @@ public class CancelledEntrantsActivity extends AppCompatActivity {
     }
 
     /**
-     * Handles send notification button click.
+     * Triggered when the user taps Send Notification.
      */
     private void handleSendNotificationClick() {
         if (cancelledProfiles.isEmpty()) {
             Toast.makeText(this, "No cancelled entrants to notify", Toast.LENGTH_SHORT).show();
             return;
         }
-
-        // Show confirmation dialog
         showSendNotificationDialog();
     }
 
     /**
-     * Displays a dialog to compose and send the notification.
+     * Confirmation dialog before sending notifications.
      */
     private void showSendNotificationDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Send Notification to Cancelled Entrants");
-        builder.setMessage("This will notify " + cancelledProfiles.size() +
-                " cancelled entrants about the event.\n\n" +
-                "Do you want to proceed?");
+        builder.setMessage(
+                "This will send an update to " + cancelledProfiles.size() +
+                        " cancelled entrants.\n\nDo you want to proceed?"
+        );
 
-        builder.setPositiveButton("Send", (dialog, which) -> {
-            sendNotificationToCancelledEntrants();
-        });
-
-        builder.setNegativeButton("Cancel", (dialog, which) -> {
-            dialog.dismiss();
-        });
-
+        builder.setPositiveButton("Send", (dialog, which) -> fetchEventNameAndSend());
+        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
         builder.show();
     }
 
     /**
-     * Sends notification to all cancelled entrants.
+     * First fetch the event name so the message can include:
+     *   Winter Gala: The organizer has sent you an update. Please go to the event page.
      */
-    private void sendNotificationToCancelledEntrants() {
-        // Show loading state
+    private void fetchEventNameAndSend() {
         sendNotificationButton.setEnabled(false);
-        Toast.makeText(this, "Sending notifications...", Toast.LENGTH_SHORT).show();
 
-        // Log userIds being used for debugging
-        Log.d(TAG, "Sending notifications to " + cancelledProfiles.size() + " cancelled entrants:");
-        for (Profile p : cancelledProfiles) {
-            Log.d(TAG, "  - Profile: " + p.getName() + ", userId: " + p.getUserId());
-        }
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        db.collection("events")
+                .document(eventId)
+                .get()
+                .addOnSuccessListener(doc -> {
+                    String eventName = "Event";
+                    if (doc.exists()) {
+                        Event e = doc.toObject(Event.class);
+                        if (e != null && e.getName() != null && !e.getName().trim().isEmpty()) {
+                            eventName = e.getName();
+                        }
+                    }
 
-        // Prepare notification content
-        String title = "📢 Event Update";
-        String message = "The organizer has sent you an update regarding the event. " +
-                "Please check your notifications for more details.";
+                    String title = "📢 Event Update";
+                    String message = eventName + ": You’ve been removed from the event due to a change in your registration status. "
+                            + "Please visit the event page for more details.";
 
-        // Send notifications
+                    sendNotifications(title, message);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Failed to fetch event name", e);
+                    String title = "📢 Event Update";
+                    String message = "You’ve been removed from the event due to a change in your registration status. Please visit the event page for more details.";
+                    sendNotifications(title, message);
+                });
+    }
+
+    /**
+     * Perform notification send using NotificationServiceFs.
+     */
+    private void sendNotifications(String title, String message) {
+        Log.d(TAG, "Sending notifications with title=" + title + " message=" + message);
+
         notificationService.sendNotificationToCancelledEntrants(
                 eventId,
                 cancelledProfiles,
                 title,
                 message,
-                () -> handleSendSuccess(),
-                error -> handleSendFailure(error)
+                this::handleSendSuccess,
+                this::handleSendFailure
         );
     }
 
     /**
-     * Handles successful notification send.
+     * Called when notifications were successfully delivered.
      */
     private void handleSendSuccess() {
         runOnUiThread(() -> {
             sendNotificationButton.setEnabled(true);
-            Toast.makeText(this, "✅ Notifications sent successfully to " +
-                    cancelledProfiles.size() + " cancelled entrants!", Toast.LENGTH_LONG).show();
-            Log.i(TAG, "Successfully sent notifications to all cancelled entrants");
+            Toast.makeText(
+                    this,
+                    "Notifications sent to " + cancelledProfiles.size() + " cancelled entrants!",
+                    Toast.LENGTH_LONG
+            ).show();
+            Log.i(TAG, "Notifications sent successfully");
         });
     }
 
     /**
-     * Handles notification send failure.
-     *
-     * @param error Error message
+     * Called when any failure occurs during notification.
      */
     private void handleSendFailure(String error) {
         runOnUiThread(() -> {
             sendNotificationButton.setEnabled(true);
-            Toast.makeText(this, "❌ Failed to send notifications: " + error,
-                    Toast.LENGTH_LONG).show();
-            Log.e(TAG, "Failed to send notifications: " + error);
+            Toast.makeText(this, "Failed to send notifications: " + error, Toast.LENGTH_LONG).show();
+            Log.e(TAG, "Send failed: " + error);
         });
     }
 
     /**
-     * Fetches all entrants whose registration status indicates cancellation.
-     * After fetching the registration documents, it loads each user's profile
-     * so their name and details can be shown in the list.
+     * Loads cancelled entrants from Firestore:
+     *   events/{eventId}/registrations
+     *   where status in [CANCELLED_BY_ORGANIZER, CANCELLED_BY_ENTRANT]
      */
     private void loadCancelledFromFirestore() {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
@@ -213,53 +214,31 @@ public class CancelledEntrantsActivity extends AppCompatActivity {
         db.collection("events")
                 .document(eventId)
                 .collection("registrations")
-                .whereIn("status", Arrays.asList(
-                        "CANCELLED_BY_ORGANIZER",
-                        "CANCELLED_BY_ENTRANT"
-                ))
+                .whereIn("status", Arrays.asList("CANCELLED_BY_ORGANIZER", "CANCELLED_BY_ENTRANT"))
                 .get()
                 .addOnSuccessListener(snap -> {
                     Log.d(TAG, "Found " + snap.size() + " cancelled entrants");
 
                     if (snap.isEmpty()) {
-//                        adapter.updateCancelledEntrants(cancelledProfiles, cancelledStatuses);
-                        adapter.updateCancelledEntrants(
-                                new ArrayList<>(cancelledProfiles),
-                                new ArrayList<>(cancelledStatuses)
-                        );
-
+                        adapter.updateCancelledEntrants(new ArrayList<>(cancelledProfiles),
+                                new ArrayList<>(cancelledStatuses));
                         updateCount();
                         return;
                     }
 
                     for (DocumentSnapshot doc : snap.getDocuments()) {
-                        // Registration document ID is the userId (Firebase Auth UID)
-                        String userId = doc.getId(); // Document ID is the userId
 
-                        // Verify entrantId field matches (for debugging)
+                        String userId;
+                        if (doc.contains("userId"))      userId = doc.getString("userId");
+                        else if (doc.contains("entrantId")) userId = doc.getString("entrantId");
+                        else                                userId = doc.getId();
+
                         String entrantId = doc.getString("entrantId");
-                        if (entrantId != null && !entrantId.isEmpty()) {
-                            if (!entrantId.equals(userId)) {
-                                Log.w(TAG, "Registration entrantId (" + entrantId + ") doesn't match document ID (" + userId + "), using entrantId");
-                                userId = entrantId;
-                            }
-                        }
-
-                        // Also check userId field as fallback
                         String userIdField = doc.getString("userId");
-                        if (userIdField != null && !userIdField.isEmpty()) {
-                            userId = userIdField;
-                        }
 
-                        String status = doc.getString("status");
-                        Log.d(TAG, "Found cancelled registration - docId: " + doc.getId() + ", entrantId: " + entrantId + ", status: " + status);
-
-                        cancelledStatuses.add(status);
-//                        loadProfile(userId);
+                        cancelledStatuses.add(doc.getString("status"));
                         loadProfileWithFallback(userId, entrantId, userIdField);
-
                     }
-
                 })
                 .addOnFailureListener(e -> {
                     Log.e(TAG, "Error retrieving cancelled entrants", e);
@@ -267,101 +246,127 @@ public class CancelledEntrantsActivity extends AppCompatActivity {
                 });
     }
 
-    private void loadProfile(String userId) {
-        // Load profile by userId (document ID = userId in profiles collection)
+    /**
+     * Resolves profiles safely in this priority order:
+     *   1. userId (trusted)
+     *   2. entrantId
+     *   3. deviceId (legacy)
+     */
+    private void loadProfileWithFallback(String userId, String entrantId, String userIdField) {
+
         profileRepo.get(userId)
                 .addOnSuccessListener(profile -> {
                     if (profile != null) {
-                        // Always ensure userId matches (critical for notifications)
-                        String profileUserId = profile.getUserId();
-                        if (profileUserId == null || profileUserId.isEmpty() || !profileUserId.equals(userId)) {
-                            Log.d(TAG, "Updating profile userId from '" + profileUserId + "' to '" + userId + "'");
-                            profile.setUserId(userId);
-                        }
-
-                        // Check if profile is already in the list (avoid duplicates)
-                        boolean alreadyExists = false;
-                        for (Profile p : cancelledProfiles) {
-                            if (p.getUserId() != null && p.getUserId().equals(userId)) {
-                                alreadyExists = true;
-                                break;
-                            }
-                        }
-
-                        if (!alreadyExists) {
-                            cancelledProfiles.add(profile);
-                            Log.d(TAG, "✓ Loaded profile for userId: " + userId + ", name: " + profile.getName());
-                        } else {
-                            Log.d(TAG, "Profile already in list for userId: " + userId);
-                        }
-                    } else {
-                        Log.w(TAG, "Profile not found for userId: " + userId);
+                        profile.setUserId(userId);
+                        addCancelledProfile(profile);
+                        return;
                     }
 
-                    adapter.updateCancelledEntrants(
-                            new ArrayList<>(cancelledProfiles),
-                            new ArrayList<>(cancelledStatuses)
-                    );
-                    updateCount();
+                    if (entrantId != null && !entrantId.isEmpty()) {
+                        profileRepo.get(entrantId)
+                                .addOnSuccessListener(p2 -> {
+                                    if (p2 != null) {
+                                        p2.setUserId(entrantId);
+                                        addCancelledProfile(p2);
+                                        return;
+                                    }
+
+                                    if (userIdField != null && !userIdField.isEmpty()) {
+                                        profileRepo.get(userIdField)
+                                                .addOnSuccessListener(p3 -> {
+                                                    if (p3 != null) {
+                                                        p3.setUserId(userIdField);
+                                                        addCancelledProfile(p3);
+                                                        return;
+                                                    }
+                                                    loadProfileByDeviceId(userId);
+                                                });
+                                    } else {
+                                        loadProfileByDeviceId(userId);
+                                    }
+                                });
+                    } else loadProfileByDeviceId(userId);
+
                 })
                 .addOnFailureListener(e -> {
-                    Log.e(TAG, "✗ Failed loading profile by document ID for userId: " + userId, e);
-                    // Try fallback query by userId field
-                    profileRepo.get(userId)
-                            .addOnSuccessListener(profile -> {
-                                if (profile != null) {
-                                    // Always ensure userId matches (critical for notifications)
-                                    String profileUserId = profile.getUserId();
-                                    if (profileUserId == null || profileUserId.isEmpty() || !profileUserId.equals(userId)) {
-                                        Log.d(TAG, "Updating profile userId from '" + profileUserId + "' to '" + userId + "' (fallback)");
-                                        profile.setUserId(userId);
-                                    }
-
-                                    boolean alreadyExists = false;
-                                    for (Profile p : cancelledProfiles) {
-                                        if (p.getUserId() != null && p.getUserId().equals(userId)) {
-                                            alreadyExists = true;
-                                            break;
-                                        }
-                                    }
-
-                                    if (!alreadyExists) {
-                                        cancelledProfiles.add(profile);
-                                        Log.d(TAG, "✓ Loaded profile (fallback) for userId: " + userId);
-                                    }
-                                }
-
-                                adapter.updateCancelledEntrants(
-                                        new ArrayList<>(cancelledProfiles),
-                                        new ArrayList<>(cancelledStatuses)
-                                );
-                                updateCount();
-                            })
-                            .addOnFailureListener(e2 -> {
-                                Log.e(TAG, "✗ Failed loading profile (fallback) for userId: " + userId, e2);
-                                adapter.updateCancelledEntrants(
-                                        new ArrayList<>(cancelledProfiles),
-                                        new ArrayList<>(cancelledStatuses)
-                                );
-                                updateCount();
-                            });
+                    Log.e(TAG, "Primary lookup failed for " + userId, e);
+                    loadProfileByDeviceId(userId);
                 });
     }
 
     /**
-     * Updates the on-screen count of cancelled entrants.
+     * Legacy fallback for very old registrations using deviceId.
+     */
+    private void loadProfileByDeviceId(String deviceId) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        db.collection("profiles")
+                .whereEqualTo("deviceId", deviceId)
+                .limit(1)
+                .get()
+                .addOnSuccessListener(snap -> {
+                    if (!snap.isEmpty()) {
+                        DocumentSnapshot doc = snap.getDocuments().get(0);
+                        Profile p = doc.toObject(Profile.class);
+
+                        if (p != null) {
+                            String realUid = doc.getString("userId");
+                            if (realUid == null || realUid.isEmpty()) realUid = doc.getId();
+                            p.setUserId(realUid);
+
+                            addCancelledProfile(p);
+                            return;
+                        }
+                    }
+
+                    Log.w(TAG, "No profile found using deviceId fallback: " + deviceId);
+                    adapter.updateCancelledEntrants(new ArrayList<>(cancelledProfiles),
+                            new ArrayList<>(cancelledStatuses));
+                    updateCount();
+                })
+                .addOnFailureListener(e ->
+                        Log.e(TAG, "DeviceId fallback failed for " + deviceId, e));
+    }
+
+    /**
+     * Adds a profile to the cancelled list and updates the adapter.
+     */
+    private void addCancelledProfile(Profile profile) {
+        if (profile == null) return;
+
+        String userId = profile.getUserId();
+        if (userId == null || userId.trim().isEmpty()) {
+            Log.e(TAG, "Skipping profile: missing userId");
+            return;
+        }
+
+        for (Profile p : cancelledProfiles) {
+            if (p.getUserId().equals(userId)) return;
+        }
+
+        cancelledProfiles.add(profile);
+        Log.d(TAG, "Added cancelled profile: " + userId);
+
+        adapter.updateCancelledEntrants(new ArrayList<>(cancelledProfiles),
+                new ArrayList<>(cancelledStatuses));
+        updateCount();
+    }
+
+    /**
+     * Updates the UI text showing the number of cancelled entrants.
      */
     private void updateCount() {
         totalCountText.setText("Total cancelled entrants: " + cancelledProfiles.size());
     }
 
     /**
-     * Runs the replacement lottery. This randomly selects users from the
-     * not_selected collection (who were not chosen originally), creates new
-     * invitations for them, sends notifications, adds them to chosen_list,
-     * and removes them from not_selected.
-     *
-     * This is used when spots open up due to cancellations.
+     * Runs the replacement lottery:
+     * 1. Fetches all users in not_selected
+     * 2. Randomly selects new entrants equal to number of cancelled ones
+     * 3. Adds them to chosen_list
+     * 4. Creates Firestore invitation
+     * 5. Sends event-aware replacement notification (Firestore + push)
+     * 6. Removes them from not_selected
      */
     private void runReplacementLottery() {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
@@ -372,235 +377,150 @@ public class CancelledEntrantsActivity extends AppCompatActivity {
             return;
         }
 
-        // 1. Fetch from not_selected list
+        // Fetch event name FIRST so all notifications use it
         db.collection("events")
                 .document(eventId)
-                .collection("not_selected")
                 .get()
-                .addOnSuccessListener(notSelectedSnap -> {
+                .addOnSuccessListener(eventDoc -> {
 
-                    if (notSelectedSnap.isEmpty()) {
-                        Toast.makeText(this, "No remaining entrants in not_selected.", Toast.LENGTH_SHORT).show();
-                        return;
+                    String eventName = "Event";
+                    if (eventDoc.exists()) {
+                        Event e = eventDoc.toObject(Event.class);
+                        if (e != null && e.getName() != null && !e.getName().trim().isEmpty()) {
+                            eventName = e.getName();
+                        }
                     }
 
-                    // Convert to list
-                    List<DocumentSnapshot> docs = new ArrayList<>(notSelectedSnap.getDocuments());
+                    final String finalEventName = eventName;
 
-                    // Shuffle to randomize
-                    java.util.Collections.shuffle(docs);
+                    // Now fetch not_selected list
+                    db.collection("events")
+                            .document(eventId)
+                            .collection("not_selected")
+                            .get()
+                            .addOnSuccessListener(notSelectedSnap -> {
 
-                    // Pick replacements = number cancelled
-                    List<DocumentSnapshot> replacements = docs.subList(0, Math.min(numCancelled, docs.size()));
+                                if (notSelectedSnap.isEmpty()) {
+                                    Toast.makeText(this, "No remaining entrants in not_selected.", Toast.LENGTH_SHORT).show();
+                                    return;
+                                }
 
-                    List<Task<Void>> tasks = new ArrayList<>();
+                                // Convert to list and randomize
+                                List<DocumentSnapshot> docs = new ArrayList<>(notSelectedSnap.getDocuments());
+                                java.util.Collections.shuffle(docs);
 
-                    for (DocumentSnapshot doc : replacements) {
-                        String userId = doc.getId();
-                        WaitingListEntry entry = doc.toObject(WaitingListEntry.class);
+                                // Pick replacements = number cancelled
+                                List<DocumentSnapshot> replacements =
+                                        docs.subList(0, Math.min(numCancelled, docs.size()));
 
-                        if (entry == null) continue;
+                                List<Task<Void>> tasks = new ArrayList<>();
 
-                        entry.setStatus("selected");
+                                for (DocumentSnapshot doc : replacements) {
 
-                        // 2. Add to chosen_list
-                        Task<Void> addChosen = db.collection("events")
-                                .document(eventId)
-                                .collection("chosen_list")
-                                .document(userId)
-                                .set(entry);
+                                    String userId = doc.getId();
+                                    WaitingListEntry entry = doc.toObject(WaitingListEntry.class);
 
-                        tasks.add(addChosen);
+                                    if (entry == null) continue;
 
-                        // 3. Create a new invitation
-                        Map<String, Object> invitation = new HashMap<>();
-                        invitation.put("eventId", eventId);
-                        invitation.put("entrantId", userId);
-                        invitation.put("status", "PENDING");
-                        invitation.put("createdAtUtc", System.currentTimeMillis());
+                                    entry.setStatus("selected");
 
-                        Task<Void> inviteTask = db.collection("events")
-                                .document(eventId)
-                                .collection("invitations")
-                                .document(userId)
-                                .set(invitation, SetOptions.merge());
+                                    // ---- 2. Add to chosen_list ----
+                                    Task<Void> addChosen = db.collection("events")
+                                            .document(eventId)
+                                            .collection("chosen_list")
+                                            .document(userId)
+                                            .set(entry);
+                                    tasks.add(addChosen);
 
-                        tasks.add(inviteTask);
+                                    // ---- 3. Create invitation ----
+                                    Map<String, Object> invitation = new HashMap<>();
+                                    invitation.put("eventId", eventId);
+                                    invitation.put("entrantId", userId);
+                                    invitation.put("status", "PENDING");
+                                    invitation.put("createdAtUtc", System.currentTimeMillis());
 
-                        // 4. Send notification
-                        Map<String, Object> notification = new HashMap<>();
-                        notification.put("eventId", eventId);
-                        notification.put("recipientId", userId);
-                        notification.put("type", "LOTTERY_REPLACEMENT_SELECTED");
-                        notification.put("title", "You've been selected!");
-                        notification.put("message", "A spot has opened up, and you’ve been selected as a replacement. Please accept or decline your invitation.");
-                        notification.put("isRead", false);
-                        notification.put("createdAt", com.google.firebase.Timestamp.now());
+                                    Task<Void> inviteTask = db.collection("events")
+                                            .document(eventId)
+                                            .collection("invitations")
+                                            .document(userId)
+                                            .set(invitation, SetOptions.merge());
+                                    tasks.add(inviteTask);
 
-                        Task<Void> notifTask = db.collection("notifications")
-                                .add(notification)
-                                .continueWith(t -> null);
+                                    // ---- 4. Event-aware notification text ----
+                                    String title = "🎉 You've been selected!";
+                                    String message = finalEventName +
+                                            ": A spot has opened up and you’ve been selected as a replacement. " +
+                                            "Please go to the event page to respond to your invitation.";
 
-                        tasks.add(notifTask);
-                        //5. send push notifccation:
-                        profileRepo.get(userId)
-                                .addOnSuccessListener(profile -> {
-                                    if (profile != null) {
+                                    // ---- 5. Add Firestore notification record ----
+                                    Map<String, Object> notif = new HashMap<>();
+                                    notif.put("eventId", eventId);
+                                    notif.put("recipientUserId", userId);
+                                    notif.put("type", "LOTTERY_REPLACEMENT_SELECTED");
+                                    notif.put("title", title);
+                                    notif.put("message", message);
+                                    notif.put("isRead", false);
+                                    notif.put("sentAt", com.google.firebase.Timestamp.now());
 
-                                        // Ensure userId is correct
-                                        String profileUserId = profile.getUserId();
-                                        if (profileUserId == null || !profileUserId.equals(userId)) {
-                                            profile.setUserId(userId);
-                                        }
+                                    Task<Void> notifTask = db.collection("notifications")
+                                            .add(notif)
+                                            .continueWith(t -> null);
 
-                                        String replacementTitle = "🎉 You've been selected!";
-                                        String replacementMessage = "A spot opened up and you’ve been selected as a replacement. " +
-                                                "Go to the event page to respond to your invitation.";
+                                    tasks.add(notifTask);
 
-                                        notificationService.sendNotificationToSelectedEntrants(
-                                                eventId,
-                                                List.of(profile),
-                                                replacementTitle,
-                                                replacementMessage,
-                                                () -> Log.d(TAG, "🔔 Push notification sent to replacement: " + userId),
-                                                (error) -> Log.e(TAG, "❌ Failed to send push to replacement: " + userId)
-                                        );
-                                    }
-                                })
-                                .addOnFailureListener(e -> Log.e(TAG, "Failed to fetch profile for push notif: " + userId, e));
+                                    // ---- 6. Push notification via NotificationServiceFs ----
+                                    profileRepo.get(userId)
+                                            .addOnSuccessListener(profile -> {
+                                                if (profile != null) {
+                                                    profile.setUserId(userId);
 
+                                                    notificationService.sendNotificationToSelectedEntrants(
+                                                            eventId,
+                                                            List.of(profile),
+                                                            title,
+                                                            message,
+                                                            () -> Log.d(TAG, "Push sent to replacement " + userId),
+                                                            (error) -> Log.e(TAG, "Push send failed for replacement " + userId + ": " + error)
+                                                    );
+                                                }
+                                            })
+                                            .addOnFailureListener(e -> Log.e(TAG,
+                                                    "Failed profile fetch for replacement push: " + userId, e));
 
+                                    // ---- 7. Remove from not_selected ----
+                                    Task<Void> removeTask = db.collection("events")
+                                            .document(eventId)
+                                            .collection("not_selected")
+                                            .document(userId)
+                                            .delete();
+                                    tasks.add(removeTask);
+                                }
 
-                        // 6. Remove from not_selected
-                        Task<Void> removeTask = db.collection("events")
-                                .document(eventId)
-                                .collection("not_selected")
-                                .document(userId)
-                                .delete();
+                                // When all tasks complete
+                                com.google.android.gms.tasks.Tasks.whenAll(tasks)
+                                        .addOnSuccessListener(aVoid -> {
+                                            Toast.makeText(this,
+                                                    "Replacement lottery completed!",
+                                                    Toast.LENGTH_SHORT).show();
+                                        })
+                                        .addOnFailureListener(err -> {
+                                            Toast.makeText(this,
+                                                    "Error during replacement lottery.",
+                                                    Toast.LENGTH_SHORT).show();
+                                            Log.e(TAG, "Replacement lottery failed", err);
+                                        });
 
-                        tasks.add(removeTask);
-                    }
-
-                    // Wait for all tasks
-                    com.google.android.gms.tasks.Tasks.whenAll(tasks)
-                            .addOnSuccessListener(aVoid -> {
-                                Toast.makeText(this, "Replacement lottery completed!", Toast.LENGTH_SHORT).show();
                             })
-                            .addOnFailureListener(err -> {
-                                Toast.makeText(this, "Error during replacement lottery.", Toast.LENGTH_SHORT).show();
-                                Log.e(TAG, "Replacement lottery failed", err);
+                            .addOnFailureListener(e -> {
+                                Toast.makeText(this, "Failed to load not_selected list.", Toast.LENGTH_SHORT).show();
+                                Log.e(TAG, "Error loading not_selected", e);
                             });
 
                 })
                 .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Failed to load not_selected list.", Toast.LENGTH_SHORT).show();
-                    Log.e(TAG, "Error loading not_selected", e);
+                    Toast.makeText(this, "Failed to load event name.", Toast.LENGTH_SHORT).show();
+                    Log.e(TAG, "Failed to fetch event name", e);
                 });
     }
-
-    private void loadProfileWithFallback(String userId, String entrantId, String userIdField) {
-        // 1. Try new system: docId = userId
-        profileRepo.get(userId)
-                .addOnSuccessListener(profile -> {
-                    if (profile != null) {
-                        profile.setUserId(userId);
-                        addCancelledProfile(profile);
-                        return;
-                    }
-
-                    // 2. Try entrantId (legacy deviceId sometimes stored here)
-                    if (entrantId != null && !entrantId.isEmpty()) {
-                        profileRepo.get(entrantId)
-                                .addOnSuccessListener(p2 -> {
-                                    if (p2 != null) {
-                                        p2.setUserId(entrantId);
-                                        addCancelledProfile(p2);
-                                        return;
-                                    }
-
-                                    // 3. Try userId field
-                                    if (userIdField != null && !userIdField.isEmpty()) {
-                                        profileRepo.get(userIdField)
-                                                .addOnSuccessListener(p3 -> {
-                                                    if (p3 != null) {
-                                                        p3.setUserId(userIdField);
-                                                        addCancelledProfile(p3);
-                                                        return;
-                                                    }
-
-                                                    // 4. Last fallback: old deviceId lookup
-                                                    loadProfileByDeviceId(userId);
-                                                });
-                                    } else {
-                                        loadProfileByDeviceId(userId);
-                                    }
-                                });
-                    } else {
-                        loadProfileByDeviceId(userId);
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    Log.e(TAG, "Failed primary lookup for " + userId, e);
-                    loadProfileByDeviceId(userId);
-                });
-    }
-
-    private void loadProfileByDeviceId(String deviceId) {
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
-
-        db.collection("profiles")
-                .whereEqualTo("deviceId", deviceId)
-                .limit(1)
-                .get()
-                .addOnSuccessListener(snap -> {
-                    if (!snap.isEmpty()) {
-                        Profile p = snap.getDocuments().get(0).toObject(Profile.class);
-                        if (p != null) {
-                            addCancelledProfile(p);
-                            return;
-                        }
-                    }
-
-                    Log.w(TAG, "No profile found using deviceId fallback: " + deviceId);
-                    adapter.updateCancelledEntrants(
-                            new ArrayList<>(cancelledProfiles),
-                            new ArrayList<>(cancelledStatuses)
-                    );
-                    updateCount();
-                })
-                .addOnFailureListener(e -> Log.e(TAG, "DeviceId fallback failed for " + deviceId, e));
-    }
-
-    /**
-     * Adds a cancelled entrant's profile safely (no duplicates)
-     * and updates the adapter + count.
-     */
-    private void addCancelledProfile(Profile profile) {
-        if (profile == null) return;
-
-        String userId = profile.getUserId();
-
-        // Avoid duplicates
-        for (Profile p : cancelledProfiles) {
-            if (p.getUserId() != null && p.getUserId().equals(userId)) {
-                Log.d(TAG, "Skipping duplicate profile for " + userId);
-                return;
-            }
-        }
-
-        cancelledProfiles.add(profile);
-        Log.d(TAG, "✓ Added cancelled profile for " + userId);
-
-        // Update the UI lists
-        adapter.updateCancelledEntrants(
-                new ArrayList<>(cancelledProfiles),
-                new ArrayList<>(cancelledStatuses)
-        );
-
-        updateCount();
-    }
-
-
-
 
 }
