@@ -78,6 +78,11 @@ public class ChosenListActivity extends AppCompatActivity {
         adapter = new ChosenListAdapter(new ArrayList<>());
         recyclerView.setAdapter(adapter);
 
+        // Cancel entrants link
+        TextView cancelEntrantsLink = findViewById(R.id.cancel_entrants_link);
+        cancelEntrantsLink.setOnClickListener(v -> cancelAllPendingInvitations());
+
+
         btnBack.setOnClickListener(v -> finish());
 
         if (textSendNotification != null) {
@@ -131,61 +136,6 @@ public class ChosenListActivity extends AppCompatActivity {
         builder.show();
     }
 
-//    /**
-//     * Loads profiles using the *embedded profile object* inside chosen_list,
-//     * because chosen_list stores the REAL uid only inside profile.userId.
-//     */
-//    private void sendNotificationToChosenEntrants() {
-//        if (currentChosenList.isEmpty()) {
-//            Toast.makeText(this, "No chosen entrants to notify", Toast.LENGTH_SHORT).show();
-//            return;
-//        }
-//
-//        textSendNotification.setEnabled(false);
-//        Toast.makeText(this, "Sending notifications...", Toast.LENGTH_SHORT).show();
-//
-//        List<Profile> profiles = new ArrayList<>();
-//
-//        for (WaitingListEntry entry : currentChosenList) {
-//
-//            // Extract REAL user profile (the embedded object)
-//            Profile p = entry.getProfile();
-//
-//            if (p == null) {
-//                Log.e(TAG, "Chosen entry missing embedded profile");
-//                continue;
-//            }
-//
-//            // Ensure correct userId
-//            String uid = p.getUserId();
-//            if (uid == null || uid.isEmpty()) {
-//                uid = p.getId(); // fallback
-//            }
-//
-//            p.setUserId(uid);
-//            profiles.add(p);
-//        }
-//
-//        if (profiles.isEmpty()) {
-//            Toast.makeText(this, "Failed to load profiles", Toast.LENGTH_SHORT).show();
-//            textSendNotification.setEnabled(true);
-//            return;
-//        }
-//
-//        // Now send notifications using valid profiles
-//        String title = "🎉 You've been chosen!";
-//        String message = "Congratulations! You've been chosen in the lottery. "
-//                + "Go to the event page to accept or decline your invite.";
-//
-//        notificationService.sendNotificationToSelectedEntrants(
-//                eventId,
-//                profiles,
-//                title,
-//                message,
-//                () -> handleSendSuccess(profiles.size()),
-//                err -> handleSendFailure(err)
-//        );
-//    }
     /**
      * Sends notifications to chosen entrants using the embedded profile
      * AND includes event name in the message.
@@ -415,4 +365,97 @@ public class ChosenListActivity extends AppCompatActivity {
     private interface ProfileCallback {
         void onProfileResolved(Profile profile);
     }
+
+    /**
+     * Cancels all invitations that are still pending. This changes the registration
+     * status to CANCELLED_BY_ORGANIZER, updates the invitation document, and then
+     * clears the chosen_list collection. Used when the organizer wants to revoke
+     * all outstanding invites at once.
+     */
+    private void cancelAllPendingInvitations() {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        db.collection("events")
+                .document(eventId)
+                .collection("invitations")
+                .whereEqualTo("status", "PENDING")
+                .get()
+                .addOnSuccessListener(invSnap -> {
+
+                    if (invSnap.isEmpty()) {
+                        Toast.makeText(this, "No pending invitations to cancel", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    for (DocumentSnapshot doc : invSnap.getDocuments()) {
+
+                        // Get entrantId from document field, not doc ID
+                        String entrantId = doc.getString("entrantId");
+
+                        if (entrantId == null || entrantId.isEmpty()) {
+                            Log.e(TAG, "Invitation missing entrantId: " + doc.getId());
+                            continue;
+                        }
+
+                        // 1) Cancel the registration using your service
+                        registrationService.cancel(
+                                eventId,
+                                entrantId,
+                                true,   // cancelled BY ORGANIZER
+                                (v) -> Log.d(TAG, "Cancelled registration for: " + entrantId),
+                                (err) -> Log.e(TAG, "Failed to cancel " + entrantId, err)
+                        );
+
+                        // 2) Update the invitation status
+                        db.collection("events")
+                                .document(eventId)
+                                .collection("invitations")
+                                .document(doc.getId())
+                                .update("status", "CANCELLED_BY_ORGANIZER");
+                    }
+
+                    Toast.makeText(this, "Cancelled all pending invitations", Toast.LENGTH_SHORT).show();
+                    deleteChosenListCollection(eventId);
+//                    loadChosenList(eventId);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error loading invitations", e);
+                    Toast.makeText(this, "Error cancelling entrants", Toast.LENGTH_SHORT).show();
+                });
+    }
+
+    /**
+     * Deletes all documents inside the chosen_list collection after pending
+     * invitations are cancelled. Afterwards, the chosen list UI is refreshed.
+     *
+     * @param eventId The Firestore event ID.
+     */
+    private void deleteChosenListCollection(String eventId) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        db.collection("events")
+                .document(eventId)
+                .collection("chosen_list")
+                .get()
+                .addOnSuccessListener(snap -> {
+                    if (snap.isEmpty()) {
+                        Log.d("ChosenList", "No chosen_list docs to delete.");
+                        return;
+                    }
+
+                    for (DocumentSnapshot doc : snap.getDocuments()) {
+                        doc.getReference().delete()
+                                .addOnSuccessListener(v -> Log.d("ChosenList", "Deleted " + doc.getId()))
+                                .addOnFailureListener(e -> Log.e("ChosenList", "Error deleting doc", e));
+                    }
+
+                    Log.d("ChosenList", "chosen_list collection cleared.");
+                    loadChosenList(eventId);
+
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("ChosenList", "Failed to load chosen_list", e);
+                });
+    }
+
 }

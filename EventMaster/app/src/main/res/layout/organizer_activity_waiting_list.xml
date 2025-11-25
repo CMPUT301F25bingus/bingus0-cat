@@ -122,34 +122,7 @@
                 android:clickable="true"
                 android:focusable="true"/>
 
-            <!-- RUN LOTTERY -->
-            <TextView
-                android:id="@+id/textDrawReplacement"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="🎲 Run Lottery"
-                android:textSize="14sp"
-                android:textStyle="italic"
-                android:textColor="@android:color/black"
-                android:background="?attr/selectableItemBackground"
-                android:padding="8dp"
-                android:gravity="start"
-                android:layout_marginStart="8dp"
-                android:clickable="true"
-                android:focusable="true"/>
         </LinearLayout>
-
-        <TextView
-            android:id="@+id/textSendNotificationNotSelected"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Send Notification to Not Selected 📩"
-            android:textColor="#D32F2F"
-            android:textStyle="italic"
-            android:clickable="true"
-            android:focusable="true" />
 
 
         </LinearLayout>

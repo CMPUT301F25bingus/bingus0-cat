@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -41,11 +42,7 @@ import java.util.Set;
  * Allows organizers to send notifications to selected entrants inviting them to sign up.
  * 
  * Implements US 02.05.01: As an organizer I want to send a notification to chosen entrants.
- * 
- * Outstanding issues:
- * - Event ID and selected entrants are currently mocked for demonstration
- * - In production, these should be passed via Intent extras from the previous screen
- * - CSV export functionality is stubbed and needs implementation
+ * CSV export functionality
  */
 public class SelectedEntrantsActivity extends AppCompatActivity {
 
@@ -67,7 +64,6 @@ public class SelectedEntrantsActivity extends AppCompatActivity {
     }
 
     // UI Components
-    private MaterialToolbar backButtonContainer;
     private RecyclerView recyclerView;
     private TextView totalSelectedCount;
     private TextView sendNotificationButton;
@@ -94,10 +90,14 @@ public class SelectedEntrantsActivity extends AppCompatActivity {
         // Initialize UI components
         initializeViews();
 
-        backButtonContainer.setNavigationOnClickListener(v -> finish());
+        ImageView backArrow = findViewById(R.id.back_arrow);
 
+        backArrow.setOnClickListener(v -> {
+            Log.d(TAG, "Back arrow clicked");
+            finish();
+        });
 
-        // Load data (from Intent or mock data for now)
+        // Load data
         loadData();
 
         // Setup RecyclerView
@@ -114,7 +114,6 @@ public class SelectedEntrantsActivity extends AppCompatActivity {
      * Initializes all view components.
      */
     private void initializeViews() {
-        backButtonContainer = findViewById(R.id.back_button_container);
         recyclerView = findViewById(R.id.selected_entrants_recycler_view);
         totalSelectedCount = findViewById(R.id.total_selected_count);
         sendNotificationButton = findViewById(R.id.send_notification_button);
@@ -204,47 +203,6 @@ public class SelectedEntrantsActivity extends AppCompatActivity {
                     Log.e(TAG, "Error loading selected entrants", e);
                 });
     }
-
-//    private void loadProfileForSelectedEntrant(String userId) {
-//        // Load profile by userId (document ID = userId in profiles collection)
-//        profileRepo.get(userId)
-//                .addOnSuccessListener(profile -> {
-//                    if (profile != null) {
-//                        // Always ensure userId matches (critical for notifications)
-//                        String profileUserId = profile.getUserId();
-//                        if (profileUserId == null || profileUserId.isEmpty() || !profileUserId.equals(userId)) {
-//                            Log.d(TAG, "Updating profile userId from '" + profileUserId + "' to '" + userId + "'");
-//                            profile.setUserId(userId);
-//                        }
-//
-//                        // Check if profile is already in the list (avoid duplicates)
-//                        boolean alreadyExists = false;
-//                        for (Profile p : selectedEntrants) {
-//                            if (p.getUserId() != null && p.getUserId().equals(userId)) {
-//                                alreadyExists = true;
-//                                break;
-//                            }
-//                        }
-//
-//                        if (!alreadyExists) {
-//                            selectedEntrants.add(profile);
-//                            Log.d(TAG, "✓ Loaded profile for userId: " + userId + ", name: " + profile.getName());
-//                        } else {
-//                            Log.d(TAG, "Profile already in list for userId: " + userId);
-//                        }
-//                    } else {
-//                        Log.w(TAG, "Profile not found for userId: " + userId);
-//                    }
-//
-//                    adapter.updateEntrants(new ArrayList<>(selectedEntrants));
-//                    updateUI();
-//                })
-//                .addOnFailureListener(e -> {
-//                    Log.e(TAG, "✗ Failed loading profile by document ID for userId: " + userId, e);
-//                    adapter.updateEntrants(new ArrayList<>(selectedEntrants));
-//                    updateUI();
-//                });
-//    }
 
     private void loadProfileForSelectedEntrant(String userId) {
 
@@ -336,26 +294,6 @@ public class SelectedEntrantsActivity extends AppCompatActivity {
 
 
     /**
-     * Creates mock selected entrants data for demonstration purposes.
-     * 
-     * @return List of mock profiles
-     */
-    private List<Profile> createMockSelectedEntrants(@NonNull String eventId) {
-        List<Profile> mockProfiles = new ArrayList<>();
-
-        boolean shouldPopulate = Math.abs(eventId.hashCode()) % 2 == 1;
-        if (!shouldPopulate) {
-            return mockProfiles;
-        }
-
-        Profile profile = new Profile("user_001", "Bingus", "bingus@example.com");
-        profile.setPhoneNumber("+1 (785) 534-1229");
-        mockProfiles.add(profile);
-
-        return mockProfiles;
-    }
-
-    /**
      * Sets up the RecyclerView with adapter and layout manager.
      */
     private void setupRecyclerView() {
@@ -445,8 +383,7 @@ public class SelectedEntrantsActivity extends AppCompatActivity {
 
         // Prepare notification content
         String title = "🎉 Congratulations! You've Been Enrolled!";
-        String message = "Great news! You have been Enrolled in the lottery for this event. " +
-                "Please confirm your attendance within 48 hours to secure your spot.";
+        String message = "Great news! You have been Enrolled in the lottery for this event.";
 
         // Send notifications
         notificationService.sendNotificationToSelectedEntrants(

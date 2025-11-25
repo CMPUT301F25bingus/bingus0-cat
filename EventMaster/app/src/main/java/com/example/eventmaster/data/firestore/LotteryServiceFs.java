@@ -7,6 +7,7 @@ import com.example.eventmaster.model.WaitingListEntry;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.Timestamp;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.SetOptions;
@@ -161,6 +162,24 @@ public class LotteryServiceFs implements LotteryService {
                             writeTasks.add(notificationTask);
                         }
 
+                        //Get event name to let the not selected know which event:
+
+                        // 🔹 Fetch event name once before notifying losers
+                        Task<DocumentSnapshot> eventTask = db.collection("events")
+                                .document(eventId)
+                                .get();
+
+                        String[] eventNameHolder = new String[1];
+
+                        eventTask.addOnSuccessListener(doc -> {
+                            String n = doc.getString("title");
+                            eventNameHolder[0] = (n != null) ? n : "this event";
+                        }).addOnFailureListener(ex -> {
+                            eventNameHolder[0] = "this event";
+                        });
+
+
+
                         // Process LOSERS (not selected)
                         for (WaitingListEntry e : notChosen) {
                             // Add them to not_selected
@@ -188,12 +207,13 @@ public class LotteryServiceFs implements LotteryService {
 
                             // Send notification to loser (US 01.04.02)
                             Map<String, Object> notification = new HashMap<>();
+                            String eventName = (eventNameHolder[0] != null) ? eventNameHolder[0] : "this event";
                             notification.put("eventId", eventId);
                             notification.put("recipientUserId", e.getUserId()); // Fixed: use recipientUserId to match Notification model
                             notification.put("senderUserId", "system"); // Organizer ID would be better, but system works for now
                             notification.put("type", "LOTTERY_LOST"); // Fixed: use LOTTERY_LOST to match Notification enum
-                            notification.put("title", "Lottery Results");
-                            notification.put("message", "Thank you for your interest. Unfortunately, you were not selected in this lottery. "   + "But don't worry! a spot might still open if someone else changes their mind.");
+                            notification.put("title", "Lottery Results - " + eventName);
+                            notification.put("message", "Thank you for your interest. Unfortunately, you were not selected in this lottery for " + eventName   + ". But don't worry! a spot might still open if someone else changes their mind.");
                             notification.put("isRead", false);
                             notification.put("sentAt", Timestamp.now()); // Fixed: use sentAt to match Notification model
 
