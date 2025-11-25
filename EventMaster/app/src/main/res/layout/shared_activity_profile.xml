@@ -17,139 +17,245 @@
         android:layout_height="56dp"
         android:background="@color/profile_nav"
         app:title="My Profile"
-        app:titleTextColor="@android:color/black"
-        app:navigationIcon="@drawable/ic_arrow_back"
-        app:navigationIconTint="@android:color/black" />
+        app:titleTextColor="@android:color/black" />
 
-    <ScrollView
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/profile_content"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:fillViewport="true">
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="@color/backgroundColor"
+        android:padding="20dp">
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="16dp">
-
-            <!-- Profile card -->
-            <LinearLayout
-                android:layout_width="match_parent"
+            <!-- Hero Profile Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardHero"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:background="@drawable/bg_card_12"
-                android:padding="16dp"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
-
-                <ImageView
-                    android:id="@+id/imgAvatar"
-                    android:layout_width="56dp"
-                    android:layout_height="56dp"
-                    android:src="@drawable/ic_avatar_placeholder"
-                    android:contentDescription="@string/app_name" />
+                android:layout_marginBottom="4dp"
+                app:cardCornerRadius="24dp"
+                app:cardBackgroundColor="@color/teal_light"
+                app:strokeWidth="0dp"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent">
 
                 <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center_horizontal"
                     android:orientation="vertical"
-                    android:layout_marginStart="12dp">
+                    android:paddingHorizontal="16dp"
+                    android:paddingVertical="16dp">
+
+                    <ImageView
+                        android:id="@+id/imgAvatar"
+                        android:layout_width="82dp"
+                        android:layout_height="82dp"
+                        android:background="@drawable/bg_card_12"
+                        android:contentDescription="@string/app_name"
+                        android:padding="12dp"
+                        android:src="@drawable/ic_avatar_placeholder"
+                        android:tint="@color/teal_dark" />
 
                     <TextView
-                        android:id="@+id/tvName"
+                        android:id="@+id/tvHeroName"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Name: —"
+                        android:layout_marginTop="16dp"
+                        android:text="User name"
+                        android:textColor="@color/text_primary_dark"
+                        android:textSize="20sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvHeroEmail"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="email@example.com"
+                        android:textColor="@color/text_secondary_dark"
+                        android:textSize="14sp" />
+
+                    <TextView
+                        android:id="@+id/tvBanned"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:background="@drawable/bg_card_12"
+                        android:paddingHorizontal="16dp"
+                        android:paddingVertical="8dp"
+                        android:text="BANNED"
+                        android:textColor="@color/btn_danger"
                         android:textStyle="bold"
-                        android:textColor="@color/text_primary_dark"/>
+                        android:visibility="gone" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Personal information + actions -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardInfo"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            app:cardCornerRadius="24dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/cardHero"
+            app:strokeColor="@color/teal_light"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:paddingBottom="12dp">
 
                     <TextView
-                        android:id="@+id/tvEmail"
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:text="Email: —"
-                        android:textColor="@color/text_secondary_dark"
-                        android:layout_marginTop="2dp"/>
+                        android:layout_weight="1"
+                        android:text="Personal Information"
+                        android:textColor="@color/text_primary_dark"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
 
-                    <TextView
-                        android:id="@+id/tvPhone"
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnCancelEdit"
+                        style="@style/Widget.Material3.Button.TextButton"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Phone: —"
+                        android:text="Cancel"
+                        android:textAllCaps="false"
                         android:textColor="@color/text_secondary_dark"
-                        android:layout_marginTop="2dp"/>
+                        android:visibility="gone" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnEdit"
+                        style="@style/Widget.Material3.Button.TextButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Edit"
+                        android:textAllCaps="false"
+                        android:textColor="@color/teal_dark"
+                        app:icon="@drawable/ic_edit_24"
+                        app:iconTint="@color/teal_dark" />
                 </LinearLayout>
 
-                <!-- BANNED chip (shown/hidden in code) -->
-                <TextView
-                    android:id="@+id/tvBanned"
-                    android:layout_width="wrap_content"
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/layoutName"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="BANNED"
-                    android:textStyle="bold"
+                    android:layout_marginTop="4dp"
+                    android:hint="Full Name"
+                    app:boxBackgroundColor="@color/teal_light"
+                    app:boxCornerRadiusBottomEnd="16dp"
+                    app:boxCornerRadiusBottomStart="16dp"
+                    app:boxCornerRadiusTopEnd="16dp"
+                    app:boxCornerRadiusTopStart="16dp">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/inputName"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/text_primary_dark" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/layoutEmail"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:hint="Email Address"
+                    app:boxBackgroundColor="@color/teal_light"
+                    app:boxCornerRadiusBottomEnd="16dp"
+                    app:boxCornerRadiusBottomStart="16dp"
+                    app:boxCornerRadiusTopEnd="16dp"
+                    app:boxCornerRadiusTopStart="16dp">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/inputEmail"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/text_primary_dark" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/layoutPhone"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:hint="Phone Number"
+                    app:boxBackgroundColor="@color/teal_light"
+                    app:boxCornerRadiusBottomEnd="16dp"
+                    app:boxCornerRadiusBottomStart="16dp"
+                    app:boxCornerRadiusTopEnd="16dp"
+                    app:boxCornerRadiusTopStart="16dp">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/inputPhone"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/text_primary_dark" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:hint="Device ID"
+                    app:boxBackgroundColor="@color/teal_light"
+                    app:boxCornerRadiusBottomEnd="16dp"
+                    app:boxCornerRadiusBottomStart="16dp"
+                    app:boxCornerRadiusTopEnd="16dp"
+                    app:boxCornerRadiusTopStart="16dp">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/inputDeviceId"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/text_primary_dark" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    android:text="Account Actions"
+                    android:textColor="@color/text_primary_dark"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnDelete"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="12dp"
+                    android:text="Delete Profile"
+                    android:textAllCaps="false"
                     android:textColor="@android:color/white"
-                    android:paddingHorizontal="10dp"
-                    android:paddingVertical="6dp"
-                    android:background="@color/btn_danger"
-                    android:visibility="gone"/>
+                    app:backgroundTint="@color/btn_danger"
+                    app:cornerRadius="16dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnLogout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Log Out"
+                    android:textAllCaps="false"
+                    android:textColor="@android:color/white"
+                    app:backgroundTint="@color/profile_button"
+                    app:cornerRadius="16dp" />
             </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
-            <!-- Edit / Delete buttons -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnEdit"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:layout_marginTop="12dp"
-                android:text="Edit Info"
-                android:textColor="@android:color/white"
-                app:cornerRadius="12dp"
-                app:backgroundTint="@color/profile_button" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnDelete"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:layout_marginTop="8dp"
-                android:text="Delete Profile"
-                android:textColor="@android:color/white"
-                app:cornerRadius="12dp"
-                app:backgroundTint="@color/btn_danger" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnLogout"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:layout_marginTop="8dp"
-                android:text="Log Out"
-                android:textColor="@android:color/white"
-                app:cornerRadius="12dp"
-                app:backgroundTint="@color/profile_button" />
-
-            <!-- History header -->
-            <TextView
-                android:id="@+id/tvHistoryHeader"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="My Event History"
-                android:textStyle="bold"
-                android:textColor="@android:color/black"
-                android:layout_marginTop="16dp"
-                android:layout_marginBottom="8dp" />
-
-            <!-- History list -->
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvHistory"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1"
-                android:paddingStart="8dp"
-                android:paddingEnd="8dp"
-                android:paddingTop="8dp"
-                android:paddingBottom="80dp"
-                android:clipToPadding="false"/>
-
-        </LinearLayout>
-    </ScrollView>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 </LinearLayout>
 
     <!-- Bottom Navigation Bar (for entrants) -->

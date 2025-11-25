@@ -7,6 +7,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.LayoutInflater;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -33,6 +34,7 @@ import com.example.eventmaster.model.Profile;
 import com.example.eventmaster.model.WaitingListEntry;
 import com.example.eventmaster.utils.DeviceUtils;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
 
@@ -74,8 +76,7 @@ public class EventDetailsFragment extends Fragment {
     // UI Elements
     private ImageView posterImage;
     private ImageView backButton;
-    private ImageView favoriteIcon;
-    private ImageView qrCodeImage;
+    private MaterialButton qrButton;
     private TextView eventNameText;
     private TextView organizerText;
     private TextView eventDateText;
@@ -178,8 +179,7 @@ public class EventDetailsFragment extends Fragment {
         // Initialize UI
         posterImage = view.findViewById(R.id.event_poster_image);
         backButton = view.findViewById(R.id.back_button);
-        favoriteIcon = view.findViewById(R.id.favorite_icon);
-        qrCodeImage = view.findViewById(R.id.qr_code_image);
+        qrButton = view.findViewById(R.id.btn_show_qr);
         eventNameText = view.findViewById(R.id.event_name_text);
         organizerText = view.findViewById(R.id.event_organizer_text);
         eventDateText = view.findViewById(R.id.event_date_text);
@@ -205,7 +205,7 @@ public class EventDetailsFragment extends Fragment {
         replacementLotterySection.setVisibility(View.GONE);
 
         backButton.setOnClickListener(v -> requireActivity().onBackPressed());
-        favoriteIcon.setOnClickListener(v -> handleFavoriteClick());
+        qrButton.setOnClickListener(v -> showQrDialog());
         joinButton.setOnClickListener(v -> handleJoinOrExitWaitingList());
 
         loadEventDetails();
@@ -583,13 +583,11 @@ public class EventDetailsFragment extends Fragment {
             posterImage.setImageResource(R.drawable.ic_launcher_background);
         }
 
-        // ✅ Load QR image from Firestore (not generate locally)
         if (event.getQrUrl() != null && !event.getQrUrl().isEmpty()) {
-            Glide.with(requireContext())
-                    .load(event.getQrUrl())
-                    .into(qrCodeImage);
+            qrButton.setVisibility(View.VISIBLE);
+            qrButton.setEnabled(true);
         } else {
-            qrCodeImage.setVisibility(View.GONE);
+            qrButton.setVisibility(View.GONE);
         }
     }
 
@@ -608,8 +606,25 @@ public class EventDetailsFragment extends Fragment {
         });
     }
 
-    private void handleFavoriteClick() {
-        Toast.makeText(requireContext(), "Favorite feature coming soon!", Toast.LENGTH_SHORT).show();
+    private void showQrDialog() {
+        if (currentEvent == null || currentEvent.getQrUrl() == null || currentEvent.getQrUrl().isEmpty()) {
+            Toast.makeText(requireContext(), "QR code not available yet.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        View dialogView = LayoutInflater.from(requireContext())
+                .inflate(R.layout.dialog_event_qr, null, false);
+        ImageView qrImage = dialogView.findViewById(R.id.dialog_qr_image);
+        Glide.with(requireContext())
+                .load(currentEvent.getQrUrl())
+                .placeholder(R.drawable.ic_launcher_background)
+                .into(qrImage);
+
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Event QR Code")
+                .setView(dialogView)
+                .setPositiveButton("Close", null)
+                .show();
     }
 
     private void checkIfUserInWaitingList() {
