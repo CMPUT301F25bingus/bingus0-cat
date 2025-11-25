@@ -19,9 +19,12 @@ public class AdminNotificationLogActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.admin_activity_notification_log);
 
+        // Get organizerId from intent if provided
+        String organizerId = getIntent().getStringExtra("organizerId");
+
         // Load fragment
         if (savedInstanceState == null) {
-            AdminNotificationLogFragment fragment = AdminNotificationLogFragment.newInstance();
+            AdminNotificationLogFragment fragment = AdminNotificationLogFragment.newInstance(organizerId);
             FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
             transaction.replace(R.id.fragment_container, fragment);
             transaction.commit();

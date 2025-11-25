@@ -16,6 +16,9 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.eventmaster.R;
+import com.example.eventmaster.data.api.EventReadService;
+import com.example.eventmaster.data.firestore.EventReadServiceFs;
+import com.example.eventmaster.model.Event;
 import com.example.eventmaster.model.Notification;
 import com.example.eventmaster.ui.admin.adapters.AdminNotificationLogAdapter;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -24,7 +27,10 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Fragment displaying a log of all notifications sent in the system.
@@ -34,19 +40,35 @@ public class AdminNotificationLogFragment extends Fragment {
 
     private static final String TAG = "AdminNotificationLog";
     private static final String COLLECTION_NOTIFICATIONS = "notifications";
+    private static final String ARG_ORGANIZER_ID = "organizerId";
 
     private RecyclerView recyclerView;
     private ImageView backButton;
     private TextView emptyStateText;
     private AdminNotificationLogAdapter adapter;
     private List<Notification> allNotifications = new ArrayList<>();
+    private String organizerId;
+    private EventReadService eventReadService;
 
     public AdminNotificationLogFragment() {
         // Required empty public constructor
     }
 
-    public static AdminNotificationLogFragment newInstance() {
-        return new AdminNotificationLogFragment();
+    public static AdminNotificationLogFragment newInstance(String organizerId) {
+        AdminNotificationLogFragment fragment = new AdminNotificationLogFragment();
+        Bundle args = new Bundle();
+        args.putString(ARG_ORGANIZER_ID, organizerId);
+        fragment.setArguments(args);
+        return fragment;
+    }
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        if (getArguments() != null) {
+            organizerId = getArguments().getString(ARG_ORGANIZER_ID);
+        }
+        eventReadService = new EventReadServiceFs();
     }
 
     @Nullable
@@ -68,10 +90,174 @@ public class AdminNotificationLogFragment extends Fragment {
         recyclerView.setAdapter(adapter);
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
 
-        // Load all notifications
-        loadAllNotifications();
+        // Load notifications (filtered by organizer if organizerId is provided)
+        if (organizerId != null && !organizerId.isEmpty()) {
+            loadNotificationsForOrganizer();
+        } else {
+            loadAllNotifications();
+        }
 
         return view;
+    }
+
+    /**
+     * Loads notifications for a specific organizer by first getting their events,
+     * then filtering notifications by those event IDs.
+     */
+    private void loadNotificationsForOrganizer() {
+        Log.d(TAG, "Loading notifications for organizer: " + organizerId);
+        
+        // First, get all events for this organizer
+        eventReadService.listByOrganizer(organizerId)
+                .addOnSuccessListener(events -> {
+                    if (events == null || events.isEmpty()) {
+                        Log.d(TAG, "No events found for organizer, showing empty list");
+                        adapter.setNotifications(new ArrayList<>());
+                        updateEmptyState();
+                        return;
+                    }
+                    
+                    // Collect event IDs
+                    Set<String> eventIds = new HashSet<>();
+                    for (Event event : events) {
+                        if (event.getEventId() != null) {
+                            eventIds.add(event.getEventId());
+                        }
+                    }
+                    
+                    Log.d(TAG, "Found " + eventIds.size() + " events for organizer");
+                    
+                    // Now load notifications for these events
+                    loadNotificationsForEvents(eventIds);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Failed to load events for organizer", e);
+                    Toast.makeText(requireContext(),
+                            "Failed to load organizer events: " + e.getMessage(),
+                            Toast.LENGTH_SHORT).show();
+                    adapter.setNotifications(new ArrayList<>());
+                    updateEmptyState();
+                });
+    }
+
+    /**
+     * Loads notifications for a set of event IDs.
+     * Handles Firestore's whereIn limit of 10 items by batching queries if needed.
+     */
+    private void loadNotificationsForEvents(Set<String> eventIds) {
+        if (eventIds.isEmpty()) {
+            adapter.setNotifications(new ArrayList<>());
+            updateEmptyState();
+            return;
+        }
+        
+        List<String> eventIdList = new ArrayList<>(eventIds);
+        allNotifications.clear();
+        
+        // Firestore whereIn has a limit of 10 items, so we need to batch if there are more
+        final int BATCH_SIZE = 10;
+        final int totalBatches = (eventIdList.size() + BATCH_SIZE - 1) / BATCH_SIZE;
+        final AtomicInteger completedBatches = new AtomicInteger(0);
+        
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        
+        for (int i = 0; i < eventIdList.size(); i += BATCH_SIZE) {
+            int end = Math.min(i + BATCH_SIZE, eventIdList.size());
+            List<String> batch = eventIdList.subList(i, end);
+            
+            db.collection(COLLECTION_NOTIFICATIONS)
+                    .whereIn("eventId", batch)
+                    .orderBy("sentAt", Query.Direction.DESCENDING)
+                    .get()
+                    .addOnSuccessListener(querySnapshot -> {
+                        for (QueryDocumentSnapshot doc : querySnapshot) {
+                            try {
+                                Notification notification = parseNotification(doc);
+                                if (notification != null) {
+                                    allNotifications.add(notification);
+                                }
+                            } catch (Exception e) {
+                                Log.e(TAG, "Error parsing notification document: " + doc.getId(), e);
+                            }
+                        }
+                        
+                        int completed = completedBatches.incrementAndGet();
+                        if (completed == totalBatches) {
+                            // All batches completed, sort and update UI
+                            allNotifications.sort((a, b) -> {
+                                Date dateA = a.getSentAt();
+                                Date dateB = b.getSentAt();
+                                if (dateA == null && dateB == null) return 0;
+                                if (dateA == null) return 1;
+                                if (dateB == null) return -1;
+                                return dateB.compareTo(dateA); // Descending
+                            });
+                            
+                            adapter.setNotifications(allNotifications);
+                            updateEmptyState();
+                            Log.d(TAG, "Loaded " + allNotifications.size() + " notifications for organizer");
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        // If orderBy fails, try without orderBy
+                        Log.w(TAG, "Query with orderBy failed for batch, trying without orderBy: " + e.getMessage());
+                        db.collection(COLLECTION_NOTIFICATIONS)
+                                .whereIn("eventId", batch)
+                                .get()
+                                .addOnSuccessListener(querySnapshot -> {
+                                    for (QueryDocumentSnapshot doc : querySnapshot) {
+                                        try {
+                                            Notification notification = parseNotification(doc);
+                                            if (notification != null) {
+                                                allNotifications.add(notification);
+                                            }
+                                        } catch (Exception ex) {
+                                            Log.e(TAG, "Error parsing notification document: " + doc.getId(), ex);
+                                        }
+                                    }
+                                    
+                                    int completed = completedBatches.incrementAndGet();
+                                    if (completed == totalBatches) {
+                                        // All batches completed, sort and update UI
+                                        allNotifications.sort((a, b) -> {
+                                            Date dateA = a.getSentAt();
+                                            Date dateB = b.getSentAt();
+                                            if (dateA == null && dateB == null) return 0;
+                                            if (dateA == null) return 1;
+                                            if (dateB == null) return -1;
+                                            return dateB.compareTo(dateA); // Descending
+                                        });
+                                        
+                                        adapter.setNotifications(allNotifications);
+                                        updateEmptyState();
+                                        Log.d(TAG, "Loaded " + allNotifications.size() + " notifications for organizer (without orderBy)");
+                                    }
+                                })
+                                .addOnFailureListener(ex -> {
+                                    Log.e(TAG, "Failed to load notifications batch for organizer", ex);
+                                    int completed = completedBatches.incrementAndGet();
+                                    if (completed == totalBatches) {
+                                        // Even if some batches failed, update UI with what we have
+                                        allNotifications.sort((a, b) -> {
+                                            Date dateA = a.getSentAt();
+                                            Date dateB = b.getSentAt();
+                                            if (dateA == null && dateB == null) return 0;
+                                            if (dateA == null) return 1;
+                                            if (dateB == null) return -1;
+                                            return dateB.compareTo(dateA); // Descending
+                                        });
+                                        
+                                        adapter.setNotifications(allNotifications);
+                                        updateEmptyState();
+                                        if (allNotifications.isEmpty()) {
+                                            Toast.makeText(requireContext(),
+                                                    "Failed to load notifications: " + ex.getMessage(),
+                                                    Toast.LENGTH_SHORT).show();
+                                        }
+                                    }
+                                });
+                    });
+        }
     }
 
     /**
