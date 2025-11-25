@@ -135,6 +135,26 @@
                         android:textColor="#222222"/>
                 </com.google.android.material.textfield.TextInputLayout>
 
+
+                <!-- optional: max # of ppl in waiting list -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    app:boxBackgroundMode="filled"
+                    app:boxBackgroundColor="@android:color/white"
+                    app:boxStrokeColor="#22000000">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/editWaitingListLimit"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Optional: Max Waiting List Size"
+                        android:inputType="number"
+                        android:maxLines="1"
+                        android:textColor="#222222"/>
+                </com.google.android.material.textfield.TextInputLayout>
+
                 <!-- PRICE -->
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"

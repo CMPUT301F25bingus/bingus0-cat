@@ -14,6 +14,13 @@ import com.example.eventmaster.model.WaitingListEntry;
 
 import java.util.List;
 
+/**
+ * RecyclerView adapter for displaying users currently on the waiting list.
+ * Each row displays the entrant’s name, email, and phone number. The adapter
+ * uses profile data when available, falling back to waiting list fields if needed.
+ *
+ * It supports runtime updates when new entrants join or others are removed.
+ */
 public class WaitingListAdapter extends RecyclerView.Adapter<WaitingListAdapter.ViewHolder> {
 
     private List<WaitingListEntry> entrants;
@@ -22,6 +29,11 @@ public class WaitingListAdapter extends RecyclerView.Adapter<WaitingListAdapter.
         this.entrants = entrants;
     }
 
+    /**
+     * Replaces the list of waiting list entrants and refreshes the UI.
+     *
+     * @param newEntrants the updated list of WaitingListEntry objects.
+     */
     public void updateList(List<WaitingListEntry> newEntrants) {
         this.entrants = newEntrants;
         notifyDataSetChanged();

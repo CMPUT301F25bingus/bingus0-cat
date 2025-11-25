@@ -136,6 +136,11 @@ public class EventRepositoryFs implements EventRepository {
         return update(eventId, fields);
     }
 
+    @Override
+    public Task<Void> delete(@NonNull String eventId) {
+        return db.collection(COLL).document(eventId).delete();
+    }
+
     // ----------- Task-based reads -----------
 
     @Override

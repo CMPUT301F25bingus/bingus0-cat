@@ -1,84 +1,131 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp"
-    android:background="#A5D6D3">
+    android:background="#5EC1B6">
 
-    <!-- Back Button -->
-    <TextView
+    <!-- TOP BAR (Unified Theme) -->
+    <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/btnBack"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="← Back to View Entrants"
-        android:textColor="#000000"
-        android:textSize="15sp"
-        android:background="#D4E8E6"
-        android:padding="16dp"
-        android:gravity="start|center_vertical"
-        android:clickable="true"
-        android:focusable="true" />
+        android:background="#B8D9D8">
 
-    <!-- Section Header -->
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:padding="16dp">
+
+            <ImageView
+                android:id="@+id/imageView"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:contentDescription="Back"
+                android:src="@android:drawable/ic_menu_revert"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"/>
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="Back to View Entrants"
+                android:textColor="@android:color/black"
+                android:textStyle="bold"
+                android:textSize="20sp"
+                android:layout_marginStart="16dp"
+                app:layout_constraintStart_toEndOf="@+id/imageView"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </com.google.android.material.appbar.MaterialToolbar>
+
+
+    <!-- TITLE BAR -->
     <TextView
         android:id="@+id/btnTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Waitlisted entrants"
+        android:textSize="22sp"
         android:textStyle="bold"
-        android:textColor="#000000"
-        android:textSize="16sp"
-        android:background="#6CAAA1"
-        android:padding="16dp"
-        android:gravity="center"
-        android:layout_marginTop="12dp" />
+        android:textAlignment="center"
+        android:textColor="@android:color/black"
+        android:background="#B8D9D8"
+        android:padding="12dp"
+        android:layout_marginStart="24dp"
+        android:layout_marginEnd="24dp"
+        android:layout_marginTop="24dp"
+        android:layout_marginBottom="16dp"/>
 
-    <!-- RecyclerView -->
+
+    <!-- LIST -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerViewWaitingList"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:layout_marginTop="12dp"
-        android:paddingTop="4dp"
-        android:paddingBottom="4dp"
-        android:clipToPadding="false" />
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
+        android:clipToPadding="false"
+        android:scrollbars="vertical" />
 
-    <!-- Footer -->
-    <TextView
-        android:id="@+id/textTotalCount"
-        android:layout_width="wrap_content"
+
+    <!-- FOOTER -->
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Total waitlisted entrants: 0"
-        android:layout_marginTop="8dp"
-        android:textStyle="bold"
-        android:textColor="#000" />
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:background="#5FB3AD">
+
+        <!-- COUNT -->
+        <TextView
+            android:id="@+id/textTotalCount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Total waitlisted entrants: 0"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:textColor="@android:color/black"
+            android:layout_marginBottom="14dp" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
+        android:orientation="vertical"
         android:layout_marginTop="8dp">
 
-        <TextView
-            android:id="@+id/textSendNotification"
-            android:layout_width="0dp"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Send Notification 📩"
-            android:textColor="#00796B"
-            android:textStyle="italic" />
+            android:orientation="horizontal">
 
-        <TextView
-            android:id="@+id/textDrawReplacement"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Run Lottery"
-            android:textColor="#00796B"
-            android:textStyle="italic"
-            android:clickable="true"
-            android:focusable="true" />
+            <!-- SEND NOTIFICATION -->
+            <TextView
+                android:id="@+id/textSendNotification"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="📩 Send Notification"
+                android:textSize="14sp"
+                android:textStyle="italic"
+                android:textColor="@android:color/black"
+                android:background="?attr/selectableItemBackground"
+                android:padding="8dp"
+                android:gravity="start"
+                android:layout_marginEnd="8dp"
+                android:clickable="true"
+                android:focusable="true"/>
+
+        </LinearLayout>
+
+
+        </LinearLayout>
     </LinearLayout>
 
 </LinearLayout>

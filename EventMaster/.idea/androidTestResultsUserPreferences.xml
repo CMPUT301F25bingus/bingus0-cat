@@ -3,6 +3,34 @@
   <component name="AndroidTestResultsUserPreferences">
     <option name="androidTestResultsTableState">
       <map>
+        <entry key="-2138852291">
+          <value>
+            <AndroidTestResultsTableState>
+              <option name="preferredColumnWidths">
+                <map>
+                  <entry key="Duration" value="90" />
+                  <entry key="Pixel_8_Pro" value="120" />
+                  <entry key="Tests" value="360" />
+                  <entry key="samsung SM-A546W" value="120" />
+                </map>
+              </option>
+            </AndroidTestResultsTableState>
+          </value>
+        </entry>
+        <entry key="-1829050129">
+          <value>
+            <AndroidTestResultsTableState>
+              <option name="preferredColumnWidths">
+                <map>
+                  <entry key="Duration" value="90" />
+                  <entry key="Pixel_8_Pro" value="120" />
+                  <entry key="Tests" value="360" />
+                  <entry key="samsung SM-A546W" value="120" />
+                </map>
+              </option>
+            </AndroidTestResultsTableState>
+          </value>
+        </entry>
         <entry key="-1180551679">
           <value>
             <AndroidTestResultsTableState>
@@ -109,6 +137,32 @@
             </AndroidTestResultsTableState>
           </value>
         </entry>
+        <entry key="94265432">
+          <value>
+            <AndroidTestResultsTableState>
+              <option name="preferredColumnWidths">
+                <map>
+                  <entry key="Duration" value="90" />
+                  <entry key="Pixel_3a" value="120" />
+                  <entry key="Tests" value="360" />
+                </map>
+              </option>
+            </AndroidTestResultsTableState>
+          </value>
+        </entry>
+        <entry key="242533348">
+          <value>
+            <AndroidTestResultsTableState>
+              <option name="preferredColumnWidths">
+                <map>
+                  <entry key="Duration" value="90" />
+                  <entry key="Tests" value="360" />
+                  <entry key="samsung SM-A546W" value="120" />
+                </map>
+              </option>
+            </AndroidTestResultsTableState>
+          </value>
+        </entry>
         <entry key="333873563">
           <value>
             <AndroidTestResultsTableState>
@@ -195,6 +249,20 @@
                   <entry key="Duration" value="90" />
                   <entry key="Medium_Phone_API_36.0" value="120" />
                   <entry key="Tests" value="360" />
+                </map>
+              </option>
+            </AndroidTestResultsTableState>
+          </value>
+        </entry>
+        <entry key="1941184721">
+          <value>
+            <AndroidTestResultsTableState>
+              <option name="preferredColumnWidths">
+                <map>
+                  <entry key="Duration" value="90" />
+                  <entry key="Pixel_8_Pro" value="120" />
+                  <entry key="Tests" value="360" />
+                  <entry key="samsung SM-A546W" value="120" />
                 </map>
               </option>
             </AndroidTestResultsTableState>

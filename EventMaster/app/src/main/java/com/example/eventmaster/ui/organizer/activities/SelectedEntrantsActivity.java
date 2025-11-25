@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -22,26 +23,26 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.eventmaster.R;
 import com.example.eventmaster.data.api.NotificationService;
 import com.example.eventmaster.data.firestore.NotificationServiceFs;
+import com.example.eventmaster.data.firestore.ProfileRepositoryFs;
 import com.example.eventmaster.model.Profile;
 import com.example.eventmaster.ui.organizer.adapters.*;
+import com.google.android.material.appbar.MaterialToolbar;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Activity for displaying selected entrants who won the lottery.
  * Allows organizers to send notifications to selected entrants inviting them to sign up.
  * 
  * Implements US 02.05.01: As an organizer I want to send a notification to chosen entrants.
- * 
- * Outstanding issues:
- * - Event ID and selected entrants are currently mocked for demonstration
- * - In production, these should be passed via Intent extras from the previous screen
- * - CSV export functionality is stubbed and needs implementation
+ * CSV export functionality
  */
 public class SelectedEntrantsActivity extends AppCompatActivity {
 
@@ -63,13 +64,10 @@ public class SelectedEntrantsActivity extends AppCompatActivity {
     }
 
     // UI Components
-    private LinearLayout backButtonContainer;
     private RecyclerView recyclerView;
     private TextView totalSelectedCount;
     private TextView sendNotificationButton;
     private TextView exportCsvButton;
-    private TextView viewEnrolledLink;
-    private TextView cancelEntrantsLink;
 
     // Data
     private String eventId;
@@ -78,19 +76,28 @@ public class SelectedEntrantsActivity extends AppCompatActivity {
 
     // Services
     private NotificationService notificationService;
+    private ProfileRepositoryFs profileRepo;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.organizer_activity_selected_entrants);
 
-        // Initialize service
+        // Initialize services
         notificationService = new NotificationServiceFs();
+        profileRepo = new ProfileRepositoryFs();
 
         // Initialize UI components
         initializeViews();
 
-        // Load data (from Intent or mock data for now)
+        ImageView backArrow = findViewById(R.id.back_arrow);
+
+        backArrow.setOnClickListener(v -> {
+            Log.d(TAG, "Back arrow clicked");
+            finish();
+        });
+
+        // Load data
         loadData();
 
         // Setup RecyclerView
@@ -107,13 +114,10 @@ public class SelectedEntrantsActivity extends AppCompatActivity {
      * Initializes all view components.
      */
     private void initializeViews() {
-        backButtonContainer = findViewById(R.id.back_button_container);
         recyclerView = findViewById(R.id.selected_entrants_recycler_view);
         totalSelectedCount = findViewById(R.id.total_selected_count);
         sendNotificationButton = findViewById(R.id.send_notification_button);
         exportCsvButton = findViewById(R.id.export_csv_button);
-        viewEnrolledLink = findViewById(R.id.view_enrolled_link);
-        cancelEntrantsLink = findViewById(R.id.cancel_entrants_link);
     }
 
     /**
@@ -139,6 +143,9 @@ public class SelectedEntrantsActivity extends AppCompatActivity {
     private void loadSelectedEntrantsFromFirestore() {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
+        // Clear existing list before reloading to avoid duplicates
+        selectedEntrants.clear();
+
         // 1) Load selected entrants (status = ACTIVE)
         db.collection("events")
                 .document(eventId)
@@ -156,11 +163,38 @@ public class SelectedEntrantsActivity extends AppCompatActivity {
 
                     Log.d(TAG, "Found " + regSnap.size() + " selected entrants");
 
+                    // Track userIds we've already processed to avoid duplicates
+                    Set<String> processedUserIds = new HashSet<>();
+                    
                     for (DocumentSnapshot doc : regSnap.getDocuments()) {
+                        // Registration document ID is the userId (Firebase Auth UID)
+                        String userId = doc.getId(); // Document ID is the userId
+                        
+                        // Verify entrantId field matches (for debugging)
+                        String entrantId = doc.getString("entrantId");
+                        if (entrantId != null && !entrantId.isEmpty()) {
+                            if (!entrantId.equals(userId)) {
+                                Log.w(TAG, "Registration entrantId (" + entrantId + ") doesn't match document ID (" + userId + "), using entrantId");
+                                userId = entrantId;
+                            }
+                        }
+                        
+                        // Also check userId field as fallback
+                        String userIdField = doc.getString("userId");
+                        if (userIdField != null && !userIdField.isEmpty()) {
+                            userId = userIdField;
+                        }
+                        
+                        // Skip if we've already processed this userId (avoid duplicates)
+                        if (processedUserIds.contains(userId)) {
+                            Log.d(TAG, "Skipping duplicate registration for userId: " + userId + " (docId: " + doc.getId() + ")");
+                            continue;
+                        }
+                        
+                        processedUserIds.add(userId);
+                        Log.d(TAG, "Found selected registration - docId: " + doc.getId() + ", userId: " + userId);
 
-                        String deviceId = doc.getId(); // userId stored by entrant side
-
-                        loadProfileForSelectedEntrant(deviceId);
+                        loadProfileForSelectedEntrant(userId);
                     }
 
                 })
@@ -170,54 +204,94 @@ public class SelectedEntrantsActivity extends AppCompatActivity {
                 });
     }
 
-    private void loadProfileForSelectedEntrant(String deviceId) {
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
+    private void loadProfileForSelectedEntrant(String userId) {
 
-        // 2) Find the matching profile by its deviceId field
-        db.collection("profiles")
-                .whereEqualTo("deviceId", deviceId)
-                .limit(1)
-                .get()
-                .addOnSuccessListener(profileSnap -> {
-
-                    if (!profileSnap.isEmpty()) {
-                        Profile profile = profileSnap.getDocuments().get(0).toObject(Profile.class);
-                        selectedEntrants.add(profile);
-                        Log.d(TAG, "Loaded profile for: " + profile.getName());
-                    } else {
-                        Log.w(TAG, "No profile found for deviceId: " + deviceId);
+        // 1️⃣ Try document ID = userId (correct method for new accounts)
+        profileRepo.get(userId)
+                .addOnSuccessListener(profile -> {
+                    if (profile != null) {
+                        finalizeSelectedProfile(userId, profile);
+                        return;
                     }
 
-                    // Update the adapter each time a profile loads
-                    adapter.updateEntrants(new ArrayList<>(selectedEntrants));
-                    updateUI();
-
+                    Log.w(TAG, "(1) No profile under docId for UID: " + userId);
+                    loadProfileByUserIdField(userId);
                 })
                 .addOnFailureListener(e -> {
-                    Log.e(TAG, "Failed loading profile for " + deviceId, e);
+                    Log.e(TAG, "(1) Error loading docId profile for " + userId, e);
+                    loadProfileByUserIdField(userId);
+                });
+    }
+
+    private void loadProfileByUserIdField(String userId) {
+        FirebaseFirestore.getInstance()
+                .collection("profiles")
+                .whereEqualTo("userId", userId)
+                .limit(1)
+                .get()
+                .addOnSuccessListener(snap -> {
+                    if (!snap.isEmpty()) {
+                        Profile profile = snap.getDocuments().get(0).toObject(Profile.class);
+                        finalizeSelectedProfile(userId, profile);
+                        return;
+                    }
+
+                    Log.w(TAG, "(2) No profile with userId field = " + userId);
+                    loadProfileByDeviceId(userId);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "(2) userId field lookup failed for " + userId, e);
+                    loadProfileByDeviceId(userId);
                 });
     }
 
 
-    /**
-     * Creates mock selected entrants data for demonstration purposes.
-     * 
-     * @return List of mock profiles
-     */
-    private List<Profile> createMockSelectedEntrants(@NonNull String eventId) {
-        List<Profile> mockProfiles = new ArrayList<>();
+    private void loadProfileByDeviceId(String deviceId) {
+        FirebaseFirestore.getInstance()
+                .collection("profiles")
+                .whereEqualTo("deviceId", deviceId)
+                .limit(1)
+                .get()
+                .addOnSuccessListener(snap -> {
+                    if (!snap.isEmpty()) {
+                        Profile profile = snap.getDocuments().get(0).toObject(Profile.class);
+                        finalizeSelectedProfile(deviceId, profile);
+                        return;
+                    }
 
-        boolean shouldPopulate = Math.abs(eventId.hashCode()) % 2 == 1;
-        if (!shouldPopulate) {
-            return mockProfiles;
+                    Log.w(TAG, "(3) No profile found by deviceId fallback: " + deviceId);
+                    adapter.updateEntrants(new ArrayList<>(selectedEntrants));
+                    updateUI();
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "(3) deviceId lookup failed for: " + deviceId, e);
+                    adapter.updateEntrants(new ArrayList<>(selectedEntrants));
+                    updateUI();
+                });
+    }
+
+    private void finalizeSelectedProfile(String userId, Profile profile) {
+        if (profile == null) return;
+
+        if (profile.getUserId() == null || !profile.getUserId().equals(userId)) {
+            profile.setUserId(userId);
         }
 
-        Profile profile = new Profile("user_001", "Bingus", "bingus@example.com");
-        profile.setPhoneNumber("+1 (785) 534-1229");
-        mockProfiles.add(profile);
+        for (Profile p : selectedEntrants) {
+            if (p.getUserId().equals(userId)) {
+                Log.d(TAG, "Already added: " + userId);
+                return;
+            }
+        }
 
-        return mockProfiles;
+        selectedEntrants.add(profile);
+        Log.d(TAG, "✓ Added selected entrant: " + profile.getName());
+
+        adapter.updateEntrants(new ArrayList<>(selectedEntrants));
+        updateUI();
     }
+
+
 
     /**
      * Sets up the RecyclerView with adapter and layout manager.
@@ -238,20 +312,11 @@ public class SelectedEntrantsActivity extends AppCompatActivity {
      * Sets up click listeners for all interactive components.
      */
     private void setupClickListeners() {
-        // Back button
-        backButtonContainer.setOnClickListener(v -> handleBackButtonClick());
-
         // Send Notification button (Main action for US 02.05.01)
         sendNotificationButton.setOnClickListener(v -> handleSendNotificationClick());
 
         // Export CSV button
         exportCsvButton.setOnClickListener(v -> handleExportCsvClick());
-
-        // View enrolled link
-        viewEnrolledLink.setOnClickListener(v -> handleViewEnrolledClick());
-
-        // Cancel entrants link
-        cancelEntrantsLink.setOnClickListener(v -> handleCancelEntrantsClick());
     }
 
     /**
@@ -317,9 +382,8 @@ public class SelectedEntrantsActivity extends AppCompatActivity {
         Toast.makeText(this, "Sending notifications...", Toast.LENGTH_SHORT).show();
 
         // Prepare notification content
-        String title = "🎉 Congratulations! You've Been Selected!";
-        String message = "Great news! You have been selected in the lottery for this event. " +
-                "Please confirm your attendance within 48 hours to secure your spot.";
+        String title = "🎉 Congratulations! You've Been Enrolled!";
+        String message = "Great news! You have been Enrolled in the lottery for this event.";
 
         // Send notifications
         notificationService.sendNotificationToSelectedEntrants(
@@ -417,30 +481,13 @@ public class SelectedEntrantsActivity extends AppCompatActivity {
 
     }
 
-    /**
-     * Handles View Enrolled link click.
-     * Shows list of entrants who have confirmed attendance.
-     */
-    private void handleViewEnrolledClick() {
-        Log.d(TAG, "View enrolled link clicked");
-        Toast.makeText(this, "View enrolled entrants - Coming soon!", Toast.LENGTH_SHORT).show();
-        // TODO: Navigate to enrolled entrants screen
-    }
-
-    /**
-     * Handles Cancel Entrants link click.
-     * Allows cancelling entrants who haven't signed up.
-     */
-    private void handleCancelEntrantsClick() {
-        Log.d(TAG, "Cancel entrants link clicked");
-        Toast.makeText(this, "Cancel entrants functionality - Coming soon!", Toast.LENGTH_SHORT).show();
-        // TODO: Implement cancel entrants functionality
-    }
 
 
     private String safe(String s) {
         return (s == null) ? "" : s.replace(",", " ");  // Avoid breaking CSV format
     }
+
+
 
 }
 

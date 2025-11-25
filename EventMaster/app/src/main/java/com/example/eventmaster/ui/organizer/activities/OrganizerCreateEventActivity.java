@@ -69,7 +69,7 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
     public MaterialButton tvRegOpen, tvRegClose;
     private MaterialButton btnPublish;
     private MaterialCheckBox cbGenerateQr;
-    private TextInputEditText editTitle, editDescription, editLocation, editCapacity;
+    private TextInputEditText editTitle, editDescription, editLocation, editCapacity, editWaitingLimit;
     private ProgressBar progress;
     private MaterialCheckBox cbRequireLocation;
     private TextInputEditText editPrice;
@@ -126,6 +126,8 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
         editCapacity = findViewById(R.id.editCapacity);
         cbRequireLocation = findViewById(R.id.cbRequireLocation);
         editPrice = findViewById(R.id.editPrice);
+        editWaitingLimit = findViewById(R.id.editWaitingListLimit);
+
 
 
 
@@ -195,6 +197,8 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
         String desc = textOf(editDescription);
         String location = textOf(editLocation);
         String capStr = textOf(editCapacity);
+        String waitLimitStr = textOf(editWaitingLimit);
+        Integer waitingListLimit = null;  // null = unlimited
 
         if (TextUtils.isEmpty(selectedEventType)) {
             toast("Select an event type");
@@ -221,6 +225,22 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
             return;
         }
         if (capacity <= 0) { editCapacity.setError("Capacity must be greater than 0"); return; }
+
+        //OPTIONAL Waiting List Limit
+        // If empty → waitingListLimit stays null (unlimited)
+        if (!TextUtils.isEmpty(waitLimitStr)) {
+            try {
+                int parsed = Integer.parseInt(waitLimitStr);
+                if (parsed < 0) {
+                    editWaitingLimit.setError("Limit must be ≥ 0");
+                    return;
+                }
+                waitingListLimit = parsed;   // valid limit
+            } catch (Exception e) {
+                editWaitingLimit.setError("Invalid number");
+                return;
+            }
+        }
 
         String priceStr = textOf(editPrice);
         double price;
@@ -267,6 +287,7 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
         base.put("createdAt", Timestamp.now());
         base.put("geolocationRequired", cbRequireLocation.isChecked());
         base.put("price", price);
+        base.put("waitingListLimit", waitingListLimit);
         base.put("eventType", selectedEventType);
 
 

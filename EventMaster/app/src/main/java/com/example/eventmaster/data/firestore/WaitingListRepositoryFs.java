@@ -51,6 +51,38 @@ public class WaitingListRepositoryFs implements WaitingListRepository {
             listener.onFailure(e);
         }
     }
+    public void joinWithLimitCheck(WaitingListEntry entry, OnWaitingListOperationListener listener) {
+
+        String eventId = entry.getEventId();
+
+        // Step 1: load event to get limit
+        db.collection("events").document(eventId).get()
+                .addOnSuccessListener(eventDoc -> {
+
+                    Integer limit = eventDoc.get("waitingListLimit", Integer.class);
+
+                    // Step 2: get count
+                    db.collection("events")
+                            .document(eventId)
+                            .collection("waiting_list")
+                            .get()
+                            .addOnSuccessListener(q -> {
+
+                                int current = q.size();
+
+                                if (limit != null && limit > 0 && current >= limit) {
+                                    listener.onFailure(new Exception("Waiting list is full"));
+                                    return;
+                                }
+
+                                // Otherwise proceed normally
+                                addToWaitingList(entry, listener);
+
+                            }).addOnFailureListener(listener::onFailure);
+
+                }).addOnFailureListener(listener::onFailure);
+    }
+
 
     @Override
     public void removeFromWaitingList(String entryId, OnWaitingListOperationListener listener) {

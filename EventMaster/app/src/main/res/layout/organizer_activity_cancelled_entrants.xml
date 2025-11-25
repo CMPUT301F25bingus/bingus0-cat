@@ -1,44 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Selected Entrants Activity Layout - Matches Figma Design -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#80CBC4">
+    android:background="#5FB3AD">
 
-    <!-- Back Button Header -->
-    <LinearLayout
+    <!-- TOP BAR (Matching the Event Details + Entrants Hub theme) -->
+    <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/back_button_container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="16dp"
-        android:gravity="center_vertical"
-        android:background="#B2DFDB"
-        android:clickable="true"
-        android:focusable="true">
+        android:background="#B8D9D8"
+        android:padding="0dp">
 
-        <ImageView
-            android:id="@+id/back_arrow"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:src="@android:drawable/ic_menu_revert"
-            android:contentDescription="Back arrow"
-            app:tint="@android:color/black" />
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:padding="16dp">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:text="Back to View Entrants"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:textColor="@android:color/black" />
+            <ImageView
+                android:id="@+id/back_arrow"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:src="@android:drawable/ic_menu_revert"
+                android:contentDescription="Back"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent" />
 
-    </LinearLayout>
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="Back to View Entrants"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/black"
+                android:layout_marginStart="16dp"
+                app:layout_constraintStart_toEndOf="@id/back_arrow"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </com.google.android.material.appbar.MaterialToolbar>
 
-    <!-- cancelled Entrants Title -->
+    <!-- Screen Title -->
     <TextView
         android:id="@+id/cancelledEntrantsTitle"
         android:layout_width="match_parent"
@@ -52,10 +58,10 @@
         android:textStyle="bold"
         android:textAlignment="center"
         android:textColor="@android:color/black"
-        android:background="@drawable/title_background"
+        android:background="#B8D9D8"
         android:padding="12dp" />
 
-    <!-- RecyclerView for Entrants List -->
+    <!-- RecyclerView -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/cancelled_entrants_recycler_view"
         android:layout_width="match_parent"
@@ -66,38 +72,13 @@
         android:clipToPadding="false"
         android:scrollbars="vertical" />
 
-    <!-- Bottom Actions Section -->
+    <!-- Bottom Section -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:padding="16dp"
-        android:background="#80CBC4">
-
-        <!-- Action Links -->
-        <TextView
-            android:id="@+id/view_enrolled_link"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="4dp"
-            android:text="click here to view a list of all entrants who have enrolled"
-            android:textSize="12sp"
-            android:textColor="#1976D2"
-            android:textStyle="italic"
-            android:clickable="true"
-            android:focusable="true" />
-
-        <TextView
-            android:id="@+id/cancel_entrants_link"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            android:text="cancel the entrants who haven't yet signed up for the events"
-            android:textSize="12sp"
-            android:textColor="#D32F2F"
-            android:textStyle="italic"
-            android:clickable="true"
-            android:focusable="true" />
+        android:background="#5FB3AD">
 
         <!-- Total Count -->
         <TextView
@@ -105,54 +86,54 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginBottom="12dp"
-            android:text="Total selected entrants: 3"
-            android:textSize="14sp"
-            android:textColor="@android:color/black" />
+            android:text="Total cancelled entrants: 0"
+            android:textSize="15sp"
+            android:textColor="@android:color/black"
+            android:textStyle="bold" />
 
-        <!-- Action Buttons Row -->
+        <!-- BUTTON ROW -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:weightSum="2">
 
-            <!-- Send Notification Button -->
+            <!-- SEND NOTIFICATION -->
             <TextView
-                android:id="@+id/send_notification_button"
+                android:id="@+id/textSendNotification"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:layout_marginEnd="8dp"
-                android:text="Send Notification 📧"
+                android:text="📩 Send Notification"
                 android:textSize="14sp"
-                android:textColor="@android:color/black"
                 android:textStyle="italic"
+                android:textColor="@android:color/black"
+                android:background="?attr/selectableItemBackground"
+                android:padding="8dp"
                 android:gravity="start"
+                android:layout_marginEnd="8dp"
                 android:clickable="true"
-                android:focusable="true"
-                android:background="?attr/selectableItemBackground"
-                android:padding="8dp" />
+                android:focusable="true"/>
 
-            <!-- Export CSV Button -->
+            <!-- RUN LOTTERY -->
             <TextView
-                android:id="@+id/export_csv_button"
+                android:id="@+id/textDrawReplacement"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:layout_marginStart="8dp"
-                android:text="Export CSV"
+                android:text="🎲 Draw Replacment"
                 android:textSize="14sp"
-                android:textColor="@android:color/black"
                 android:textStyle="italic"
-                android:gravity="end"
-                android:clickable="true"
-                android:focusable="true"
+                android:textColor="@android:color/black"
                 android:background="?attr/selectableItemBackground"
-                android:padding="8dp" />
+                android:padding="8dp"
+                android:gravity="start"
+                android:layout_marginStart="8dp"
+                android:clickable="true"
+                android:focusable="true"/>
 
         </LinearLayout>
 
     </LinearLayout>
 
 </LinearLayout>
-

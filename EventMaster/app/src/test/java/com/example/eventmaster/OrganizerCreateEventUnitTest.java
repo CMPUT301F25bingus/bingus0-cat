@@ -3,7 +3,8 @@ package com.example.eventmaster;
 import static org.junit.Assert.*;
 import android.graphics.Bitmap;
 
-import com.example.eventmaster.ui.organizer.OrganizerCreateEventActivity;
+import com.example.eventmaster.ui.organizer.activities.OrganizerCreateEventActivity;
+import com.example.eventmaster.utils.QRCodeGenerator;
 import com.google.firebase.Timestamp;
 
 import org.junit.Before;
@@ -37,16 +38,15 @@ public class OrganizerCreateEventUnitTest {
 
     @Test
     public void testCreateQrBitmap_notNull() {
-        Bitmap qr = activity.createQrBitmap("eventmaster://event/123", 400);
-        assertNotNull(qr);
-        assertEquals(400, qr.getWidth());
-        assertEquals(400, qr.getHeight());
+        Bitmap qr = QRCodeGenerator.generateQRCode("eventmaster://event/123");
+        assertNotNull("QR bitmap should not be null", qr);
+        assertTrue(qr.getWidth() > 0);
+        assertTrue(qr.getHeight() > 0);
     }
 
     @Test
-    public void testBitmapToPng_notEmpty() {
-        Bitmap bmp = Bitmap.createBitmap(10, 10, Bitmap.Config.ARGB_8888);
-        byte[] bytes = activity.bitmapToPng(bmp);
-        assertTrue(bytes.length > 0);
+    public void testGenerateQRCode_bitmapSquare() {
+        Bitmap qr = QRCodeGenerator.generateQRCode("test");
+        assertEquals("QR should be square", qr.getWidth(), qr.getHeight());
     }
 }

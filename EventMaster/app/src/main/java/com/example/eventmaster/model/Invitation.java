@@ -1,5 +1,7 @@
 package com.example.eventmaster.model;
 
+import java.util.Date;
+
 /**
  * Invitation
  * Represents an invitation issued to an Entrant for a specific Event.
@@ -11,6 +13,9 @@ public class Invitation {
     private String eventId;
     private String entrantId;
     private String status;    // "PENDING" | "ACCEPTED" | "DECLINED"
+
+    private Date replyBy;
+
 
     public Invitation() {}
 
@@ -25,4 +30,7 @@ public class Invitation {
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+
+    public Date getReplyBy() { return replyBy; }
+    public void setReplyBy(Date replyBy) { this.replyBy = replyBy; }
 }
