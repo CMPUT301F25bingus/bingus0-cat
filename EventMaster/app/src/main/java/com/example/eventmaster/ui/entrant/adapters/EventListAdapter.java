@@ -12,10 +12,10 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.example.eventmaster.R;
 import com.example.eventmaster.model.Event;
-import com.google.android.material.button.MaterialButton;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
@@ -96,50 +96,81 @@ public class EventListAdapter extends RecyclerView.Adapter<EventListAdapter.Even
         final TextView title;
         final TextView location;
         final TextView dates;
-        final TextView registerBy;
-        final TextView capacity;
-        final TextView joined;
-        final MaterialButton joinButton;
+        final TextView description;
+        final TextView badgeStatus;
+        final TextView categoryChip;
+        final TextView waitingListCount;
 
         EventViewHolder(@NonNull View itemView) {
             super(itemView);
-            poster     = itemView.findViewById(R.id.imgEventPoster);
-            title      = itemView.findViewById(R.id.txtEventTitle);
-            location   = itemView.findViewById(R.id.txtEventLocation);
-            dates      = itemView.findViewById(R.id.txtEventDates);
-            registerBy = itemView.findViewById(R.id.register_by_text);
-            capacity   = itemView.findViewById(R.id.capacity_text);
-            joined     = itemView.findViewById(R.id.joined_text);
-            joinButton = itemView.findViewById(R.id.join_button);
+            poster           = itemView.findViewById(R.id.imgEventPoster);
+            title            = itemView.findViewById(R.id.txtEventTitle);
+            location         = itemView.findViewById(R.id.txtEventLocation);
+            dates            = itemView.findViewById(R.id.txtEventDates);
+            description      = itemView.findViewById(R.id.txtDescription);
+            badgeStatus      = itemView.findViewById(R.id.badge_status);
+            categoryChip     = itemView.findViewById(R.id.category_chip);
+            waitingListCount = itemView.findViewById(R.id.txtWaitingListCount);
         }
 
         void bind(Event event, OnEventClickListener listener) {
             // ---------- Title ----------
             title.setText(safe(event.getName(), "Unnamed Event"));
 
+            // ---------- Description ----------
+            String desc = event.getDescription();
+            if (desc != null && !desc.trim().isEmpty()) {
+                description.setText(desc);
+                description.setVisibility(View.VISIBLE);
+            } else {
+                description.setVisibility(View.GONE);
+            }
+
             // ---------- Location ----------
             location.setText(safe(event.getLocation(), "Location TBA"));
 
-            // ---------- Dates ----------
-            if (event.getRegistrationStartDate() != null && event.getRegistrationEndDate() != null) {
-                SimpleDateFormat fmt = new SimpleDateFormat("MMM dd", Locale.getDefault());
-                String text = "Reg: " + fmt.format(event.getRegistrationStartDate())
-                        + " - " + fmt.format(event.getRegistrationEndDate());
-                dates.setText(text);
-                registerBy.setText("Register by: " + fmt.format(event.getRegistrationEndDate()));
+            // ---------- Event Dates (showing actual event date, not registration dates) ----------
+            if (event.getEventDate() != null) {
+                SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+                String eventDateText = fmt.format(event.getEventDate());
+                
+                // If event spans multiple days, try to show range
+                if (event.getRegistrationStartDate() != null && event.getRegistrationEndDate() != null) {
+                    Date regEnd = event.getRegistrationEndDate();
+                    if (regEnd.after(event.getEventDate())) {
+                        // Event might span days, show range
+                        String endDateText = fmt.format(regEnd);
+                        dates.setText(eventDateText + " - " + endDateText);
+                    } else {
+                        dates.setText(eventDateText);
+                    }
+                } else {
+                    dates.setText(eventDateText);
+                }
+            } else if (event.getRegistrationStartDate() != null && event.getRegistrationEndDate() != null) {
+                // Fallback to registration dates if event date not available
+                SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+                String startText = fmt.format(event.getRegistrationStartDate());
+                String endText = fmt.format(event.getRegistrationEndDate());
+                dates.setText(startText + " - " + endText);
             } else {
                 dates.setText("Dates TBA");
-                registerBy.setText("Register by: TBA");
             }
 
-            // ---------- Capacity ----------
-            capacity.setText("Cap: " + event.getCapacity());
+            // ---------- Waiting List Count ----------
+            waitingListCount.setText("0 on waiting list");
+            // TODO: Load actual waiting list count from repository if needed
 
-            // ---------- Joined Count ----------
-            joined.setText("Joined: 0"); // TODO: connect to real joined count later
+            // ---------- Badge Status ----------
+            // TODO: Show badge if user is on waitlist - needs user context
+            badgeStatus.setVisibility(View.GONE);
+
+            // ---------- Category Chip ----------
+            // TODO: Add category field to Event model or derive from other data
+            categoryChip.setVisibility(View.GONE);
 
             // ---------- Poster ----------
-            String posterUrl = event.getPosterUrl(); // assuming Event model has getPosterUrl()
+            String posterUrl = event.getPosterUrl();
             if (posterUrl != null && !posterUrl.isEmpty()) {
                 Glide.with(itemView.getContext())
                         .load(posterUrl)
@@ -155,14 +186,7 @@ public class EventListAdapter extends RecyclerView.Adapter<EventListAdapter.Even
                 if (listener != null) listener.onEventClick(event);
             });
 
-            joinButton.setOnClickListener(v -> {
-                if (listener != null) listener.onJoinButtonClick(event);
-            });
-
-            // Poster click → open event details or QR
-            poster.setOnClickListener(v -> {
-                if (listener != null) listener.onQRCodeClick(event);
-            });
+            // Remove poster-specific click handler since entire card is clickable
         }
 
         private static String safe(String s, String fallback) {

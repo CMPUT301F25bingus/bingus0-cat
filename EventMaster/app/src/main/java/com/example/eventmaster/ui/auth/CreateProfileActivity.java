@@ -10,7 +10,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.eventmaster.R;
 import com.example.eventmaster.data.firestore.ProfileRepositoryFs;
 import com.example.eventmaster.model.Profile;
-import com.example.eventmaster.ui.entrant.EntrantHomeActivity;
+import com.example.eventmaster.ui.entrant.activities.EntrantWelcomeActivity;
 import com.example.eventmaster.utils.DeviceUtils;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
@@ -165,7 +165,7 @@ public class CreateProfileActivity extends AppCompatActivity {
     }
 
     private void navigateToEntrantHome() {
-        Intent intent = new Intent(this, EntrantHomeActivity.class);
+        Intent intent = new Intent(this, EntrantWelcomeActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();

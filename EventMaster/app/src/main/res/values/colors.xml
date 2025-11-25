@@ -28,4 +28,5 @@
     <color name="stroke">#1A000000</color>       <!-- subtle strokes -->
     <color name="shadow">#33000000</color>
     <color name="backgroundColor">#64C3BF</color>
+    <color name="status_badge_bg">#F2F6F6</color>
 </resources>

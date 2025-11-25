@@ -78,6 +78,8 @@
         <activity android:name=".ui.entrant.EntrantHomeActivity"
             android:exported="false"
             android:label="Entrant Home" />
+        <activity android:name=".ui.entrant.activities.EntrantWelcomeActivity" android:exported="false"/>
+        <activity android:name=".ui.entrant.activities.EntrantHistoryActivity" android:exported="false"/>
         <activity android:name=".ui.entrant.activities.EventListActivity" android:exported="false"/>
         <activity android:name=".ui.entrant.activities.EventDetailsActivity" android:exported="false"/>
 

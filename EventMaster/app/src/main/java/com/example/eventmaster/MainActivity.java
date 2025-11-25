@@ -11,7 +11,7 @@ import com.example.eventmaster.ui.admin.activities.AdminWelcomeActivity;
 import com.example.eventmaster.ui.auth.AdminLoginActivity;
 import com.example.eventmaster.ui.auth.CreateProfileActivity;
 import com.example.eventmaster.ui.auth.OrganizerLoginActivity;
-import com.example.eventmaster.ui.entrant.EntrantHomeActivity;
+import com.example.eventmaster.ui.entrant.activities.EntrantWelcomeActivity;
 import com.example.eventmaster.utils.AuthHelper;
 import com.example.eventmaster.utils.DeviceUtils;
 import com.google.android.material.button.MaterialButton;
@@ -21,6 +21,7 @@ import com.google.firebase.auth.FirebaseAuth;
  * Role selection screen and authentication router.
  *
  * Flow:
+ * - Landing page → Role selection (always shown first)
  * - Entrant → anonymous login → create profile → entrant home
  * - Organizer → signup/login → check role → organizer home
  * - Admin → login only → admin dashboard
@@ -31,15 +32,16 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Check if user is already authenticated and route accordingly
-        checkAuthAndRoute();
+        // Always show role selection screen first, regardless of authentication status
+        // Users must explicitly choose their role (Entrant/Organizer/Admin)
+        showRoleSelection();
     }
 
     @Override
     protected void onStart() {
-        // Check authentication state when activity resumes
+        // Don't auto-route on resume - keep showing role selection
         super.onStart();
-        checkAuthAndRoute();
+        // Role selection screen is already shown, no need to check auth
     }
 
     private void checkAuthAndRoute() {
@@ -60,7 +62,7 @@ public class MainActivity extends AppCompatActivity {
                         // Check if profile is complete (has name and email)
                         if (profile.getName() != null && !profile.getName().isEmpty()
                                 && profile.getEmail() != null && !profile.getEmail().isEmpty()) {
-                            intent = new Intent(MainActivity.this, EntrantHomeActivity.class);
+                            intent = new Intent(MainActivity.this, EntrantWelcomeActivity.class);
                         } else {
                             // Profile incomplete, go to create profile
                             intent = new Intent(MainActivity.this, CreateProfileActivity.class);
@@ -166,7 +168,7 @@ public class MainActivity extends AppCompatActivity {
                                 if (profile.getName() != null && !profile.getName().isEmpty()
                                         && profile.getEmail() != null && !profile.getEmail().isEmpty()) {
                                     // Profile complete, go to home
-                                    Intent intent = new Intent(MainActivity.this, EntrantHomeActivity.class);
+                                    Intent intent = new Intent(MainActivity.this, EntrantWelcomeActivity.class);
                                     intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                                     startActivity(intent);
                                     finish();
@@ -201,7 +203,7 @@ public class MainActivity extends AppCompatActivity {
                             if (profile.getName() != null && !profile.getName().isEmpty()
                                     && profile.getEmail() != null && !profile.getEmail().isEmpty()) {
                                 // Profile complete, go to home
-                                Intent intent = new Intent(MainActivity.this, EntrantHomeActivity.class);
+                                Intent intent = new Intent(MainActivity.this, EntrantWelcomeActivity.class);
                                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                                 startActivity(intent);
                                 finish();
@@ -234,7 +236,7 @@ public class MainActivity extends AppCompatActivity {
         if (profile.getName() != null && !profile.getName().isEmpty()
                 && profile.getEmail() != null && !profile.getEmail().isEmpty()) {
             // Profile complete, go to home
-            intent = new Intent(this, EntrantHomeActivity.class);
+            intent = new Intent(this, EntrantWelcomeActivity.class);
         } else {
             // Profile incomplete, go to create profile
             intent = new Intent(this, CreateProfileActivity.class);
