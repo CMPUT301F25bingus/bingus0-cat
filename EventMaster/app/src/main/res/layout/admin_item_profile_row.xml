@@ -35,7 +35,7 @@
                 android:layout_height="wrap_content"
                 android:text="Name: Bingus10"
                 android:textStyle="bold"
-                android:textColor="@color/text_primary_dark"
+                android:textColor="#666666"
                 android:textSize="15sp"/>
 
             <TextView
