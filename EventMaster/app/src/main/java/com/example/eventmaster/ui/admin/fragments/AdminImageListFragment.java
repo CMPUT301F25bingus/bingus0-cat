@@ -37,7 +37,6 @@ public class AdminImageListFragment extends Fragment implements AdminImageListAd
     private List<StorageReference> imageRefs = new ArrayList<>();
 
     public AdminImageListFragment() {
-        // Required empty public constructor
     }
 
     public static AdminImageListFragment newInstance() {
