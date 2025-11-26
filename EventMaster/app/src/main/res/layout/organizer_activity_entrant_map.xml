@@ -33,11 +33,23 @@
             android:textStyle="bold"/>
     </LinearLayout>
 
-    <!-- OSM MAP -->
+    <!-- MAP -->
     <org.osmdroid.views.MapView
         android:id="@+id/mapView"
         android:layout_below="@id/topBar"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+    <!-- EMPTY STATE PLACEHOLDER -->
+    <TextView
+        android:id="@+id/empty_state_message"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:text="No entrants have joined yet.\nLocations will appear here once they check in."
+        android:gravity="center"
+        android:textSize="18sp"
+        android:textColor="#FFFFFF"
+        android:padding="32dp"
+        android:visibility="gone"/>
 </RelativeLayout>

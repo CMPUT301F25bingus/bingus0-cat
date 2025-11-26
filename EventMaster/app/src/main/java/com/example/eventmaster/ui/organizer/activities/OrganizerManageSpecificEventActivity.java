@@ -1,5 +1,6 @@
 package com.example.eventmaster.ui.organizer.activities;
 
+import android.annotation.SuppressLint;
 import android.app.DatePickerDialog;
 import android.content.Intent;
 import android.net.Uri;
@@ -17,6 +18,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.FragmentTransaction;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.GlideException;
 import com.example.eventmaster.R;
 import com.example.eventmaster.data.firestore.LotteryServiceFs;
 import com.example.eventmaster.ui.organizer.fragments.OrganizerEntrantsHubFragment;
@@ -72,8 +74,6 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
     // Action buttons
     private MaterialButton btnViewEntrants;
     private MaterialButton btnRunLottery;
-    private MaterialButton btnNotifications;
-    private MaterialButton btnCancelEvent;
     private MaterialButton btnViewMap;
     private ImageView editPosterIcon;
     private Uri newPosterUri = null;
@@ -105,13 +105,6 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
         btnViewEntrants.setOnClickListener(v -> openEntrantsHub());
 //        btnRunLottery.setOnClickListener(v -> runLottery());
 
-        btnNotifications.setOnClickListener(v ->
-                Toast.makeText(this, "Notifications — coming soon!", Toast.LENGTH_SHORT).show()
-        );
-
-        btnCancelEvent.setOnClickListener(v ->
-                Toast.makeText(this, "Cancel Event — coming soon!", Toast.LENGTH_SHORT).show()
-        );
 
         editPosterIcon.setOnClickListener(v -> pickNewPoster.launch("image/*"));
 
@@ -142,8 +135,6 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
 
         btnViewEntrants = findViewById(R.id.btnViewEntrants);
         btnRunLottery = findViewById(R.id.btnRunLottery);
-        btnNotifications = findViewById(R.id.btnNotifications);
-        btnCancelEvent = findViewById(R.id.btnCancelEvent);
 
         btnViewMap = findViewById(R.id.btnViewMap);
         editPosterIcon = findViewById(R.id.edit_poster_icon);
@@ -176,27 +167,59 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
                     Boolean geo = doc.getBoolean("geolocationRequired");
                     btnViewMap.setVisibility(geo != null && geo ? View.VISIBLE : View.GONE);
 
-                    if (geo != null && geo) {
-                        btnViewMap.setVisibility(View.VISIBLE);
-                    } else {
-                        btnViewMap.setVisibility(View.GONE);
-                    }
-
-                    // --------------------------------------
-
                     if (!doc.exists()) {
                         Toast.makeText(this, "Event not found", Toast.LENGTH_SHORT).show();
                         return;
                     }
 
-                    // Poster
+                    // --- POSTER + PLACEHOLDER HANDLING ---
+                    ImageView posterImage = findViewById(R.id.event_poster_image);
+                    TextView placeholder = findViewById(R.id.poster_placeholder_text);
+
                     String posterUrl = doc.getString("posterUrl");
+
                     if (posterUrl != null && !posterUrl.isEmpty()) {
-                        Glide.with(this).load(posterUrl).into(eventPoster);
+
+                        Glide.with(this)
+                                .load(posterUrl)
+                                .listener(new com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable>() {
+
+                                    @Override
+                                    public boolean onLoadFailed(
+                                            @Nullable GlideException e,
+                                            Object model,
+                                            com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target,
+                                            boolean isFirstResource
+                                    ) {
+                                        // ❌ Poster failed to load → show placeholder
+                                        placeholder.setVisibility(View.VISIBLE);
+                                        return false;
+                                    }
+
+                                    @Override
+                                    public boolean onResourceReady(
+                                            android.graphics.drawable.Drawable resource,
+                                            Object model,
+                                            com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target,
+                                            com.bumptech.glide.load.DataSource dataSource,
+                                            boolean isFirstResource
+                                    ) {
+                                        // ✔ Poster loaded → hide placeholder
+                                        placeholder.setVisibility(View.GONE);
+                                        return false;
+                                    }
+                                })
+                                .into(posterImage);
+
+                    } else {
+                        // ❌ No poster URL in database
+                        placeholder.setVisibility(View.VISIBLE);
                     }
 
+                    // --- NAME ---
                     eventName.setText(doc.getString("title"));
-                    // Replace organizerId with organizerName (fallback to ID)
+
+                    // --- ORGANIZER NAME ---
                     String organizerId = doc.getString("organizerId");
 
                     if (organizerId != null) {
@@ -207,23 +230,23 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
                                 .addOnSuccessListener(profileDoc -> {
                                     if (profileDoc.exists()) {
                                         String organizerName = profileDoc.getString("name");
-
                                         if (organizerName != null && !organizerName.isEmpty()) {
                                             eventOrganizer.setText("Hosted by: " + organizerName);
                                         } else {
                                             eventOrganizer.setText("Hosted by: " + organizerId);
                                         }
-
                                     } else {
                                         eventOrganizer.setText("Hosted by: " + organizerId);
                                     }
                                 })
-                                .addOnFailureListener(e -> eventOrganizer.setText("Hosted by: " + organizerId));
+                                .addOnFailureListener(e ->
+                                        eventOrganizer.setText("Hosted by: " + organizerId)
+                                );
                     } else {
                         eventOrganizer.setText("Hosted by: Unknown");
                     }
 
-                    // Price
+                    // --- PRICE ---
                     Double price = doc.getDouble("price");
                     if (price != null) {
                         if (price % 1 == 0)
@@ -232,6 +255,7 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
                             eventPrice.setText(String.format("$%.2f", price));
                     }
 
+                    // --- LOCATION / CAPACITY / DESCRIPTION ---
                     eventLocation.setText("📍 " + doc.getString("location"));
 
                     Long cap = doc.getLong("capacity");
@@ -239,49 +263,54 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
 
                     eventDescription.setText(doc.getString("description"));
 
+                    // --- EVENT TYPE ---
                     String type = doc.getString("eventType");
-                    if (type != null && !type.isEmpty()) {
-                        eventType.setText("Type: " + type);
-                    } else {
-                        eventType.setText("Type: Not specified");
-                    }
+                    eventType.setText(type != null && !type.isEmpty()
+                            ? "Type: " + type
+                            : "Type: Not specified");
 
+                    // --- DATE RANGE ---
                     com.google.firebase.Timestamp start = doc.getTimestamp("registrationOpen");
                     com.google.firebase.Timestamp end = doc.getTimestamp("registrationClose");
 
                     if (start != null && end != null) {
-                        String s = new java.text.SimpleDateFormat("MMM d").format(start.toDate());
-                        String e = new java.text.SimpleDateFormat("MMM d").format(end.toDate());
+                        String s = new java.text.SimpleDateFormat("MMM d")
+                                .format(start.toDate());
+                        String e = new java.text.SimpleDateFormat("MMM d")
+                                .format(end.toDate());
+
                         eventDates.setText("📅 " + s + " → " + e);
 
-                        // ---------- LOTTERY BUTTON LOCK LOGIC ----------
+                        // --- LOTTERY BUTTON ENABLE/DISABLE LOGIC ---
                         Date now = new Date();
 
                         if (now.before(end.toDate())) {
-                            // Registration still open → DISABLE lottery button
+                            // Registration still open → disable lottery
                             btnRunLottery.setEnabled(false);
-                            btnRunLottery.setAlpha(0.4f);    // Dim the button visually
+                            btnRunLottery.setAlpha(0.4f);
 
                             btnRunLottery.setOnClickListener(v ->
                                     Toast.makeText(
                                             this,
-                                            "For fairness, the lottery can only be run after registration closes.",
+                                            "Lottery can only be run after registration closes.",
                                             Toast.LENGTH_LONG
                                     ).show()
                             );
                         } else {
-                            // Registration closed → enable lottery normally
+                            // Registration closed → enable lottery
                             btnRunLottery.setEnabled(true);
                             btnRunLottery.setAlpha(1f);
 
                             btnRunLottery.setOnClickListener(v -> runLottery());
                         }
                     }
+
                 })
                 .addOnFailureListener(e ->
                         Toast.makeText(this, "Failed to load event: " + e.getMessage(), Toast.LENGTH_SHORT).show()
                 );
     }
+
     /**
      * Uploads a new poster image to Firebase Storage, retrieves its
      * download URL, and updates the event document in Firestore.
@@ -429,6 +458,7 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
     }
 
     // Hide the overlay when back is pressed
+    @SuppressLint("GestureBackNavigation")
     @Override
     public void onBackPressed() {
         if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
