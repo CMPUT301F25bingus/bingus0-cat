@@ -12,11 +12,15 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import android.content.DialogInterface;
+
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.bumptech.glide.Glide;
@@ -772,11 +776,33 @@ public class EventDetailsFragment extends Fragment {
                 .placeholder(R.drawable.ic_launcher_background)
                 .into(qrImage);
 
-        new MaterialAlertDialogBuilder(requireContext())
+        AlertDialog dialog = new MaterialAlertDialogBuilder(requireContext())
                 .setTitle("Event QR Code")
                 .setView(dialogView)
                 .setPositiveButton("Close", null)
-                .show();
+                .create();
+        
+        // Change dialog background from purple to white and make it smaller
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.white);
+            android.view.WindowManager.LayoutParams params = dialog.getWindow().getAttributes();
+            int screenWidth = getResources().getDisplayMetrics().widthPixels;
+            int maxWidth = (int) (screenWidth * 0.85); // 85% of screen width
+            params.width = maxWidth;
+            dialog.getWindow().setAttributes(params);
+        }
+        
+        // Change Close button color from purple to teal
+        dialog.setOnShowListener(new DialogInterface.OnShowListener() {
+            @Override
+            public void onShow(DialogInterface d) {
+                dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(
+                    ContextCompat.getColor(requireContext(), R.color.teal_dark)
+                );
+            }
+        });
+        
+        dialog.show();
     }
 
     /**
