@@ -1,5 +1,6 @@
 package com.example.eventmaster.ui.admin.activities;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.TextView;
@@ -35,7 +36,7 @@ public class AdminProfileDetailActivity extends AppCompatActivity {
 
     // header fields
     private TextView tvName, tvEmail, tvPhone, tvState;
-    private Button btnBan;
+    private Button btnBan, btnViewNotificationLogs;
 
     // events section
     private RecyclerView rvEvents;
@@ -57,8 +58,10 @@ public class AdminProfileDetailActivity extends AppCompatActivity {
         tvPhone = findViewById(R.id.tvPhone);
         tvState = findViewById(R.id.tvState);
         btnBan  = findViewById(R.id.btnBan);
+        btnViewNotificationLogs = findViewById(R.id.btnViewNotificationLogs);
 
         btnBan.setOnClickListener(v -> toggleBan());
+        btnViewNotificationLogs.setOnClickListener(v -> openNotificationLogs());
 
         // Events list
         rvEvents = findViewById(R.id.rvEvents);
@@ -104,6 +107,12 @@ public class AdminProfileDetailActivity extends AppCompatActivity {
         eventRead.listByOrganizer(profileId)
                 .addOnSuccessListener(events -> eventsAdapter.replace(events))
                 .addOnFailureListener(e -> eventsAdapter.replace(new java.util.ArrayList<>()));
+    }
+
+    private void openNotificationLogs() {
+        Intent intent = new Intent(this, AdminNotificationLogActivity.class);
+        intent.putExtra("organizerId", profileId);
+        startActivity(intent);
     }
 
     private String ns(String s) {

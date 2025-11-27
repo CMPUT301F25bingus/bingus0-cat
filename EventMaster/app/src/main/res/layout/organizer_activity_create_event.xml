@@ -37,14 +37,15 @@
                 <ImageView
                     android:id="@+id/imgPosterPreview"
                     android:layout_width="match_parent"
-                    android:layout_height="180dp"
+                    android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:layout_marginBottom="8dp"
+                    android:adjustViewBounds="true"
+                    android:scaleType="fitCenter"
                     android:background="#D8F2EF"
-                    android:padding="36dp"
-                    android:scaleType="centerInside"
-                    android:src="@android:drawable/ic_menu_gallery"
                     android:contentDescription="Poster preview"/>
+
+
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnPickPoster"
@@ -135,6 +136,26 @@
                         android:textColor="#222222"/>
                 </com.google.android.material.textfield.TextInputLayout>
 
+
+                <!-- optional: max # of ppl in waiting list -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    app:boxBackgroundMode="filled"
+                    app:boxBackgroundColor="@android:color/white"
+                    app:boxStrokeColor="#22000000">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/editWaitingListLimit"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Optional: Max Waiting List Size"
+                        android:inputType="number"
+                        android:maxLines="1"
+                        android:textColor="#222222"/>
+                </com.google.android.material.textfield.TextInputLayout>
+
                 <!-- PRICE -->
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"
@@ -152,6 +173,28 @@
                         android:inputType="numberDecimal"
                         android:maxLines="1"
                         android:textColor="#222222"/>
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- EVENT TYPE DROPDOWN -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/eventTypeLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    app:boxBackgroundMode="filled"
+                    app:boxBackgroundColor="@android:color/white"
+                    app:boxStrokeColor="#22000000"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
+
+                    <AutoCompleteTextView
+                        android:id="@+id/eventTypeDropdown"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Event Type"
+                        android:inputType="none"
+                        android:focusable="false"
+                        android:textColor="#222222"
+                        android:padding="12dp"/>
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <!-- DATE "CHIPS" -->

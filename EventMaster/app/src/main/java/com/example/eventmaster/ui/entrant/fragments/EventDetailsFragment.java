@@ -35,11 +35,14 @@ import com.example.eventmaster.model.WaitingListEntry;
 import com.example.eventmaster.utils.DeviceUtils;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
+import com.google.firebase.firestore.SetOptions;
+import com.google.firebase.firestore.WriteBatch;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -93,7 +96,7 @@ public class EventDetailsFragment extends Fragment {
     private TextView inviteStatusText;
     private MaterialButton btnAccept;
     private MaterialButton btnDecline;
-    
+
     // Replacement lottery
     private View replacementLotterySection;
     private TextView replacementLotteryText;
@@ -104,6 +107,10 @@ public class EventDetailsFragment extends Fragment {
     
     // Firestore listeners for real-time updates
     private ListenerRegistration invitationListener;
+
+    //when invite is recived show time left to reply
+    private TextView inviteCountdownText;
+
 
     /** Factory method */
     public static EventDetailsFragment newInstance(String eventId) {
@@ -143,6 +150,11 @@ public class EventDetailsFragment extends Fragment {
         Log.d(TAG, "onCreate: eventId=" + eventId + ", userId=" + userId);
     }
 
+    /**
+     * Retrieves the user's profile using the device ID. If no existing profile
+     * is found, a default "Guest User" profile is created and saved. This ensures
+     * that every entrant interacting with the system has a valid profile record.
+     */
     private void loadUserProfile() {
         profileRepo.getByDeviceId(userId)
                 .addOnSuccessListener(profile -> {
@@ -193,9 +205,10 @@ public class EventDetailsFragment extends Fragment {
 
         inviteInclude = view.findViewById(R.id.invitation_include);
         inviteStatusText = view.findViewById(R.id.invite_status_text);
+        inviteCountdownText = view.findViewById(R.id.invite_countdown_text);
         btnAccept = view.findViewById(R.id.btnAccept);
         btnDecline = view.findViewById(R.id.btnDecline);
-        
+
         replacementLotterySection = view.findViewById(R.id.replacement_lottery_section);
         replacementLotteryText = view.findViewById(R.id.replacement_lottery_text);
         btnJoinReplacementLottery = view.findViewById(R.id.btnJoinReplacementLottery);
@@ -240,7 +253,8 @@ public class EventDetailsFragment extends Fragment {
             public void onSuccess(Event event) {
                 currentEvent = event;
                 displayEventDetails(event);
-                loadWaitingListCount();
+                loadWaitingListCountWithLimit(event);
+                // loadWaitingListCount(); CODE CHECK
             }
 
             @Override
@@ -251,7 +265,10 @@ public class EventDetailsFragment extends Fragment {
         });
     }
 
-    /** Sets up real-time listener for invitation changes */
+    /** Sets up real-time listener for invitation changes
+     * If an invitation exists, the invitation UI is shown. If no invitation
+     * is found, the join waiting list button is shown. Automatically calls
+     *the expiration handler if the reply-by deadline has passed. */
     private void decideInviteOrJoin() {
         // Remove old listener if it exists
         if (invitationListener != null) {
@@ -277,6 +294,19 @@ public class EventDetailsFragment extends Fragment {
                         if (inv != null) {
                             inv.setId(snapshots.getDocuments().get(0).getId());
                             Log.d(TAG, "📩 Invitation status changed: " + inv.getStatus());
+
+                            //AUTO-EXPIRE INVITATION IF DEADLINE PASSED
+                            if (inv.getReplyBy() != null && "PENDING".equals(inv.getStatus())) {
+
+                                Date now = new Date();
+                                Date deadline = inv.getReplyBy();
+
+                                if (now.after(deadline)) {
+                                    autoExpireInvitation(inv);
+                                    return; // stop normal flow (DO NOT show normal invite UI)
+                                }
+                            }
+
                             showInvitationInclude(inv);
                         } else {
                             showJoinButtonWithState();
@@ -288,9 +318,25 @@ public class EventDetailsFragment extends Fragment {
                 });
     }
 
+    /**
+     * Populates the invitation action UI based on the current invitation status.
+     * Handles pending, accepted, declined, and organizer-cancelled states.
+     * Enables and disables Accept/Decline buttons appropriately.
+     *
+     * @param inv the invitation object retrieved from Firestore
+     */
     private void showInvitationInclude(@NonNull Invitation inv) {
         inviteInclude.setVisibility(View.VISIBLE);
         joinButton.setVisibility(View.GONE);
+
+        // SHOW COUNTDOWN TIMER (only when pending & replyBy set)
+        if (inv.getReplyBy() != null && "PENDING".equals(inv.getStatus())) {
+            inviteCountdownText.setVisibility(View.VISIBLE);
+            inviteCountdownText.setText(getCountdownText(inv.getReplyBy()));
+        } else {
+            inviteCountdownText.setVisibility(View.GONE);
+        }
+
 
         String status = String.valueOf(inv.getStatus());
         switch (status) {
@@ -335,7 +381,11 @@ public class EventDetailsFragment extends Fragment {
                 break;
 
             default:
-                inviteStatusText.setText("Invitation declined");
+                if (inv.getStatus().equals("CANCELLED_BY_ORGANIZER")) {
+                    inviteStatusText.setText("Did not meet the reply deadline");
+                } else {
+                    inviteStatusText.setText("Invitation declined");
+                }
                 inviteStatusText.setVisibility(View.VISIBLE);
                 btnAccept.setEnabled(false);
                 btnDecline.setEnabled(false);
@@ -343,19 +393,58 @@ public class EventDetailsFragment extends Fragment {
         }
     }
 
+    /**
+     * Generates a countdown message showing the remaining
+     * time an entrant has to respond to an invitation.
+     *
+     * @param replyBy the reply deadline timestamp
+     * @return a formatted string such as "2 days left to reply"
+     */
+    private String getCountdownText(Date replyBy) {
+        long now = System.currentTimeMillis();
+        long diff = replyBy.getTime() - now;
+
+        if (diff <= 0) {
+            return "Reply deadline passed";
+        }
+
+        long days = diff / (1000 * 60 * 60 * 24);
+        long hours = (diff / (1000 * 60 * 60)) % 24;
+        long minutes = (diff / (1000 * 60)) % 60;
+
+        if (days > 0) return days + " day" + (days == 1 ? "" : "s") + " left to reply";
+        if (hours > 0) return hours + " hour" + (hours == 1 ? "" : "s") + " left to reply";
+        return minutes + " minute" + (minutes == 1 ? "" : "s") + " left to reply";
+    }
+
+    /**
+     * Enables or disables both Accept and Decline buttons in the invitation UI.
+     *
+     * @param enabled true to enable buttons, false to disable them
+     */
     private void setInviteButtonsEnabled(boolean enabled) {
         btnAccept.setEnabled(enabled);
         btnDecline.setEnabled(enabled);
     }
 
+    /**
+     * Hides the invitation UI and displays the join waiting list button.
+     * Also checks if the user appears in the not_selected list, which updates
+     * the button text accordingly.
+     */
     private void showJoinButtonWithState() {
         inviteInclude.setVisibility(View.GONE);
         joinButton.setVisibility(View.VISIBLE);
+        // checkNotSelected(); // CODE CHECK
+
+
+        // CODE CHECK - ACCEPTED START
+
         checkIfUserInWaitingList();
         // Check if user is eligible for replacement lottery
         checkReplacementLotteryEligibility();
     }
-    
+
     /**
      * Checks if user is eligible for replacement lottery (when someone else declines).
      * Implements US 01.05.01 - Get another chance if selected user declines.
@@ -366,9 +455,9 @@ public class EventDetailsFragment extends Fragment {
             replacementLotterySection.setVisibility(View.GONE);
             return;
         }
-        
+
         FirebaseFirestore db = FirebaseFirestore.getInstance();
-        
+
         // Check if user has a replacement lottery notification for this event
         db.collection("notifications")
                 .whereEqualTo("recipientId", userId)
@@ -391,13 +480,13 @@ public class EventDetailsFragment extends Fragment {
                     checkIfCanRejoinForReplacement();
                 });
     }
-    
+
     /**
      * Checks if user was not selected initially and can rejoin waiting list for replacement lottery.
      */
     private void checkIfCanRejoinForReplacement() {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
-        
+
         // Check if user was previously not selected (has LOTTERY_NOT_SELECTED notification)
         db.collection("notifications")
                 .whereEqualTo("recipientId", userId)
@@ -418,7 +507,7 @@ public class EventDetailsFragment extends Fragment {
                     replacementLotterySection.setVisibility(View.GONE);
                 });
     }
-    
+
     /**
      * Shows the replacement lottery option UI.
      */
@@ -435,7 +524,7 @@ public class EventDetailsFragment extends Fragment {
                             replacementLotteryText.setText(
                                 "A spot has opened up! Join the waiting list for another chance to be selected. 🎲"
                             );
-                            
+
                             btnJoinReplacementLottery.setOnClickListener(v -> {
                                 btnJoinReplacementLottery.setEnabled(false);
                                 btnJoinReplacementLottery.setText("Joining...");
@@ -450,7 +539,7 @@ public class EventDetailsFragment extends Fragment {
                         replacementLotteryText.setText(
                             "A spot has opened up! Join the waiting list for another chance to be selected. 🎲"
                         );
-                        
+
                         btnJoinReplacementLottery.setOnClickListener(v -> {
                             btnJoinReplacementLottery.setEnabled(false);
                             btnJoinReplacementLottery.setText("Joining...");
@@ -459,7 +548,7 @@ public class EventDetailsFragment extends Fragment {
                     }
                 });
     }
-    
+
     /**
      * Handle joining the waiting list from replacement lottery section.
      */
@@ -493,13 +582,13 @@ public class EventDetailsFragment extends Fragment {
             @Override
             public void onSuccess() {
                 isInWaitingList = true;
-                
+
                 if (joinButton.getVisibility() == View.VISIBLE) {
                     joinButton.setText("Exit Waiting List");
                     joinButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFFFF5252)); // Red color
                     joinButton.setEnabled(true);
                 }
-                
+
                 loadWaitingListCount();
                 replacementLotterySection.setVisibility(View.GONE);
                 btnJoinReplacementLottery.setEnabled(true);
@@ -513,6 +602,8 @@ public class EventDetailsFragment extends Fragment {
             }
         });
     }
+
+    // CODE CHECK - ACCEPTED END ^
 
     /** Displays event details in the UI. */
     private void displayEventDetails(Event event) {
@@ -591,13 +682,65 @@ public class EventDetailsFragment extends Fragment {
         }
     }
 
-    /** Loads number of people on waiting list. */
-    private void loadWaitingListCount() {
+    /**
+     * Loads the number of users currently in the waiting list and updates
+     * the UI to reflect whether the entrant may join, exit, or is blocked
+     * due to a full waiting list. Applies waiting list limit rules defined
+     * by the organizer.
+     *
+     * @param event the event containing waiting list configuration
+     */
+    private void loadWaitingListCountWithLimit(Event event) {
+
+        Integer waitingLimit = event.getWaitingListLimit();   // null = unlimited
+
         waitingListRepository.getWaitingListCount(eventId, new WaitingListRepository.OnCountListener() {
             @Override
             public void onSuccess(int count) {
                 waitingListCountText.setText(count + " people have joined the waiting list");
+
+                // CODE CHECK START
+
+                // If user is already in the WL → always allow them to leave
+                waitingListRepository.isUserInWaitingList(eventId, userId, new WaitingListRepository.OnCheckListener() {
+                    @Override
+                    public void onSuccess(boolean exists) {
+
+                        isInWaitingList = exists;
+
+                        // If user already joined → allow them to exit even if full
+                        if (exists) {
+                            joinButton.setEnabled(true);
+                            joinButton.setText("Exit Waiting List");
+                            return;
+                        }
+
+                        // --- If no limit set → normal behaviour ---
+                        if (waitingLimit == null || waitingLimit == 0) {
+                            joinButton.setEnabled(true);
+                            joinButton.setText("Join Waiting List");
+                            return;
+                        }
+
+                        // --- If FULL → disable joining ---
+                        if (count >= waitingLimit) {
+                            joinButton.setEnabled(false);
+                            joinButton.setText("Waiting List Full");
+                        } else {
+                            joinButton.setEnabled(true);
+                            joinButton.setText("Join Waiting List");
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Exception e) {
+                        joinButton.setEnabled(true);
+                        joinButton.setText("Join Waiting List");
+                    }
+                });
             }
+
+            // CODE CHECK END ^
 
             @Override
             public void onFailure(Exception e) {
@@ -627,6 +770,11 @@ public class EventDetailsFragment extends Fragment {
                 .show();
     }
 
+    /**
+     * Checks whether the user is currently in the event's waiting list.
+     * Updates the join button text and enabled state to match the user's
+     * status.
+     */
     private void checkIfUserInWaitingList() {
         if (eventId == null || userId == null) {
             Log.w(TAG, "checkIfUserInWaitingList  skipped: NULL id(s).");
@@ -716,38 +864,87 @@ public class EventDetailsFragment extends Fragment {
     private void joinWaitingListWithLocation(double lat, double lng) {
         String entryId = UUID.randomUUID().toString();
 
-        Map<String, Object> data = new HashMap<>();
-        data.put("entryId", entryId);
-        data.put("eventId", eventId);
-        data.put("userId", userId);
-        data.put("joinedAt", new Date());
-        data.put("lat", lat);
-        data.put("lng", lng);
+        // CODE CHECK START - COMMENTED
 
-        FirebaseFirestore.getInstance()
-                .collection("events")
-                .document(eventId)
-                .collection("waiting_list")
-                .document(userId)
-                .set(data)
-                .addOnSuccessListener(unused -> {
-                    isInWaitingList = true;
-                    joinButton.setText("Exit Waiting List");
-                    joinButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFFFF5252)); // Red color
-                    joinButton.setEnabled(true);
-                    loadWaitingListCount();
-                })
-                .addOnFailureListener(e -> {
-                    joinButton.setEnabled(true);
-                    joinButton.setText("Join Waiting List");
-                    joinButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFF3D8B87)); // Teal color
-                });
+//        Map<String, Object> data = new HashMap<>();
+//        data.put("entryId", entryId);
+//        data.put("eventId", eventId);
+//        data.put("userId", userId);
+//        data.put("joinedAt", new Date());
+//        data.put("lat", lat);
+//        data.put("lng", lng);
+        WaitingListEntry entry = new WaitingListEntry(
+                entryId,
+                eventId,
+                userId,
+                new Date()
+        );
+        entry.setProfile(currentProfile);  //ensure profile is set for organizer later
+        entry.setlat(lat);
+        entry.setlng(lng);
+
+        // CODE CHECK END ^
+
+
+        // CODE CHECK ENTRANT START
+//        FirebaseFirestore.getInstance()
+//                .collection("events")
+//                .document(eventId)
+//                .collection("waiting_list")
+//                .document(userId)
+//                .set(data)
+//                .addOnSuccessListener(unused -> {
+//                    isInWaitingList = true;
+//                    joinButton.setText("Exit Waiting List");
+//                    joinButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFFFF5252)); // Red color
+//                    joinButton.setEnabled(true);
+//                    loadWaitingListCount();
+//                })
+//                .addOnFailureListener(e -> {
+//                    joinButton.setEnabled(true);
+//                    joinButton.setText("Join Waiting List");
+//                    joinButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFF3D8B87)); // Teal color
+//                });
+
+        // CODE CHECK ENTRANT END ^
+
+        // CODE CHECK DEV START (CHOOSE ONE UP OR DOWN)
+
+        ((WaitingListRepositoryFs) waitingListRepository)
+            .joinWithLimitCheck(entry, new WaitingListRepository.OnWaitingListOperationListener() {
+            @Override
+            public void onSuccess() {
+                Toast.makeText(requireContext(),
+                        "Successfully joined waiting list!",
+                        Toast.LENGTH_SHORT).show();
+
+                isInWaitingList = true;
+                loadEventDetails(); // refresh count & button state
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                Toast.makeText(requireContext(),
+                        e.getMessage(),
+                        Toast.LENGTH_LONG).show();
+                loadEventDetails();
+            }
+        });
     }
 
+    // CODE CHECK DEV END ^
+
     /**
-     * Handle joining the waiting list
+     * Handles the standard process of joining the waiting list when no
+     * geolocation requirement exists. Validates registration dates, event
+     * data, and user identity before creating a waiting list entry.
      */
     private void handleJoinWaitingList() {
+        // --- GEOLOCATION REQUIREMENT CHECK ---
+        if (currentEvent != null && currentEvent.isGeolocationRequired()) {
+            requestLocationThenJoin();
+            return; // stop normal joining path
+        }
         // Validate eventId and userId first
         if (eventId == null || eventId.isEmpty()) {
             Toast.makeText(requireContext(), "Error: Event ID is missing", Toast.LENGTH_LONG).show();
@@ -801,7 +998,7 @@ public class EventDetailsFragment extends Fragment {
 
         // Create dialog
         android.app.AlertDialog dialog = builder.create();
-        
+
         // Set window properties for rounded corners and padding
         dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
         android.view.WindowManager.LayoutParams params = dialog.getWindow().getAttributes();
@@ -810,7 +1007,7 @@ public class EventDetailsFragment extends Fragment {
         params.horizontalMargin = 0.02f; // 2% margin on each side - reduced for more space
         dialog.getWindow().setAttributes(params);
         dialog.getWindow().setLayout(android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
-        
+
         // Add margins to prevent edge clipping
         dialog.getWindow().setDimAmount(0.5f);
 
@@ -852,35 +1049,63 @@ public class EventDetailsFragment extends Fragment {
 
         entry.setProfile(currentProfile);
 
-        Log.d(TAG, "proceedWithJoin: Creating entry with entryId=" + entryId + 
+        Log.d(TAG, "proceedWithJoin: Creating entry with entryId=" + entryId +
                 ", eventId=" + eventId + ", userId=" + userId);
 
         joinButton.setEnabled(false);
         joinButton.setText("Joining...");
 
-        waitingListRepository.addToWaitingList(entry, new WaitingListRepository.OnWaitingListOperationListener() {
-            @Override
-            public void onSuccess() {
-                Log.d(TAG, "Successfully joined waiting list");
-                isInWaitingList = true;
-                joinButton.setText("Exit Waiting List");
-                joinButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFFFF5252)); // Red color
-                joinButton.setEnabled(true);
-                loadWaitingListCount();
+        // CODE CHECK DEV START
+        ((WaitingListRepositoryFs) waitingListRepository)
+                .joinWithLimitCheck(entry, new WaitingListRepository.OnWaitingListOperationListener() {
+                    @Override
+                    public void onSuccess() {
+                        Toast.makeText(requireContext(), "Successfully joined waiting list!", Toast.LENGTH_SHORT).show();
+                        isInWaitingList = true;
 
-                // Send notification to user
-                sendJoinedWaitingListNotification(eventId, userId);
-            }
+                        loadEventDetails(); // refresh limit + button
+                    }
 
-            @Override
-            public void onFailure(Exception e) {
-                Log.e(TAG, "Failed to join waiting list", e);
-                joinButton.setEnabled(true);
-                joinButton.setText("Join Waiting List");
-                joinButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFF3D8B87)); // Teal color
-            }
-        });
+                    @Override
+                    public void onFailure(Exception e) {
+                        Toast.makeText(requireContext(), e.getMessage(), Toast.LENGTH_LONG).show();
+                        loadEventDetails(); // refresh button state
+                    }
+                });
+
     }
+
+    // CODE CHECK DEV END ^
+
+    // CODE CHECK ENTRANT START ( CHOOSE ONE UP OR DOWN)
+
+//     waitingListRepository.addToWaitingList(entry, new WaitingListRepository.OnWaitingListOperationListener() {
+//            @Override
+//            public void onSuccess() {
+//                Log.d(TAG, "Successfully joined waiting list");
+//                isInWaitingList = true;
+//                joinButton.setText("Exit Waiting List");
+//                joinButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFFFF5252)); // Red color
+//                joinButton.setEnabled(true);
+//                loadWaitingListCount();
+//
+//                // Send notification to user
+//                sendJoinedWaitingListNotification(eventId, userId);
+//            }
+//
+//            @Override
+//            public void onFailure(Exception e) {
+//                Log.e(TAG, "Failed to join waiting list", e);
+//                joinButton.setEnabled(true);
+//                joinButton.setText("Join Waiting List");
+//                joinButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFF3D8B87)); // Teal color
+//            }
+//        });
+//    }
+
+    // CODE CHECK ENTRANT END ^
+
+
 
     /**
      * Handle exiting the waiting list
@@ -900,6 +1125,7 @@ public class EventDetailsFragment extends Fragment {
                     joinButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFF3D8B87)); // Teal color
                     joinButton.setEnabled(true);
                     loadWaitingListCount();
+                    // loadEventDetails(); // CODE CHECK DEV IF ACCEPTED DELETE ALL FROM  JOIN BUTTON
                 }
 
                 @Override
@@ -936,4 +1162,97 @@ public class EventDetailsFragment extends Fragment {
     private void toast(String msg) {
         Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show();
     }
+
+
+    /**
+     * Automatically updates an invitation to CANCELLED_BY_ORGANIZER when
+     * the reply-by deadline is missed. Performs a Firestore batch operation
+     * that:
+     * 1) Cancels the registration
+     * 2) Updates the invitation document
+     * 3) Removes the entrant from the chosen_list collection
+     *
+     * @param inv the invitation that has expired
+     */
+    private void autoExpireInvitation(Invitation inv) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        String invitationId = inv.getId();
+        String entrantId = inv.getEntrantId();
+
+        // 1) Cancel registration (same as organizer button logic)
+        Map<String, Object> reg = new HashMap<>();
+        reg.put("eventId", eventId);
+        reg.put("entrantId", entrantId);
+        reg.put("status", "CANCELLED_BY_ORGANIZER");
+        reg.put("cancelledAtUtc", new Date());
+
+        DocumentReference regRef = db.collection("events")
+                .document(eventId)
+                .collection("registrations")
+                .document(entrantId);
+
+        // 2) Update the invitation status
+        DocumentReference invRef = db.collection("events")
+                .document(eventId)
+                .collection("invitations")
+                .document(invitationId);
+
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("status", "CANCELLED_BY_ORGANIZER");
+        updates.put("autoExpiredAt", new Date());
+
+        // 3) Remove from chosen_list (same as organizer)
+        DocumentReference chosenRef = db.collection("events")
+                .document(eventId)
+                .collection("chosen_list")
+                .document(entrantId);
+
+        WriteBatch batch = db.batch();
+
+        batch.set(regRef, reg, SetOptions.merge());
+        batch.update(invRef, updates);
+        batch.delete(chosenRef);
+
+        batch.commit()
+                .addOnSuccessListener(v -> {
+                    inviteStatusText.setVisibility(View.VISIBLE);
+                    inviteStatusText.setText("Did not meet reply deadline");
+
+                    inviteCountdownText.setVisibility(View.GONE);
+
+                    btnAccept.setEnabled(false);
+                    btnDecline.setEnabled(false);
+                })
+                .addOnFailureListener(e -> Log.e("AutoExpire", "Failed to expire invitation", e));
+    }
+
+    /**
+     * Want to check if they are not selected when the lottery is ran... if that is the case, button should reflect that
+     */
+    private void checkNotSelected() {
+        FirebaseFirestore.getInstance()
+                .collection("events")
+                .document(eventId)
+                .collection("not_selected")
+                .document(userId)
+                .get()
+                .addOnSuccessListener(doc -> {
+                    if (doc.exists()) {
+                        // User was NOT SELECTED in the last lottery
+                        joinButton.setText("Unfortunately not selected for now");
+                        joinButton.setEnabled(false);
+                    } else {
+                        // If not in not_selected, continue normal WL check
+                        checkIfUserInWaitingList();
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Failed to check not_selected collection", e);
+                    checkIfUserInWaitingList();
+                });
+    }
+
+
+
 }

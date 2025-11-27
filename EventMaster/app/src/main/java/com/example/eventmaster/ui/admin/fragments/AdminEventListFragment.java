@@ -14,6 +14,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -23,15 +24,15 @@ import com.example.eventmaster.data.api.EventRepository;
 import com.example.eventmaster.data.firestore.EventRepositoryFs;
 import com.example.eventmaster.model.Event;
 import com.example.eventmaster.ui.admin.adapters.AdminEventListAdapter;
-import com.example.eventmaster.ui.entrant.activities.EventDetailsActivity;
 import com.google.android.material.button.MaterialButton;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Fragment displaying a list of all events for admin to browse and manage.
+ * Fragment displaying a list of all events for admin to browse and delete.
  * Implements US 03.04.01 - Admin can browse events.
+ * Admins can only delete events, not edit or manage them.
  */
 public class AdminEventListFragment extends Fragment implements AdminEventListAdapter.OnAdminEventClickListener {
 
@@ -168,47 +169,40 @@ public class AdminEventListFragment extends Fragment implements AdminEventListAd
 
     @Override
     public void onEventClick(Event event) {
-        // Navigate to event details
-        Intent intent = new Intent(requireContext(), EventDetailsActivity.class);
-        intent.putExtra(EventDetailsActivity.EXTRA_EVENT_ID, event.getEventId());
+        // Navigate to admin event details (read-only view)
+        Intent intent = new Intent(requireContext(), com.example.eventmaster.ui.admin.activities.AdminEventDetailsActivity.class);
+        intent.putExtra(com.example.eventmaster.ui.admin.activities.AdminEventDetailsActivity.EXTRA_EVENT_ID, event.getEventId());
         startActivity(intent);
     }
 
     @Override
-    public void onViewEntrantsClick(Event event) {
-        // TODO: Implement view entrants functionality
-        Toast.makeText(requireContext(), 
-                "View entrants for: " + event.getName(), 
-                Toast.LENGTH_SHORT).show();
-        // This would open a new fragment/activity showing the list of entrants
+    public void onDeleteEventClick(Event event) {
+        // Show confirmation dialog before deleting
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Delete Event?")
+                .setMessage("Are you sure you want to delete this event?\n\n" + event.getName())
+                .setNegativeButton("Cancel", null)
+                .setPositiveButton("Delete", (dialog, which) -> deleteEvent(event))
+                .show();
     }
 
-    @Override
-    public void onNotificationsClick(Event event) {
-        // TODO: Implement send notifications functionality
-        Toast.makeText(requireContext(), 
-                "Send notifications for: " + event.getName(), 
-                Toast.LENGTH_SHORT).show();
-        // This would open a dialog to compose and send notifications to entrants
-    }
-
-    @Override
-    public void onEditEventClick(Event event) {
-        // TODO: Implement edit event functionality
-        Toast.makeText(requireContext(), 
-                "Edit event: " + event.getName(), 
-                Toast.LENGTH_SHORT).show();
-        // This would open an edit event screen
-    }
-
-    @Override
-    public void onCancelEventClick(Event event) {
-        // TODO: Implement cancel/delete event functionality
-        Toast.makeText(requireContext(), 
-                "Cancel event: " + event.getName() + " (Not implemented)", 
-                Toast.LENGTH_SHORT).show();
-        // This would show a confirmation dialog and then delete the event
-        // For now, just showing a placeholder message
+    /**
+     * Deletes an event from Firebase.
+     */
+    private void deleteEvent(Event event) {
+        eventRepository.delete(event.getEventId())
+                .addOnSuccessListener(aVoid -> {
+                    Toast.makeText(requireContext(), 
+                            "Event deleted successfully", 
+                            Toast.LENGTH_SHORT).show();
+                    // Reload events to refresh the list
+                    loadEvents();
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(requireContext(), 
+                            "Failed to delete event: " + e.getMessage(), 
+                            Toast.LENGTH_SHORT).show();
+                });
     }
 }
 

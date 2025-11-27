@@ -124,6 +124,32 @@ public interface NotificationService {
      */
     void markNotificationAsRead(String notificationId);
 
+    /**
+     * Deletes a notification from Firestore.
+     * 
+     * @param notificationId The notification ID
+     * @param onSuccess Callback for successful deletion
+     * @param onFailure Callback for failure with error message
+     */
+    void deleteNotification(
+            String notificationId,
+            OnSuccessListener onSuccess,
+            OnFailureListener onFailure
+    );
+
+    /**
+     * Deletes all notifications for a specific user.
+     * 
+     * @param userId The user ID
+     * @param onSuccess Callback for successful deletion
+     * @param onFailure Callback for failure with error message
+     */
+    void deleteAllNotificationsForUser(
+            String userId,
+            OnSuccessListener onSuccess,
+            OnFailureListener onFailure
+    );
+
     // Callback interfaces
 
     interface OnSuccessListener {

@@ -106,13 +106,14 @@
             android:layout_height="wrap_content"
             android:paddingBottom="16dp"/>
 
-        <!-- Logs placeholder -->
-        <TextView
-            android:id="@+id/placeholderLogs"
+        <!-- View notification logs button -->
+        <Button
+            android:id="@+id/btnViewNotificationLogs"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="48dp"
             android:text="View notification logs"
             android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
             android:layout_marginTop="16dp"
             android:layout_marginBottom="24dp"/>
     </LinearLayout>

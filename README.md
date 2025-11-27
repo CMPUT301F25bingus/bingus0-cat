@@ -1,4 +1,4 @@
-# 🗂️ EventMaster - CMPUT 301 Project Part 2 
+# 🗂️ EventMaster - CMPUT 301 Project
 
 ### **Overview**
 EventMaster is an Android application designed to simplify event organization and participation, and works on a Lottery system.  

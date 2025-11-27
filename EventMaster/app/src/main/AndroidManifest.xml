@@ -93,6 +93,9 @@
         <!-- Admin flow -->
         <activity android:name=".ui.admin.activities.AdminBrowseActivity" android:exported="false"/>
         <activity android:name=".ui.admin.activities.AdminEventListActivity" android:exported="false"/>
+        <activity android:name=".ui.admin.activities.AdminEventDetailsActivity" android:exported="false"/>
+        <activity android:name=".ui.admin.activities.AdminImageListActivity" android:exported="false"/>
+        <activity android:name=".ui.admin.activities.AdminNotificationLogActivity" android:exported="false"/>
         <activity android:name=".ui.admin.activities.AdminWelcomeActivity" android:exported="false"/>
 
         <activity

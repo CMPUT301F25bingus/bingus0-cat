@@ -1,6 +1,8 @@
 package com.example.eventmaster.ui.entrant.fragments;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -19,8 +21,11 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.app.ActivityCompat;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.ConcatAdapter;
@@ -31,8 +36,10 @@ import com.example.eventmaster.R;
 import com.example.eventmaster.data.api.EventRepository;
 import com.example.eventmaster.data.api.WaitingListRepository;
 import com.example.eventmaster.data.firestore.EventRepositoryFs;
+import com.example.eventmaster.data.firestore.ProfileRepositoryFs;
 import com.example.eventmaster.data.firestore.WaitingListRepositoryFs;
 import com.example.eventmaster.model.Event;
+import com.example.eventmaster.model.Profile;
 import com.example.eventmaster.model.WaitingListEntry;
 import com.example.eventmaster.ui.entrant.activities.EntrantHistoryActivity;
 import com.example.eventmaster.ui.entrant.activities.EntrantNotificationsActivity;
@@ -43,14 +50,19 @@ import com.example.eventmaster.ui.entrant.model.StatusFilter;
 import com.example.eventmaster.ui.shared.activities.ProfileActivity;
 import com.example.eventmaster.ui.shared.activities.QRScannerActivity;
 import com.example.eventmaster.utils.DeviceUtils;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.checkbox.MaterialCheckBox;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -61,8 +73,10 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
 
     private EventRepository eventRepository;
     private WaitingListRepository waitingListRepository;
+    private ProfileRepositoryFs profileRepo = new ProfileRepositoryFs();
     private EventListAdapter adapter;
     private String userId;
+    private Profile currentProfile;
 
     private RecyclerView recyclerView;
     private EditText searchEditText;
@@ -74,7 +88,7 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
     private ConcatAdapter concatAdapter;
 
     private List<Event> allEvents = new ArrayList<>();
-    
+
     // Filter state variables
     private List<Event> filteredEvents = new ArrayList<>();
     private List<Event> statusFilteredEvents = new ArrayList<>();
@@ -83,7 +97,7 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
     private String locationFilter = null;
     private boolean onlyAvailableSpots = false;
     private StatusFilter currentStatusFilter = StatusFilter.ALL;
-    
+
     private static final String TAG = "EventListFragment";
 
     private void selectStatusFilter(StatusFilter newFilter) {
@@ -185,6 +199,22 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
         OPEN, CLOSED, DONE
     }
 
+    // --- GEOLOCATION SUPPORT ---
+    private Event pendingGeolocationEvent; // Store event requiring location
+
+    private final ActivityResultLauncher<String> requestPermissionLauncher =
+            registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> {
+                if (granted) {
+                    if (pendingGeolocationEvent != null) {
+                        fetchLocationAndJoin(pendingGeolocationEvent);
+                    }
+                } else {
+                    Toast.makeText(requireContext(),
+                            "Location is required to join this event",
+                            Toast.LENGTH_SHORT).show();
+                }
+            });
+
     public EventListFragment() {
         // Required empty public constructor
     }
@@ -196,13 +226,24 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        
+
         // Initialize repositories
         eventRepository = new EventRepositoryFs();
         waitingListRepository = new WaitingListRepositoryFs();
-        
+
         // Get device-based user ID
         userId = DeviceUtils.getDeviceId(requireContext());
+
+        // --- Load profile for attaching to waiting list entries ---
+        profileRepo.getByDeviceId(userId)
+                .addOnSuccessListener(profile -> {
+                    if (profile != null) currentProfile = profile;
+                    else {
+                        Profile newP = new Profile(userId, "Guest User", "", null);
+                        profileRepo.upsert(newP);
+                        currentProfile = newP;
+                    }
+                });
     }
 
     @Nullable
@@ -257,8 +298,7 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
     private void setupSearch() {
         searchEditText.addTextChangedListener(new TextWatcher() {
             @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-            }
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
@@ -276,8 +316,7 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
             }
 
             @Override
-            public void afterTextChanged(Editable s) {
-            }
+            public void afterTextChanged(Editable s) {}
         });
     }
 
@@ -287,7 +326,7 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
     private void setupBottomNavigation() {
         // Set Home as selected (current screen)
         bottomNavigationView.setSelectedItemId(R.id.nav_home);
-        
+
         bottomNavigationView.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
             
@@ -301,7 +340,10 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
             } else if (itemId == R.id.nav_alerts) {
                Intent intent = new Intent(requireContext(), EntrantNotificationsActivity.class);
                startActivity(intent);
-                return true;
+//            } else if (itemId == R.id.nav_notifications) {
+//                Intent intent = new Intent(requireContext(), EntrantNotificationsActivity.class);
+//                startActivity(intent);
+//                return true;
             } else if (itemId == R.id.nav_profile) {
                 Intent intent = new Intent(requireContext(), ProfileActivity.class);
                 startActivity(intent);
@@ -319,14 +361,15 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
             @Override
             public void onSuccess(List<Event> events) {
                 allEvents = events;
-                applyFilters(); // Apply any active filters
+                adapter.setEvents(events);
+                 // applyFilters(); // Apply any active filters CODE CHECK DELETE IF NOT NEEDED
                 updateEmptyState();
             }
 
             @Override
             public void onFailure(Exception e) {
-                Toast.makeText(requireContext(), 
-                        "Failed to load events: " + e.getMessage(), 
+                Toast.makeText(requireContext(),
+                        "Failed to load events: " + e.getMessage(),
                         Toast.LENGTH_SHORT).show();
                 updateEmptyState();
             }
@@ -353,7 +396,7 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
     private void showFilterDialog() {
         View dialogView = LayoutInflater.from(requireContext())
                 .inflate(R.layout.dialog_filter_events, null);
-        
+
         // Get UI elements from dialog
         RadioGroup radioGroupSort = dialogView.findViewById(R.id.radioGroupSort);
         RadioButton radioSortNewest = dialogView.findViewById(R.id.radioSortNewest);
@@ -366,10 +409,10 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
         MaterialCheckBox checkAvailableSpots = dialogView.findViewById(R.id.checkAvailableSpots);
         MaterialButton btnClearFilters = dialogView.findViewById(R.id.btnClearFilters);
         MaterialButton btnApplyFilters = dialogView.findViewById(R.id.btnApplyFilters);
-        
+
         // Price ranges: 0=$0, 1=$50, 2=$100, 3=$150, 4=$200+
         final double[] priceRanges = {0, 50, 100, 150, 200};
-        
+
         // Set up Event Type dropdown
         String[] eventTypes = {"All types", "Recreational", "Athletic", "Educational", "Social", "Cultural"};
         ArrayAdapter<String> eventTypeAdapter = new ArrayAdapter<>(
@@ -380,14 +423,14 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
         autoCompleteEventType.setAdapter(eventTypeAdapter);
         autoCompleteEventType.setFocusable(true);
         autoCompleteEventType.setFocusableInTouchMode(true);
-        
+
         // Set current filter values
         if (sortOrder.equals("newest")) {
             radioSortNewest.setChecked(true);
         } else {
             radioSortOldest.setChecked(true);
         }
-        
+
         // Set price seekbar
         if (maxPrice != null) {
             int priceIndex = 4; // Default to $200+
@@ -402,27 +445,27 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
             seekBarPrice.setProgress(4); // $200+ (no limit)
         }
         updatePriceText(textPriceValue, seekBarPrice.getProgress(), priceRanges);
-        
+
         if (locationFilter != null) {
             editLocation.setText(locationFilter);
         }
-        
+
         checkAvailableSpots.setChecked(onlyAvailableSpots);
-        
+
         // SeekBar listener to update price text
         seekBarPrice.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 updatePriceText(textPriceValue, progress, priceRanges);
             }
-            
+
             @Override
             public void onStartTrackingTouch(SeekBar seekBar) {}
-            
+
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {}
         });
-        
+
         // Event type dropdown handler
         autoCompleteEventType.setOnItemClickListener((parent, view, position, id) -> {
             String selected = eventTypes[position];
@@ -433,14 +476,14 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
                 layoutEventTypes.setVisibility(View.VISIBLE);
             }
         });
-        
+
         autoCompleteEventType.setOnClickListener(v -> autoCompleteEventType.showDropDown());
-        
+
         // Create dialog
         AlertDialog dialog = new AlertDialog.Builder(requireContext())
                 .setView(dialogView)
                 .create();
-        
+
         // Apply filters button
         btnApplyFilters.setOnClickListener(v -> {
             // Get sort order
@@ -450,7 +493,7 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
             } else {
                 sortOrder = "oldest";
             }
-            
+
             // Get price filter
             int priceProgress = seekBarPrice.getProgress();
             if (priceProgress < 4) {
@@ -458,32 +501,32 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
             } else {
                 maxPrice = null; // No limit
             }
-            
+
             // Get location filter
-            String locationText = editLocation.getText() != null 
-                ? editLocation.getText().toString().trim() 
+            String locationText = editLocation.getText() != null
+                ? editLocation.getText().toString().trim()
                 : "";
             locationFilter = locationText.isEmpty() ? null : locationText;
-            
+
             // Get availability filter
             onlyAvailableSpots = checkAvailableSpots.isChecked();
-            
+
             // Apply filters
             applyFilters();
-            
+
             // Clear search when filters are applied
             searchEditText.setText("");
-            
+
             dialog.dismiss();
         });
-        
+
         // Clear filters button
         btnClearFilters.setOnClickListener(v -> {
             sortOrder = "newest";
             maxPrice = null;
             locationFilter = null;
             onlyAvailableSpots = false;
-            
+
             // Reset dialog UI
             radioSortNewest.setChecked(true);
             seekBarPrice.setProgress(4);
@@ -492,19 +535,19 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
             checkAvailableSpots.setChecked(false);
             autoCompleteEventType.setText("All types", false);
             layoutEventTypes.setVisibility(View.GONE);
-            
+
             // Apply cleared filters
             applyFilters();
-            
+
             // Clear search
             searchEditText.setText("");
-            
+
             dialog.dismiss();
         });
-        
+
         dialog.show();
     }
-    
+
     /**
      * Updates the price text display based on seekbar progress.
      */
@@ -517,48 +560,48 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
             textView.setText(String.format("Max Price: $%.0f", priceRanges[progress]));
         }
     }
-    
+
     /**
      * Applies active filters to the event list.
      */
     private void applyFilters() {
         filteredEvents = new ArrayList<>(allEvents);
-        
+
         // Filter by price
         if (maxPrice != null) {
             filteredEvents.removeIf(event -> event.getPrice() > maxPrice);
         }
-        
+
         // Filter by location
         if (locationFilter != null && !locationFilter.isEmpty()) {
             String locationLower = locationFilter.toLowerCase();
-            filteredEvents.removeIf(event -> 
-                event.getLocation() == null || 
+            filteredEvents.removeIf(event ->
+                event.getLocation() == null ||
                 !event.getLocation().toLowerCase().contains(locationLower)
             );
         }
-        
+
         // Filter by available spots
         if (onlyAvailableSpots) {
             filteredEvents.removeIf(event -> event.getCapacity() <= 0);
         }
-        
+
         // Sort by date
         filteredEvents.sort((e1, e2) -> {
             Date date1 = e1.getRegistrationStartDate();
             Date date2 = e2.getRegistrationStartDate();
-            
+
             if (date1 == null && date2 == null) return 0;
             if (date1 == null) return 1;
             if (date2 == null) return -1;
-            
+
             int comparison = date1.compareTo(date2);
             return sortOrder.equals("newest") ? -comparison : comparison;
         });
 
         updateStatusCounts();
         applyStatusFilterAndRefresh();
-        
+
         Log.d(TAG, "Applied filters - showing " + filteredEvents.size() + " of " + allEvents.size() + " events before status filter");
     }
 
@@ -572,25 +615,33 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
 
     @Override
     public void onJoinButtonClick(Event event) {
+
+        // --- GEOLOCATION REQUIREMENT (matches EventDetailsFragment) ---
+        if (event.isGeolocationRequired()) {
+            pendingGeolocationEvent = event;
+            requestLocationPermissionThenJoin(event);
+            return;
+        }
+
         // Check if registration dates are available
         if (event.getRegistrationStartDate() == null || event.getRegistrationEndDate() == null) {
-            Toast.makeText(requireContext(), 
-                    "Registration dates not available yet", 
+            Toast.makeText(requireContext(),
+                    "Registration dates not available yet",
                     Toast.LENGTH_SHORT).show();
             return;
         }
-        
+
         // Check if registration is open
         Date now = new Date();
         if (now.before(event.getRegistrationStartDate())) {
-            Toast.makeText(requireContext(), 
-                    "Registration hasn't opened yet", 
+            Toast.makeText(requireContext(),
+                    "Registration hasn't opened yet",
                     Toast.LENGTH_SHORT).show();
             return;
         }
         if (now.after(event.getRegistrationEndDate())) {
-            Toast.makeText(requireContext(), 
-                    "Registration has closed", 
+            Toast.makeText(requireContext(),
+                    "Registration has closed",
                     Toast.LENGTH_SHORT).show();
             return;
         }
@@ -601,8 +652,8 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
                     @Override
                     public void onSuccess(boolean exists) {
                         if (exists) {
-                            Toast.makeText(requireContext(), 
-                                    "You're already in the waiting list", 
+                            Toast.makeText(requireContext(),
+                                    "You're already in the waiting list",
                                     Toast.LENGTH_SHORT).show();
                         } else {
                             joinWaitingList(event);
@@ -611,25 +662,92 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
 
                     @Override
                     public void onFailure(Exception e) {
-                        // If check fails, try to join anyway
                         joinWaitingList(event);
                     }
                 });
     }
 
+    // ---- GEOLOCATION JOIN LOGIC (NEW, same as EventDetailsFragment) ----
+
+    private void requestLocationPermissionThenJoin(Event event) {
+        if (ActivityCompat.checkSelfPermission(requireContext(),
+                Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+
+            requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION);
+            return;
+        }
+        fetchLocationAndJoin(event);
+    }
+
+    private void fetchLocationAndJoin(Event event) {
+        FusedLocationProviderClient client =
+                LocationServices.getFusedLocationProviderClient(requireContext());
+
+        if (ActivityCompat.checkSelfPermission(requireContext(),
+                Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(requireContext(),
+                        Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+
+        client.getLastLocation()
+                .addOnSuccessListener(location -> {
+                    if (location != null) {
+                        joinWaitingListWithLocation(event, location.getLatitude(), location.getLongitude());
+                    } else {
+                        Toast.makeText(requireContext(),
+                                "Unable to fetch location",
+                                Toast.LENGTH_SHORT).show();
+                    }
+                });
+    }
+
+    private void joinWaitingListWithLocation(Event event, double lat, double lng) {
+        String entryId = UUID.randomUUID().toString();
+
+        WaitingListEntry entry = new WaitingListEntry(
+                entryId,
+                event.getEventId(),
+                userId,
+                new Date()
+        );
+
+        entry.setProfile(currentProfile);  // ⭐ PROFILE INCLUDED
+        entry.setlat(lat);
+        entry.setlng(lng);
+
+        ((WaitingListRepositoryFs) waitingListRepository)
+                .joinWithLimitCheck(entry, new WaitingListRepository.OnWaitingListOperationListener() {
+                    @Override
+                    public void onSuccess() {
+                        Toast.makeText(requireContext(),
+                                "Successfully joined with location!",
+                                Toast.LENGTH_SHORT).show();
+                    }
+                    @Override
+                    public void onFailure(Exception e) {
+                        Toast.makeText(requireContext(),
+                                "Failed to join: " + e.getMessage(),
+                                Toast.LENGTH_SHORT).show();
+                    }
+                });
+    }
+
     /**
-     * Adds the user to the event's waiting list.
+     * Adds the user to the event's waiting list (non-geolocation path).
      *
      * @param event The event to join
      */
     private void joinWaitingList(Event event) {
         String entryId = UUID.randomUUID().toString();
         WaitingListEntry entry = new WaitingListEntry(
-                entryId, 
-                event.getEventId(), 
-                userId, 
+                entryId,
+                event.getEventId(),
+                userId,
                 new Date()
         );
+
+        entry.setProfile(currentProfile); //ensure profile detiasl are added to db
 
         waitingListRepository.addToWaitingList(entry,
                 new WaitingListRepository.OnWaitingListOperationListener() {

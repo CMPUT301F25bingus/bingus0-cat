@@ -1,7 +1,9 @@
 package com.example.eventmaster.ui.organizer.activities;
 
 import android.os.Bundle;
+import android.view.View;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
@@ -25,6 +27,7 @@ public class OrganizerEntrantMapActivity extends AppCompatActivity {
     private MapView mapView;
     private String eventId;
 
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -36,6 +39,8 @@ public class OrganizerEntrantMapActivity extends AppCompatActivity {
 
         mapView = findViewById(R.id.mapView);
         eventId = getIntent().getStringExtra("eventId");
+        TextView emptyState = findViewById(R.id.empty_state_message);
+
 
         // Basic map setup
         mapView.setTileSource(TileSourceFactory.MAPNIK);
@@ -51,7 +56,7 @@ public class OrganizerEntrantMapActivity extends AppCompatActivity {
         FirebaseFirestore.getInstance()
                 .collection("events")
                 .document(eventId)
-                .collection("waitingList")
+                .collection("waiting_list")
                 .get()
                 .addOnSuccessListener(snaps -> {
                     List<GeoPoint> allPoints = new ArrayList<>();
@@ -65,7 +70,6 @@ public class OrganizerEntrantMapActivity extends AppCompatActivity {
                         GeoPoint point = new GeoPoint(lat, lng);
                         allPoints.add(point);
 
-                        // Add pin
                         Marker m = new Marker(mapView);
                         m.setPosition(point);
                         m.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
@@ -74,11 +78,17 @@ public class OrganizerEntrantMapActivity extends AppCompatActivity {
                     }
 
                     if (allPoints.isEmpty()) {
-                        Toast.makeText(this, "No entrant locations available.", Toast.LENGTH_SHORT).show();
+                        // Show empty state
+                        mapView.setVisibility(View.GONE);
+                        findViewById(R.id.empty_state_message).setVisibility(View.VISIBLE);
                         return;
+                    } else {
+                        // Show map normally
+                        mapView.setVisibility(View.VISIBLE);
+                        findViewById(R.id.empty_state_message).setVisibility(View.GONE);
                     }
 
-                    // Zoom to the first entrant
+                    // Zoom to first location
                     mapView.getController().setZoom(12.0);
                     mapView.getController().setCenter(allPoints.get(0));
                 })
@@ -87,3 +97,4 @@ public class OrganizerEntrantMapActivity extends AppCompatActivity {
                 );
     }
 }
+

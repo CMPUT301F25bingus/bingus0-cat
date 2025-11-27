@@ -1,6 +1,9 @@
 package com.example.eventmaster.ui.organizer.activities;
 
+import android.annotation.SuppressLint;
+import android.app.DatePickerDialog;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.FrameLayout;
@@ -8,17 +11,45 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.FragmentTransaction;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.GlideException;
 import com.example.eventmaster.R;
 import com.example.eventmaster.data.firestore.LotteryServiceFs;
 import com.example.eventmaster.ui.organizer.fragments.OrganizerEntrantsHubFragment;
 import com.google.android.material.button.MaterialButton;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Calendar;
+import java.util.Date;
+
+/**
+ * Activity used by organizers to view and manage a specific event.
+ * This screen loads event details, displays the poster, capacity,
+ * date range, pricing, organizer name, and allows quick access to
+ * all associated management tools.
+ *
+ * The organizer can:
+ * - View entrants through the Entrants Hub
+ * - Run the lottery once registration has closed
+ * - Edit the event poster
+ * - View the event location on a map (if geolocation is enabled)
+ * - Open a fragment overlay for additional management tools
+ * - Assign reply-by dates to invitations after running the lottery
+ *
+ * The activity retrieves the selected event using the eventId passed
+ * through the Intent and keeps all UI in sync with Firestore.
+ */
 public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
 
     public static final String EXTRA_EVENT_ID = "eventId";
@@ -37,14 +68,15 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
     private TextView eventCapacity;
     private TextView eventDescription;
     private TextView eventDates;
+    private TextView eventType;
+
 
     // Action buttons
     private MaterialButton btnViewEntrants;
     private MaterialButton btnRunLottery;
-    private MaterialButton btnNotifications;
-    private MaterialButton btnEditEvent;
-    private MaterialButton btnCancelEvent;
-    private MaterialButton btnViewMap; // <-- YOUR MAP BUTTON
+    private MaterialButton btnViewMap;
+    private ImageView editPosterIcon;
+    private Uri newPosterUri = null;
 
     private FrameLayout fragmentContainer;
 
@@ -66,24 +98,15 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
         bindViews();
         loadEventDetails();
 
-        // BACK BUTTON ACTION
-        backButton.setOnClickListener(v -> finish());
+        // BACK BUTTON
+        backButton.setOnClickListener(v -> onBackPressed());
 
-        // EXISTING ACTION BUTTONS
+        // BUTTON ACTIONS
         btnViewEntrants.setOnClickListener(v -> openEntrantsHub());
-        btnRunLottery.setOnClickListener(v -> runLottery());
+//        btnRunLottery.setOnClickListener(v -> runLottery());
 
-        btnNotifications.setOnClickListener(v ->
-                Toast.makeText(this, "Notifications — coming soon!", Toast.LENGTH_SHORT).show()
-        );
 
-        btnEditEvent.setOnClickListener(v ->
-                Toast.makeText(this, "Edit Event — coming soon!", Toast.LENGTH_SHORT).show()
-        );
-
-        btnCancelEvent.setOnClickListener(v ->
-                Toast.makeText(this, "Cancel Event — coming soon!", Toast.LENGTH_SHORT).show()
-        );
+        editPosterIcon.setOnClickListener(v -> pickNewPoster.launch("image/*"));
 
         btnViewMap.setOnClickListener(v -> {
             Intent mapIntent = new Intent(this, OrganizerEntrantMapActivity.class);
@@ -91,6 +114,11 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
             startActivity(mapIntent);
         });
 
+        getSupportFragmentManager().addOnBackStackChangedListener(() -> {
+            if (getSupportFragmentManager().getBackStackEntryCount() == 0) {
+                fragmentContainer.setVisibility(View.GONE);
+            }
+        });
     }
 
     private void bindViews() {
@@ -107,16 +135,28 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
 
         btnViewEntrants = findViewById(R.id.btnViewEntrants);
         btnRunLottery = findViewById(R.id.btnRunLottery);
-        btnNotifications = findViewById(R.id.btnNotifications);
-        btnEditEvent = findViewById(R.id.btnEditEvent);
-        btnCancelEvent = findViewById(R.id.btnCancelEvent);
 
         btnViewMap = findViewById(R.id.btnViewMap);
-
+        editPosterIcon = findViewById(R.id.edit_poster_icon);
+        eventType = findViewById(R.id.event_type_text);
 
         fragmentContainer = findViewById(R.id.fragment_container);
     }
 
+    private final ActivityResultLauncher<String> pickNewPoster =
+            registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
+                if (uri != null) {
+                    newPosterUri = uri;
+                    Glide.with(this).load(uri).into(eventPoster);
+                    uploadUpdatedPoster(uri);
+                }
+            });
+
+    /**
+     * Loads all event details from Firestore and populates the UI.
+     * This includes poster, title, organizer name, capacity, dates,
+     * description, event type, and lottery button availability.
+     */
     private void loadEventDetails() {
         FirebaseFirestore.getInstance()
                 .collection("events")
@@ -127,27 +167,59 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
                     Boolean geo = doc.getBoolean("geolocationRequired");
                     btnViewMap.setVisibility(geo != null && geo ? View.VISIBLE : View.GONE);
 
-                    if (geo != null && geo) {
-                        btnViewMap.setVisibility(View.VISIBLE);
-                    } else {
-                        btnViewMap.setVisibility(View.GONE);
-                    }
-
-                    // --------------------------------------
-
                     if (!doc.exists()) {
                         Toast.makeText(this, "Event not found", Toast.LENGTH_SHORT).show();
                         return;
                     }
 
-                    // POSTER
+                    // --- POSTER + PLACEHOLDER HANDLING ---
+                    ImageView posterImage = findViewById(R.id.event_poster_image);
+                    TextView placeholder = findViewById(R.id.poster_placeholder_text);
+
                     String posterUrl = doc.getString("posterUrl");
+
                     if (posterUrl != null && !posterUrl.isEmpty()) {
-                        Glide.with(this).load(posterUrl).into(eventPoster);
+
+                        Glide.with(this)
+                                .load(posterUrl)
+                                .listener(new com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable>() {
+
+                                    @Override
+                                    public boolean onLoadFailed(
+                                            @Nullable GlideException e,
+                                            Object model,
+                                            com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target,
+                                            boolean isFirstResource
+                                    ) {
+                                        // ❌ Poster failed to load → show placeholder
+                                        placeholder.setVisibility(View.VISIBLE);
+                                        return false;
+                                    }
+
+                                    @Override
+                                    public boolean onResourceReady(
+                                            android.graphics.drawable.Drawable resource,
+                                            Object model,
+                                            com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target,
+                                            com.bumptech.glide.load.DataSource dataSource,
+                                            boolean isFirstResource
+                                    ) {
+                                        // ✔ Poster loaded → hide placeholder
+                                        placeholder.setVisibility(View.GONE);
+                                        return false;
+                                    }
+                                })
+                                .into(posterImage);
+
+                    } else {
+                        // ❌ No poster URL in database
+                        placeholder.setVisibility(View.VISIBLE);
                     }
 
+                    // --- NAME ---
                     eventName.setText(doc.getString("title"));
-                    // Replace organizerId with organizerName (fallback to ID)
+
+                    // --- ORGANIZER NAME ---
                     String organizerId = doc.getString("organizerId");
 
                     if (organizerId != null) {
@@ -158,23 +230,23 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
                                 .addOnSuccessListener(profileDoc -> {
                                     if (profileDoc.exists()) {
                                         String organizerName = profileDoc.getString("name");
-
                                         if (organizerName != null && !organizerName.isEmpty()) {
                                             eventOrganizer.setText("Hosted by: " + organizerName);
                                         } else {
                                             eventOrganizer.setText("Hosted by: " + organizerId);
                                         }
-
                                     } else {
                                         eventOrganizer.setText("Hosted by: " + organizerId);
                                     }
                                 })
-                                .addOnFailureListener(e -> eventOrganizer.setText("Hosted by: " + organizerId));
+                                .addOnFailureListener(e ->
+                                        eventOrganizer.setText("Hosted by: " + organizerId)
+                                );
                     } else {
                         eventOrganizer.setText("Hosted by: Unknown");
                     }
 
-
+                    // --- PRICE ---
                     Double price = doc.getDouble("price");
                     if (price != null) {
                         if (price % 1 == 0)
@@ -183,6 +255,7 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
                             eventPrice.setText(String.format("$%.2f", price));
                     }
 
+                    // --- LOCATION / CAPACITY / DESCRIPTION ---
                     eventLocation.setText("📍 " + doc.getString("location"));
 
                     Long cap = doc.getLong("capacity");
@@ -190,20 +263,119 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
 
                     eventDescription.setText(doc.getString("description"));
 
+                    // --- EVENT TYPE ---
+                    String type = doc.getString("eventType");
+                    eventType.setText(type != null && !type.isEmpty()
+                            ? "Type: " + type
+                            : "Type: Not specified");
+
+                    // --- DATE RANGE ---
                     com.google.firebase.Timestamp start = doc.getTimestamp("registrationOpen");
                     com.google.firebase.Timestamp end = doc.getTimestamp("registrationClose");
 
                     if (start != null && end != null) {
-                        String s = new java.text.SimpleDateFormat("MMM d").format(start.toDate());
-                        String e = new java.text.SimpleDateFormat("MMM d").format(end.toDate());
+                        String s = new java.text.SimpleDateFormat("MMM d")
+                                .format(start.toDate());
+                        String e = new java.text.SimpleDateFormat("MMM d")
+                                .format(end.toDate());
+
                         eventDates.setText("📅 " + s + " → " + e);
+
+                        // --- LOTTERY BUTTON ENABLE/DISABLE LOGIC ---
+                        Date now = new Date();
+
+                        if (now.before(end.toDate())) {
+                            // Registration still open → disable lottery
+                            btnRunLottery.setEnabled(false);
+                            btnRunLottery.setAlpha(0.4f);
+
+                            btnRunLottery.setOnClickListener(v ->
+                                    Toast.makeText(
+                                            this,
+                                            "Lottery can only be run after registration closes.",
+                                            Toast.LENGTH_LONG
+                                    ).show()
+                            );
+                        } else {
+                            // Registration closed → enable lottery
+                            btnRunLottery.setEnabled(true);
+                            btnRunLottery.setAlpha(1f);
+
+                            btnRunLottery.setOnClickListener(v -> runLottery());
+                        }
                     }
+
                 })
                 .addOnFailureListener(e ->
                         Toast.makeText(this, "Failed to load event: " + e.getMessage(), Toast.LENGTH_SHORT).show()
                 );
     }
 
+    /**
+     * Uploads a new poster image to Firebase Storage, retrieves its
+     * download URL, and updates the event document in Firestore.
+     *
+     * @param uri the selected image file chosen by the organizer.
+     */
+    private void uploadUpdatedPoster(Uri uri) {
+        if (uri == null) return;
+
+        Toast.makeText(this, "Updating poster...", Toast.LENGTH_SHORT).show();
+
+        try {
+            StorageReference ref = FirebaseStorage.getInstance()
+                    .getReference("events/" + eventId + "/poster.jpg");
+
+            byte[] bytes = readAllBytes(uri);
+
+            ref.putBytes(bytes)
+                    .continueWithTask(task -> {
+                        if (!task.isSuccessful()) throw task.getException();
+                        return ref.getDownloadUrl();
+                    })
+                    .addOnSuccessListener(url -> {
+                        FirebaseFirestore.getInstance()
+                                .collection("events")
+                                .document(eventId)
+                                .update("posterUrl", url.toString())
+                                .addOnSuccessListener(unused ->
+                                        Toast.makeText(this, "Poster updated!", Toast.LENGTH_SHORT).show()
+                                )
+                                .addOnFailureListener(e ->
+                                        Toast.makeText(this, "Failed updating Firestore: " + e.getMessage(), Toast.LENGTH_LONG).show()
+                                );
+                    })
+                    .addOnFailureListener(e ->
+                            Toast.makeText(this, "Upload failed: " + e.getMessage(), Toast.LENGTH_LONG).show()
+                    );
+        } catch (Exception e) {
+            Toast.makeText(this, "Failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
+    }
+    /**
+     * Reads the contents of a given Uri into a byte array so it
+     * can be uploaded to Firebase Storage.
+     *
+     * @param uri the selected image file
+     * @return all bytes from the file
+     */
+    private byte[] readAllBytes(Uri uri) throws IOException {
+        try (InputStream in = getContentResolver().openInputStream(uri);
+             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+
+            byte[] buffer = new byte[4096];
+            int len;
+            while ((len = in.read(buffer)) != -1) {
+                out.write(buffer, 0, len);
+            }
+            return out.toByteArray();
+        }
+    }
+
+    /**
+     * Opens the Entrants Hub fragment, which provides shortcuts
+     * to the selected, cancelled, and waiting list views.
+     */
     private void openEntrantsHub() {
         fragmentContainer.setVisibility(View.VISIBLE);
         fragmentContainer.bringToFront();
@@ -223,13 +395,19 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
         ft.commit();
     }
 
-    // NEW METHOD: Navigate to map page
+    // Map navigation
     private void openMapScreen() {
         Intent i = new Intent(this, OrganizerEntrantMapActivity.class);
         i.putExtra("eventId", eventId);
         startActivity(i);
     }
 
+    /**
+     * Initiates the event lottery once registration is closed.
+     * A confirmation dialog is shown, then the LotteryService is
+     * used to select winners and send invitations. Afterward,
+     * the organizer is prompted to set a reply-by date.
+     */
     private void runLottery() {
         FirebaseFirestore.getInstance()
                 .collection("events")
@@ -255,9 +433,18 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
                             .setPositiveButton("Run", (d, w) -> {
                                 LotteryServiceFs lottery = new LotteryServiceFs();
                                 lottery.drawLottery(eventId, capacity)
-                                        .addOnSuccessListener(aVoid ->
-                                                Toast.makeText(this, "Lottery completed!", Toast.LENGTH_SHORT).show()
-                                        )
+                                        .addOnSuccessListener(aVoid -> {
+
+                                            Toast.makeText(
+                                                    this,
+                                                    "Lottery completed! Invitations sent.",
+                                                    Toast.LENGTH_SHORT
+                                            ).show();
+
+                                            // 👉 NOW ask for reply-by date
+                                            showReplyByDatePicker();
+
+                                        })
                                         .addOnFailureListener(e ->
                                                 Toast.makeText(this, "Lottery failed: " + e.getMessage(), Toast.LENGTH_LONG).show()
                                         );
@@ -269,4 +456,89 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
                         Toast.makeText(this, "Failed loading event.", Toast.LENGTH_SHORT).show()
                 );
     }
+
+    // Hide the overlay when back is pressed
+    @SuppressLint("GestureBackNavigation")
+    @Override
+    public void onBackPressed() {
+        if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
+            getSupportFragmentManager().popBackStack();
+            fragmentContainer.setVisibility(View.GONE);
+        } else {
+            super.onBackPressed();
+        }
+    }
+
+    /**
+     * Shows a date picker that lets the organizer choose the reply-by
+     * deadline for all invitations created by the lottery.
+     */
+    private void showReplyByDatePicker() {
+        final Calendar calendar = Calendar.getInstance();
+
+        DatePickerDialog picker = new DatePickerDialog(
+                this,
+                (view, year, month, dayOfMonth) -> {
+
+                    Calendar selected = Calendar.getInstance();
+                    selected.set(Calendar.YEAR, year);
+                    selected.set(Calendar.MONTH, month);
+                    selected.set(Calendar.DAY_OF_MONTH, dayOfMonth);
+                    selected.set(Calendar.HOUR_OF_DAY, 23);
+                    selected.set(Calendar.MINUTE, 59);
+                    selected.set(Calendar.SECOND, 59);
+
+                    Date replyByDate = selected.getTime();
+
+                    saveReplyByDateToInvitations(replyByDate);
+                },
+                calendar.get(Calendar.YEAR),
+                calendar.get(Calendar.MONTH),
+                calendar.get(Calendar.DAY_OF_MONTH)
+        );
+
+        picker.setTitle("Select Reply-By Date for Invitations");
+        picker.show();
+    }
+
+    /**
+     * Saves the selected reply-by date into every invitation document
+     * under the event. This ensures all chosen entrants share the same
+     * deadline for responding.
+     *
+     * @param replyByDate the date selected in the picker dialog.
+     */
+    private void saveReplyByDateToInvitations(Date replyByDate) {
+
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        db.collection("events")
+                .document(eventId)
+                .collection("invitations")
+                .get()
+                .addOnSuccessListener(snap -> {
+
+                    db.runBatch(batch -> {
+                        for (var doc : snap.getDocuments()) {
+                            batch.update(doc.getReference(), "replyBy", replyByDate);
+                        }
+                    }).addOnSuccessListener(unused ->
+                            Toast.makeText(
+                                    this,
+                                    "Reply-by date set for all invitations!",
+                                    Toast.LENGTH_LONG
+                            ).show()
+                    ).addOnFailureListener(e ->
+                            Toast.makeText(
+                                    this,
+                                    "Failed to update invitations: " + e.getMessage(),
+                                    Toast.LENGTH_LONG
+                            ).show()
+                    );
+
+                });
+    }
+
+
+
 }
