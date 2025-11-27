@@ -51,8 +51,8 @@ public class EntrantNotificationsActivity extends AppCompatActivity {
     private static final String TAG = "EntrantNotifications";
 
     // UI Components
-    private ImageView backButton;
     private ImageView deleteAllButton;
+    private android.widget.ImageButton notificationToggle;
     private RecyclerView recyclerView;
     private LinearLayout emptyState;
     private ProgressBar loadingIndicator;
@@ -61,6 +61,7 @@ public class EntrantNotificationsActivity extends AppCompatActivity {
     // Data
     private List<Notification> notifications;
     private NotificationsAdapter adapter;
+    private Profile currentProfile;
 
     // Services
     private NotificationService notificationService;
@@ -97,14 +98,15 @@ public class EntrantNotificationsActivity extends AppCompatActivity {
         setupClickListeners();
 
         loadNotifications();
+        loadUserProfile();
     }
 
     /**
      * Initializes all view components.
      */
     private void initializeViews() {
-        backButton = findViewById(R.id.back_button);
         deleteAllButton = findViewById(R.id.delete_all_button);
+        notificationToggle = findViewById(R.id.notification_toggle);
         recyclerView = findViewById(R.id.notifications_recycler_view);
         emptyState = findViewById(R.id.empty_state);
         loadingIndicator = findViewById(R.id.loading_indicator);
@@ -221,8 +223,15 @@ public class EntrantNotificationsActivity extends AppCompatActivity {
      * Sets up click listeners for interactive components.
      */
     private void setupClickListeners() {
-        backButton.setOnClickListener(v -> finish());
         deleteAllButton.setOnClickListener(v -> handleDeleteAllClick());
+        
+        // Notification toggle button listener
+        notificationToggle.setOnClickListener(v -> {
+            if (currentProfile != null) {
+                boolean newState = !currentProfile.isNotificationsEnabled();
+                updateNotificationPreference(newState);
+            }
+        });
     }
 
     // -------------------------------------------------------------------------
@@ -470,5 +479,86 @@ public class EntrantNotificationsActivity extends AppCompatActivity {
             return FirebaseAuth.getInstance().getCurrentUser().getUid();
         }
         return DeviceUtils.getDeviceId(this);
+    }
+
+    /**
+     * Loads the user's profile and sets the notification icon state.
+     */
+    private void loadUserProfile() {
+        String deviceId = DeviceUtils.getDeviceId(this);
+        
+        profileRepo.getByDeviceId(deviceId)
+                .addOnSuccessListener(profile -> {
+                    if (profile != null) {
+                        currentProfile = profile;
+                        // Set icon state based on profile preference
+                        updateNotificationIcon(profile.isNotificationsEnabled());
+                    } else {
+                        // If no profile, create one with notifications enabled by default
+                        Profile newProfile = new Profile();
+                        newProfile.setUserId(currentUserId);
+                        newProfile.setDeviceId(deviceId);
+                        newProfile.setNotificationsEnabled(true);
+                        profileRepo.upsert(newProfile)
+                                .addOnSuccessListener(p -> {
+                                    currentProfile = newProfile;
+                                    updateNotificationIcon(true);
+                                });
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Failed to load profile", e);
+                    // Default to enabled if we can't load profile
+                    updateNotificationIcon(true);
+                });
+    }
+
+    /**
+     * Updates the notification icon appearance based on state.
+     */
+    private void updateNotificationIcon(boolean enabled) {
+        if (notificationToggle == null) return;
+        
+        if (enabled) {
+            // Bell icon - notifications ON (teal color)
+            notificationToggle.setImageResource(R.drawable.ic_bell_outline);
+            notificationToggle.setColorFilter(getResources().getColor(R.color.teal_dark, null));
+        } else {
+            // Bell icon with slash - notifications OFF (gray color)
+            notificationToggle.setImageResource(R.drawable.ic_bell_off);
+            notificationToggle.setColorFilter(getResources().getColor(android.R.color.darker_gray, null));
+        }
+    }
+
+    /**
+     * Updates the notification preference in Firestore.
+     */
+    private void updateNotificationPreference(boolean enabled) {
+        if (currentProfile == null) {
+            Log.w(TAG, "Cannot update preference: no profile loaded");
+            return;
+        }
+        
+        String profileId = currentProfile.getUserId();
+        if (profileId == null || profileId.isEmpty()) {
+            profileId = currentUserId;
+        }
+        
+        // Update icon immediately for better UX
+        updateNotificationIcon(enabled);
+        
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("notificationsEnabled", enabled);
+        
+        profileRepo.update(profileId, updates)
+                .addOnSuccessListener(v -> {
+                    currentProfile.setNotificationsEnabled(enabled);
+                    Log.d(TAG, "Notification preference updated: " + enabled);
+                })
+                .addOnFailureListener(err -> {
+                    // Revert icon on failure
+                    updateNotificationIcon(!enabled);
+                    Log.e(TAG, "Failed to update notification preference", err);
+                });
     }
 }
