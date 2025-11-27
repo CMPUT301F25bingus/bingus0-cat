@@ -4,6 +4,23 @@
 EventMaster is an Android application designed to simplify event organization and participation, and works on a Lottery system.  
 It supports three main user roles: **Entrant**, **Organizer**, and **Admin**, each with tailored functionality to manage event creation, participation, and moderation.
 
+
+### **Instructions**
+1. Installation & Setup
+
+Prerequisites
+- Android Studio (latest stable version)
+- Android Emulator (API Level 30+) or a physical Android device
+- Internet connection (app uses Firebase Firestore)
+
+Setup Steps
+- Clone the repository: git clone https://github.com/CMPUT301F25bingus/bingus0-cat.git
+- Open the project in Android Studio.
+- Allow Gradle to sync (click “Sync Now” if prompted).
+- Connect an emulator or Android device.
+- Press the Run ▶️ button to launch the app.
+
+
 ### **Team Members**
 | Name | CCID |
 |------|------|
