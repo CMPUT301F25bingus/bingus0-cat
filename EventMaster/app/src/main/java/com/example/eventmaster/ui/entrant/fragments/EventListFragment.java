@@ -445,11 +445,11 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
      * Updates the empty state visibility based on event count.
      */
     private void updateEmptyState() {
+        // Always keep RecyclerView visible so status filter bar stays visible
+        // Only show/hide the empty state text overlay
         if (adapter.getItemCount() == 0) {
-            recyclerView.setVisibility(View.GONE);
             emptyStateText.setVisibility(View.VISIBLE);
         } else {
-            recyclerView.setVisibility(View.VISIBLE);
             emptyStateText.setVisibility(View.GONE);
         }
     }
