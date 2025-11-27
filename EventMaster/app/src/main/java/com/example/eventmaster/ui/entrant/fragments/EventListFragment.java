@@ -56,6 +56,8 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.checkbox.MaterialCheckBox;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.firebase.Timestamp;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
@@ -88,6 +90,7 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
     private ConcatAdapter concatAdapter;
 
     private List<Event> allEvents = new ArrayList<>();
+    private Map<String, Integer> waitingListCounts = new HashMap<>(); // eventId -> count
 
     // Filter state variables
     private List<Event> filteredEvents = new ArrayList<>();
@@ -129,6 +132,10 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
             adapter.filter(query.toString(), statusFilteredEvents);
         } else {
             adapter.setEvents(statusFilteredEvents);
+        }
+        // Ensure waiting list counts are always available in adapter
+        if (adapter != null && !waitingListCounts.isEmpty()) {
+            adapter.setWaitingListCounts(waitingListCounts);
         }
         updateEmptyState();
     }
@@ -361,8 +368,10 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
             @Override
             public void onSuccess(List<Event> events) {
                 allEvents = events;
-                adapter.setEvents(events);
-                 // applyFilters(); // Apply any active filters CODE CHECK DELETE IF NOT NEEDED
+                filteredEvents = new ArrayList<>(events); // Initialize filteredEvents with all events
+                updateStatusCounts(); // Update the status tab counts
+                loadWaitingListCounts(events); // Load waiting list counts for all events
+                applyStatusFilterAndRefresh(); // Apply status filter and refresh the display
                 updateEmptyState();
             }
 
@@ -374,6 +383,57 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
                 updateEmptyState();
             }
         });
+    }
+
+    /**
+     * Loads waiting list counts for all events and updates the adapter.
+     */
+    private void loadWaitingListCounts(List<Event> events) {
+        if (events == null || events.isEmpty()) {
+            return;
+        }
+
+        waitingListCounts.clear();
+        final int[] completedCount = {0};
+        final int totalCount = events.size();
+
+        for (Event event : events) {
+            if (event == null || event.getId() == null) {
+                completedCount[0]++;
+                continue;
+            }
+
+            String eventId = event.getId();
+            waitingListRepository.getWaitingListCount(eventId, new WaitingListRepository.OnCountListener() {
+                @Override
+                public void onSuccess(int count) {
+                    waitingListCounts.put(eventId, count);
+                    completedCount[0]++;
+
+                    // Update adapter when all counts are loaded
+                    if (completedCount[0] == totalCount && adapter != null) {
+                        adapter.setWaitingListCounts(waitingListCounts);
+                    }
+                }
+
+                @Override
+                public void onFailure(Exception e) {
+                    // Default to 0 if fetch fails
+                    waitingListCounts.put(eventId, 0);
+                    completedCount[0]++;
+
+                    // Update adapter when all counts are loaded
+                    if (completedCount[0] == totalCount && adapter != null) {
+                        adapter.setWaitingListCounts(waitingListCounts);
+                    }
+                }
+            });
+        }
+
+        // If no events, update adapter immediately
+        if (totalCount == 0 && adapter != null) {
+            adapter.setWaitingListCounts(waitingListCounts);
+        }
     }
 
     /**
@@ -723,6 +783,9 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
                         Toast.makeText(requireContext(),
                                 "Successfully joined with location!",
                                 Toast.LENGTH_SHORT).show();
+                        
+                        // Send notification when user joins waiting list with location
+                        sendJoinedWaitingListNotification(event.getEventId(), userId);
                     }
                     @Override
                     public void onFailure(Exception e) {
@@ -756,6 +819,9 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
                         Toast.makeText(requireContext(),
                                 "Successfully joined waiting list for " + event.getName(),
                                 Toast.LENGTH_SHORT).show();
+                        
+                        // Send notification when user joins waiting list
+                        sendJoinedWaitingListNotification(event.getEventId(), userId);
                     }
 
                     @Override
@@ -780,6 +846,58 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
     private void openQRScanner() {
         Intent intent = new Intent(requireContext(), QRScannerActivity.class);
         startActivity(intent);
+    }
+
+    /**
+     * Send notification when user joins waiting list
+     */
+    private void sendJoinedWaitingListNotification(String eventId, String userId) {
+        if (eventId == null || userId == null) {
+            Log.w("EventListFragment", "Cannot send notification: missing eventId or userId");
+            return;
+        }
+        
+        // Get the Firebase Auth UID if available, otherwise use the provided userId (deviceId)
+        final String recipientUserId = getCurrentFirebaseUserId() != null ? getCurrentFirebaseUserId() : userId;
+        final String deviceIdForNotification = userId;
+        
+        Log.d("EventListFragment", "Sending notification: eventId=" + eventId + ", recipientUserId=" + recipientUserId + ", deviceId=" + deviceIdForNotification);
+        
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        
+        Map<String, Object> notification = new HashMap<>();
+        notification.put("eventId", eventId);
+        notification.put("recipientUserId", recipientUserId); // Use Firebase Auth UID (primary field)
+        notification.put("recipientId", recipientUserId); // Also add legacy field for backward compatibility
+        // Also store deviceId for query flexibility
+        if (!recipientUserId.equals(deviceIdForNotification)) {
+            notification.put("deviceId", deviceIdForNotification);
+        }
+        notification.put("senderUserId", "system");
+        notification.put("type", "GENERAL"); // Use valid NotificationType
+        notification.put("title", "Joined Waiting List");
+        notification.put("message", "You've successfully joined the waiting list for this event. Good luck!");
+        notification.put("isRead", false);
+        notification.put("sentAt", Timestamp.now()); // Use sentAt (matches Notification model)
+        
+        db.collection("notifications")
+                .add(notification)
+                .addOnSuccessListener(docRef -> {
+                    Log.d("EventListFragment", "✅ Sent waiting list notification to userId: " + recipientUserId);
+                    // Update with notificationId
+                    docRef.update("notificationId", docRef.getId());
+                })
+                .addOnFailureListener(e -> Log.e("EventListFragment", "❌ Failed to send notification", e));
+    }
+
+    /**
+     * Gets the current Firebase Auth UID if user is authenticated, otherwise null
+     */
+    private String getCurrentFirebaseUserId() {
+        if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+            return FirebaseAuth.getInstance().getCurrentUser().getUid();
+        }
+        return null;
     }
 }
 

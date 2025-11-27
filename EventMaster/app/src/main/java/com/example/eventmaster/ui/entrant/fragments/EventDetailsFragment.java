@@ -35,6 +35,7 @@ import com.example.eventmaster.model.WaitingListEntry;
 import com.example.eventmaster.utils.DeviceUtils;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
@@ -351,6 +352,9 @@ public class EventDetailsFragment extends Fragment {
                         registrationService.enroll(eventId, userId, r -> {
                             inviteStatusText.setText("You're enrolled 🎉");
                             inviteStatusText.setVisibility(View.VISIBLE);
+                            
+                            // Send notification when invitation is accepted
+                            sendInvitationAcceptedNotification(eventId, userId);
                         }, e -> {
                             toast(e.getMessage());
                             setInviteButtonsEnabled(true);
@@ -589,7 +593,12 @@ public class EventDetailsFragment extends Fragment {
                     joinButton.setEnabled(true);
                 }
 
-                loadWaitingListCount();
+                // Send notification when joining replacement lottery
+                sendJoinedWaitingListNotification(eventId, userId);
+
+                if (currentEvent != null) {
+                    loadWaitingListCountWithLimit(currentEvent);
+                }
                 replacementLotterySection.setVisibility(View.GONE);
                 btnJoinReplacementLottery.setEnabled(true);
                 btnJoinReplacementLottery.setText("Join Replacement Lottery");
@@ -1063,6 +1072,9 @@ public class EventDetailsFragment extends Fragment {
                         Toast.makeText(requireContext(), "Successfully joined waiting list!", Toast.LENGTH_SHORT).show();
                         isInWaitingList = true;
 
+                        // Send notification when user joins waiting list
+                        sendJoinedWaitingListNotification(eventId, userId);
+
                         loadEventDetails(); // refresh limit + button
                     }
 
@@ -1124,7 +1136,9 @@ public class EventDetailsFragment extends Fragment {
                     joinButton.setText("Join Waiting List");
                     joinButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFF3D8B87)); // Teal color
                     joinButton.setEnabled(true);
-                    loadWaitingListCount();
+                    if (currentEvent != null) {
+                        loadWaitingListCountWithLimit(currentEvent);
+                    }
                     // loadEventDetails(); // CODE CHECK DEV IF ACCEPTED DELETE ALL FROM  JOIN BUTTON
                 }
 
@@ -1142,20 +1156,92 @@ public class EventDetailsFragment extends Fragment {
      * Send notification when user joins waiting list
      */
     private void sendJoinedWaitingListNotification(String eventId, String userId) {
+        if (eventId == null || userId == null) {
+            Log.w(TAG, "Cannot send notification: missing eventId or userId");
+            return;
+        }
+        
+        // Get the Firebase Auth UID if available, otherwise use the provided userId (deviceId)
+        final String recipientUserId = getCurrentFirebaseUserId() != null ? getCurrentFirebaseUserId() : userId;
+        final String deviceIdForNotification = userId;
+        
+        Log.d(TAG, "Sending notification: eventId=" + eventId + ", recipientUserId=" + recipientUserId + ", deviceId=" + deviceIdForNotification);
+        
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         
         Map<String, Object> notification = new HashMap<>();
         notification.put("eventId", eventId);
-        notification.put("recipientId", userId);
-        notification.put("type", "WAITING_LIST_JOINED");
+        notification.put("recipientUserId", recipientUserId); // Use Firebase Auth UID (primary field)
+        notification.put("recipientId", recipientUserId); // Also add legacy field for backward compatibility
+        // Also store deviceId for query flexibility
+        if (!recipientUserId.equals(deviceIdForNotification)) {
+            notification.put("deviceId", deviceIdForNotification);
+        }
+        notification.put("senderUserId", "system");
+        notification.put("type", "GENERAL"); // Use valid NotificationType
         notification.put("title", "Joined Waiting List");
         notification.put("message", "You've successfully joined the waiting list for this event. Good luck!");
         notification.put("isRead", false);
-        notification.put("createdAt", com.google.firebase.Timestamp.now());
+        notification.put("sentAt", com.google.firebase.Timestamp.now()); // Use sentAt (matches Notification model)
         
         db.collection("notifications")
                 .add(notification)
-                .addOnSuccessListener(docRef -> Log.d(TAG, "✅ Sent waiting list notification"))
+                .addOnSuccessListener(docRef -> {
+                    Log.d(TAG, "✅ Sent waiting list notification to userId: " + recipientUserId);
+                    // Update with notificationId
+                    docRef.update("notificationId", docRef.getId());
+                })
+                .addOnFailureListener(e -> Log.e(TAG, "❌ Failed to send notification", e));
+    }
+
+    /**
+     * Gets the current Firebase Auth UID if user is authenticated, otherwise null
+     */
+    private String getCurrentFirebaseUserId() {
+        if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+            return FirebaseAuth.getInstance().getCurrentUser().getUid();
+        }
+        return null;
+    }
+
+    /**
+     * Send notification when user accepts an invitation and gets enrolled
+     */
+    private void sendInvitationAcceptedNotification(String eventId, String userId) {
+        if (eventId == null || userId == null) {
+            Log.w(TAG, "Cannot send notification: missing eventId or userId");
+            return;
+        }
+        
+        // Get the Firebase Auth UID if available, otherwise use the provided userId (deviceId)
+        final String recipientUserId = getCurrentFirebaseUserId() != null ? getCurrentFirebaseUserId() : userId;
+        final String deviceIdForNotification = userId;
+        
+        Log.d(TAG, "Sending invitation accepted notification: eventId=" + eventId + ", recipientUserId=" + recipientUserId);
+        
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        
+        Map<String, Object> notification = new HashMap<>();
+        notification.put("eventId", eventId);
+        notification.put("recipientUserId", recipientUserId);
+        notification.put("recipientId", recipientUserId); // Legacy field
+        // Also store deviceId for query flexibility
+        if (!recipientUserId.equals(deviceIdForNotification)) {
+            notification.put("deviceId", deviceIdForNotification);
+        }
+        notification.put("senderUserId", "system");
+        notification.put("type", "INVITATION");
+        notification.put("title", "🎉 You're Enrolled!");
+        notification.put("message", "Congratulations! You've successfully enrolled in this event. We look forward to seeing you there!");
+        notification.put("isRead", false);
+        notification.put("sentAt", com.google.firebase.Timestamp.now());
+        
+        db.collection("notifications")
+                .add(notification)
+                .addOnSuccessListener(docRef -> {
+                    Log.d(TAG, "✅ Sent invitation accepted notification to userId: " + recipientUserId);
+                    docRef.update("notificationId", docRef.getId());
+                })
                 .addOnFailureListener(e -> Log.e(TAG, "❌ Failed to send notification", e));
     }
 

@@ -16,8 +16,10 @@ import com.example.eventmaster.model.Event;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * RecyclerView adapter for displaying a list of events to entrants.
@@ -33,9 +35,16 @@ public class EventListAdapter extends RecyclerView.Adapter<EventListAdapter.Even
 
     private final OnEventClickListener listener;
     private List<Event> events = new ArrayList<>();
+    private Map<String, Integer> waitingListCounts = new HashMap<>(); // eventId -> count
 
     public EventListAdapter(@NonNull OnEventClickListener listener) {
         this.listener = listener;
+    }
+
+    /** Set waiting list counts map and refresh the display. */
+    public void setWaitingListCounts(@NonNull Map<String, Integer> counts) {
+        this.waitingListCounts = new HashMap<>(counts);
+        notifyDataSetChanged();
     }
 
     /** Replace current events and refresh list. */
@@ -77,7 +86,7 @@ public class EventListAdapter extends RecyclerView.Adapter<EventListAdapter.Even
 
     @Override
     public void onBindViewHolder(@NonNull EventViewHolder holder, int position) {
-        holder.bind(events.get(position), listener);
+        holder.bind(events.get(position), listener, waitingListCounts);
     }
 
     @Override
@@ -113,7 +122,7 @@ public class EventListAdapter extends RecyclerView.Adapter<EventListAdapter.Even
             waitingListCount = itemView.findViewById(R.id.txtWaitingListCount);
         }
 
-        void bind(Event event, OnEventClickListener listener) {
+        void bind(Event event, OnEventClickListener listener, Map<String, Integer> waitingListCounts) {
             // ---------- Title ----------
             title.setText(safe(event.getName(), "Unnamed Event"));
 
@@ -158,8 +167,14 @@ public class EventListAdapter extends RecyclerView.Adapter<EventListAdapter.Even
             }
 
             // ---------- Waiting List Count ----------
-            waitingListCount.setText("0 on waiting list");
-            // TODO: Load actual waiting list count from repository if needed
+            String eventId = event.getId();
+            int count = (waitingListCounts != null && eventId != null) 
+                    ? waitingListCounts.getOrDefault(eventId, 0) : 0;
+            if (count == 1) {
+                waitingListCount.setText("1 person on waiting list");
+            } else {
+                waitingListCount.setText(count + " people on waiting list");
+            }
 
             // ---------- Badge Status ----------
             // TODO: Show badge if user is on waitlist - needs user context

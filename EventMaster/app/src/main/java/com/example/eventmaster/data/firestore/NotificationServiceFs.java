@@ -435,7 +435,7 @@ public class NotificationServiceFs implements NotificationService {
                         if (n != null) all.add(n);
                     }
 
-                    // SECOND: query legacy recipientId only if needed
+                    // SECOND: query legacy recipientId
                     firestore.collection(COLLECTION_NOTIFICATIONS)
                             .whereEqualTo("recipientId", userId)
                             .get()
@@ -458,18 +458,86 @@ public class NotificationServiceFs implements NotificationService {
                                     }
                                 }
 
-                                all.sort((a, b) -> {
-                                    Date da = a.getSentAt(), db = b.getSentAt();
-                                    if (da == null) return 1;
-                                    if (db == null) return -1;
-                                    return db.compareTo(da);
-                                });
+                                // THIRD: query by deviceId field if it exists
+                                firestore.collection(COLLECTION_NOTIFICATIONS)
+                                        .whereEqualTo("deviceId", userId)
+                                        .get()
+                                        .addOnSuccessListener(snapshot3 -> {
+                                            for (var doc : snapshot3.getDocuments()) {
+                                                String id = doc.getId();
+                                                boolean exists = false;
 
-                                onSuccess.onSuccess(all);
+                                                for (Notification n : all) {
+                                                    if (n.getNotificationId().equals(id)) {
+                                                        exists = true;
+                                                        break;
+                                                    }
+                                                }
+
+                                                if (!exists) {
+                                                    Notification notif = parseNotification(doc);
+                                                    if (notif != null) all.add(notif);
+                                                }
+                                            }
+
+                                            all.sort((a, b) -> {
+                                                Date da = a.getSentAt(), db = b.getSentAt();
+                                                if (da == null) return 1;
+                                                if (db == null) return -1;
+                                                return db.compareTo(da);
+                                            });
+
+                                            onSuccess.onSuccess(all);
+                                        })
+                                        .addOnFailureListener(e -> {
+                                            Log.e(TAG, "deviceId query failed", e);
+                                            // Continue with what we have
+                                            all.sort((a, b) -> {
+                                                Date da = a.getSentAt(), db = b.getSentAt();
+                                                if (da == null) return 1;
+                                                if (db == null) return -1;
+                                                return db.compareTo(da);
+                                            });
+                                            onSuccess.onSuccess(all);
+                                        });
                             })
                             .addOnFailureListener(e -> {
                                 Log.e(TAG, "Legacy recipientId query failed", e);
-                                onSuccess.onSuccess(all);  // fallback
+                                // Try deviceId query even if recipientId failed
+                                firestore.collection(COLLECTION_NOTIFICATIONS)
+                                        .whereEqualTo("deviceId", userId)
+                                        .get()
+                                        .addOnSuccessListener(snapshot3 -> {
+                                            for (var doc : snapshot3.getDocuments()) {
+                                                String id = doc.getId();
+                                                boolean exists = false;
+
+                                                for (Notification n : all) {
+                                                    if (n.getNotificationId().equals(id)) {
+                                                        exists = true;
+                                                        break;
+                                                    }
+                                                }
+
+                                                if (!exists) {
+                                                    Notification notif = parseNotification(doc);
+                                                    if (notif != null) all.add(notif);
+                                                }
+                                            }
+
+                                            all.sort((a, b) -> {
+                                                Date da = a.getSentAt(), db = b.getSentAt();
+                                                if (da == null) return 1;
+                                                if (db == null) return -1;
+                                                return db.compareTo(da);
+                                            });
+
+                                            onSuccess.onSuccess(all);
+                                        })
+                                        .addOnFailureListener(e2 -> {
+                                            Log.e(TAG, "deviceId query also failed", e2);
+                                            onSuccess.onSuccess(all);  // fallback
+                                        });
                             });
                 })
                 .addOnFailureListener(e -> {
@@ -740,7 +808,7 @@ public class NotificationServiceFs implements NotificationService {
                                                 OnFailureListener onFailure) {
         Log.d(TAG, "Deleting all notifications for user: " + userId);
         
-        // Query for all notifications for this user (both recipientUserId and legacy recipientId)
+        // Query for all notifications for this user (recipientUserId, legacy recipientId, and deviceId)
         com.google.android.gms.tasks.Task<com.google.firebase.firestore.QuerySnapshot> task1 = 
                 firestore.collection(COLLECTION_NOTIFICATIONS)
                         .whereEqualTo("recipientUserId", userId)
@@ -751,7 +819,12 @@ public class NotificationServiceFs implements NotificationService {
                         .whereEqualTo("recipientId", userId)
                         .get();
         
-        Tasks.whenAllComplete(task1, task2)
+        com.google.android.gms.tasks.Task<com.google.firebase.firestore.QuerySnapshot> task3 = 
+                firestore.collection(COLLECTION_NOTIFICATIONS)
+                        .whereEqualTo("deviceId", userId)
+                        .get();
+        
+        Tasks.whenAllComplete(task1, task2, task3)
                 .addOnSuccessListener(taskList -> {
                     Set<String> notificationIds = new HashSet<>();
                     
@@ -776,6 +849,17 @@ public class NotificationServiceFs implements NotificationService {
                         Log.d(TAG, "Found " + count2 + " notifications with recipientId=" + userId);
                     } else if (task2.getException() != null) {
                         Log.w(TAG, "Query 2 failed (recipientId): " + task2.getException().getMessage());
+                    }
+                    
+                    int count3 = 0;
+                    if (task3.isSuccessful() && task3.getResult() != null) {
+                        for (com.google.firebase.firestore.DocumentSnapshot doc : task3.getResult().getDocuments()) {
+                            notificationIds.add(doc.getId());
+                            count3++;
+                        }
+                        Log.d(TAG, "Found " + count3 + " notifications with deviceId=" + userId);
+                    } else if (task3.getException() != null) {
+                        Log.w(TAG, "Query 3 failed (deviceId): " + task3.getException().getMessage());
                     }
                     
                     Log.d(TAG, "Total unique notifications to delete: " + notificationIds.size() + " for user: " + userId);

@@ -13,6 +13,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -25,6 +26,7 @@ import com.example.eventmaster.data.firestore.ProfileRepositoryFs;
 import com.example.eventmaster.model.Event;
 import com.example.eventmaster.model.Notification;
 import com.example.eventmaster.ui.entrant.activities.EntrantHistoryActivity;
+import com.example.eventmaster.ui.entrant.activities.EventDetailsActivity;
 import com.example.eventmaster.ui.entrant.activities.EventListActivity;
 import com.example.eventmaster.model.Profile;
 import com.example.eventmaster.ui.entrant.adapters.NotificationsAdapter;
@@ -85,6 +87,9 @@ public class EntrantNotificationsActivity extends AppCompatActivity {
         // Setup RecyclerView
         setupRecyclerView();
 
+        // Setup swipe-to-delete
+        setupSwipeToDelete();
+
         // Setup bottom navigation
         setupBottomNavigation();
 
@@ -116,6 +121,70 @@ public class EntrantNotificationsActivity extends AppCompatActivity {
         recyclerView.setAdapter(adapter);
 
         adapter.setOnNotificationClickListener(notification -> handleNotificationClick(notification));
+    }
+
+    /**
+     * Sets up swipe-to-delete functionality for notifications.
+     */
+    private void setupSwipeToDelete() {
+        ItemTouchHelper.SimpleCallback swipeCallback = new ItemTouchHelper.SimpleCallback(
+                0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
+            @Override
+            public boolean onMove(@NonNull RecyclerView recyclerView,
+                                  @NonNull RecyclerView.ViewHolder viewHolder,
+                                  @NonNull RecyclerView.ViewHolder target) {
+                return false; // We don't support drag and drop
+            }
+
+            @Override
+            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+                int position = viewHolder.getAdapterPosition();
+                if (position >= 0 && position < notifications.size()) {
+                    Notification notification = notifications.get(position);
+                    deleteNotification(notification, position);
+                }
+            }
+        };
+
+        ItemTouchHelper itemTouchHelper = new ItemTouchHelper(swipeCallback);
+        itemTouchHelper.attachToRecyclerView(recyclerView);
+    }
+
+    /**
+     * Deletes a single notification from Firestore and updates the UI.
+     */
+    private void deleteNotification(Notification notification, int position) {
+        if (notification == null || notification.getNotificationId() == null) {
+            Log.w(TAG, "Cannot delete notification: missing notification or ID");
+            // Restore the item if deletion can't proceed
+            adapter.notifyItemChanged(position);
+            return;
+        }
+
+        notificationService.deleteNotification(
+                notification.getNotificationId(),
+                () -> {
+                    Log.d(TAG, "Successfully deleted notification: " + notification.getNotificationId());
+                    // Remove from local list
+                    notifications.remove(position);
+                    adapter.notifyItemRemoved(position);
+                    adapter.notifyItemRangeChanged(position, notifications.size());
+
+                    // Show empty state if no notifications left
+                    if (notifications.isEmpty()) {
+                        recyclerView.setVisibility(View.GONE);
+                        emptyState.setVisibility(View.VISIBLE);
+                    }
+
+                    Toast.makeText(this, "Notification deleted", Toast.LENGTH_SHORT).show();
+                },
+                error -> {
+                    Log.e(TAG, "Failed to delete notification: " + notification.getNotificationId(), new Exception(error));
+                    // Restore the item on failure
+                    adapter.notifyItemChanged(position);
+                    Toast.makeText(this, "Failed to delete notification", Toast.LENGTH_SHORT).show();
+                }
+        );
     }
 
     /**
@@ -293,13 +362,97 @@ public class EntrantNotificationsActivity extends AppCompatActivity {
         b.setTitle("Delete All Notifications");
         b.setMessage("Are you sure you want to delete all notifications?");
         b.setPositiveButton("Delete", (d, w) -> {
-            notifications.clear();
-            adapter.updateNotifications(notifications);
-            recyclerView.setVisibility(View.GONE);
-            emptyState.setVisibility(View.VISIBLE);
+            deleteAllNotificationsFromFirestore();
         });
         b.setNegativeButton("Cancel", (d, w) -> d.dismiss());
         b.show();
+    }
+
+    /**
+     * Deletes all notifications from Firestore for the current user (all IDs).
+     */
+    private void deleteAllNotificationsFromFirestore() {
+        showLoading(true);
+        
+        String deviceId = DeviceUtils.getDeviceId(this);
+        List<String> userIdsToDelete = new ArrayList<>();
+        userIdsToDelete.add(currentUserId);
+        
+        if (!deviceId.equals(currentUserId)) {
+            userIdsToDelete.add(deviceId);
+        }
+
+        // Get profile userId if available
+        profileRepo.getByDeviceId(deviceId).addOnSuccessListener(profile -> {
+            if (profile != null && profile.getUserId() != null && !userIdsToDelete.contains(profile.getUserId())) {
+                userIdsToDelete.add(profile.getUserId());
+            }
+            
+            // Delete notifications for all user IDs
+            AtomicInteger completed = new AtomicInteger(0);
+            int total = userIdsToDelete.size();
+            
+            if (total == 0) {
+                finishDeletion();
+                return;
+            }
+            
+            for (String userId : userIdsToDelete) {
+                notificationService.deleteAllNotificationsForUser(
+                        userId,
+                        () -> {
+                            Log.d(TAG, "Successfully deleted notifications for userId: " + userId);
+                            if (completed.incrementAndGet() == total) {
+                                finishDeletion();
+                            }
+                        },
+                        error -> {
+                            Log.e(TAG, "Failed to delete notifications for userId: " + userId + ": " + error);
+                            // Continue even if one fails - we still want to finish
+                            if (completed.incrementAndGet() == total) {
+                                finishDeletion();
+                            }
+                        }
+                );
+            }
+        }).addOnFailureListener(e -> {
+            Log.e(TAG, "Failed to get profile for deletion", e);
+            // Still try to delete with what we have
+            AtomicInteger completed = new AtomicInteger(0);
+            int total = userIdsToDelete.size();
+            
+            if (total == 0) {
+                finishDeletion();
+                return;
+            }
+            
+            for (String userId : userIdsToDelete) {
+                notificationService.deleteAllNotificationsForUser(
+                        userId,
+                        () -> {
+                            Log.d(TAG, "Successfully deleted notifications for userId: " + userId);
+                            if (completed.incrementAndGet() == total) {
+                                finishDeletion();
+                            }
+                        },
+                        error -> {
+                            Log.e(TAG, "Failed to delete notifications for userId: " + userId + ": " + error);
+                            if (completed.incrementAndGet() == total) {
+                                finishDeletion();
+                            }
+                        }
+                );
+            }
+        });
+    }
+
+    /**
+     * Finalizes the deletion process by refreshing the UI.
+     */
+    private void finishDeletion() {
+        // Reload notifications to reflect deletions
+        loadNotifications();
+        Toast.makeText(this, "All notifications deleted", Toast.LENGTH_SHORT).show();
     }
 
     private void showLoading(boolean loading) {
