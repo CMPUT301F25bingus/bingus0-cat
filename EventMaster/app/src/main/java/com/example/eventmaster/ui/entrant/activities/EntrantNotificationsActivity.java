@@ -336,11 +336,21 @@ public class EntrantNotificationsActivity extends AppCompatActivity {
     }
 
     private void handleNotificationClick(Notification notification) {
+        // Mark as read if not already read
         if (!notification.isRead()) {
             notificationService.markNotificationAsRead(notification.getNotificationId());
             notification.setRead(true);
         }
-        showNotificationDetails(notification);
+        
+        // Navigate to event details if eventId is available
+        if (notification.getEventId() != null && !notification.getEventId().isEmpty()) {
+            Intent intent = new Intent(this, EventDetailsActivity.class);
+            intent.putExtra(EventDetailsActivity.EXTRA_EVENT_ID, notification.getEventId());
+            startActivity(intent);
+        } else {
+            // Fallback: show dialog if no eventId (shouldn't happen in normal flow)
+            showNotificationDetails(notification);
+        }
     }
 
     private void showNotificationDetails(Notification notification) {
@@ -348,16 +358,6 @@ public class EntrantNotificationsActivity extends AppCompatActivity {
         builder.setTitle(notification.getTitle());
         builder.setMessage(notification.getMessage());
         builder.setPositiveButton("OK", (dialog, which) -> dialog.dismiss());
-
-        if (notification.getType() == Notification.NotificationType.LOTTERY_WON
-                && notification.getEventId() != null) {
-            builder.setNeutralButton("View Event", (dialog, which) -> {
-                Intent intent = new Intent(this, EventDetailsActivity.class);
-                intent.putExtra(EventDetailsActivity.EXTRA_EVENT_ID, notification.getEventId());
-                startActivity(intent);
-            });
-        }
-
         builder.show();
     }
 

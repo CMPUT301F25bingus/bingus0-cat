@@ -90,148 +90,144 @@ public class LotteryServiceFs implements LotteryService {
 
                         Log.d(TAG, "Lottery selecting " + actualCount + " entrants from " + entrants.size());
 
-                        List<Task<Void>> writeTasks = new ArrayList<>();
-
-                        // Process WINNERS
-                        for (WaitingListEntry e : chosen) {
-                            e.setStatus("selected");
-
-                            // Write to chosen_list
-                            Task<Void> addTask = db.collection("events")
-                                    .document(eventId)
-                                    .collection("chosen_list")
-                                    .document(e.getUserId())
-                                    .set(e)
-                                    .addOnSuccessListener(aVoid -> 
-                                        Log.d(TAG, "✅ Added " + e.getUserId() + " to chosen_list"))
-                                    .addOnFailureListener(ex -> 
-                                        Log.e(TAG, "❌ Failed to add " + e.getUserId() + " to chosen_list", ex));
-                            writeTasks.add(addTask);
-
-                            // Remove from waiting_list
-                            Task<Void> removeTask = db.collection("events")
-                                    .document(eventId)
-                                    .collection("waiting_list")
-                                    .document(e.getUserId())
-                                    .delete()
-                                    .addOnSuccessListener(aVoid -> 
-                                        Log.d(TAG, "✅ Removed " + e.getUserId() + " from waiting_list"))
-                                    .addOnFailureListener(ex -> 
-                                        Log.e(TAG, "❌ Failed to remove " + e.getUserId() + " from waiting_list", ex));
-                            writeTasks.add(removeTask);
-
-                            // Create PENDING invitation
-                            Map<String, Object> invitation = new HashMap<>();
-                            invitation.put("eventId", eventId);
-                            invitation.put("entrantId", e.getUserId());
-                            invitation.put("status", "PENDING");
-                            invitation.put("createdAtUtc", System.currentTimeMillis());
-
-                            Task<Void> invitationTask = db.collection("events")
-                                    .document(eventId)
-                                    .collection("invitations")
-                                    .document(e.getUserId())
-                                    .set(invitation, SetOptions.merge())
-                                    .addOnSuccessListener(aVoid ->
-                                        Log.d(TAG, "📨 Created PENDING invitation for " + e.getUserId()))
-                                    .addOnFailureListener(ex ->
-                                        Log.e(TAG, "❌ Failed to create invitation for " + e.getUserId(), ex));
-                            writeTasks.add(invitationTask);
-
-                            // Send notification to winner (US 01.04.01)
-                            Map<String, Object> notification = new HashMap<>();
-                            notification.put("eventId", eventId);
-                            notification.put("recipientUserId", e.getUserId()); // Fixed: use recipientUserId to match Notification model
-                            notification.put("senderUserId", "system"); // Organizer ID would be better, but system works for now
-                            notification.put("type", "LOTTERY_WON");
-                            notification.put("title", "🎉 You've been selected!");
-                            notification.put("message", "Congratulations! You've been chosen in the lottery for this event. Go to the event details to accept or decline your invitation.");
-                            notification.put("isRead", false);
-                            notification.put("sentAt", Timestamp.now()); // Fixed: use sentAt to match Notification model
-
-                            Task<Void> notificationTask = db.collection("notifications")
-                                    .add(notification)
-                                    .continueWith(t -> {
-                                        if (t.isSuccessful()) {
-                                            Log.d(TAG, "🔔 Sent notification to " + e.getUserId());
-                                        } else {
-                                            Log.e(TAG, "❌ Failed to send notification to " + e.getUserId(), t.getException());
-                                        }
-                                        return null;
-                                    });
-                            writeTasks.add(notificationTask);
-                        }
-
-                        //Get event name to let the not selected know which event:
-
-                        // 🔹 Fetch event name once before notifying losers
-                        Task<DocumentSnapshot> eventTask = db.collection("events")
+                        // 🔹 Fetch event name first, then process winners and losers
+                        return db.collection("events")
                                 .document(eventId)
-                                .get();
-
-                        String[] eventNameHolder = new String[1];
-
-                        eventTask.addOnSuccessListener(doc -> {
-                            String n = doc.getString("title");
-                            eventNameHolder[0] = (n != null) ? n : "this event";
-                        }).addOnFailureListener(ex -> {
-                            eventNameHolder[0] = "this event";
-                        });
-
-
-
-                        // Process LOSERS (not selected)
-                        for (WaitingListEntry e : notChosen) {
-                            // Add them to not_selected
-                            Task<Void> addNotSelectedTask = db.collection("events")
-                                    .document(eventId)
-                                    .collection("not_selected")
-                                    .document(e.getUserId())
-                                    .set(e)
-                                    .addOnSuccessListener(aVoid ->
-                                            Log.d(TAG, "📁 Added " + e.getUserId() + " to not_selected"))
-                                    .addOnFailureListener(ex ->
-                                            Log.e(TAG, "❌ Failed to add " + e.getUserId() + " to not_selected", ex));
-                            writeTasks.add(addNotSelectedTask);
-                            // Remove from waiting_list
-                            Task<Void> removeTask = db.collection("events")
-                                    .document(eventId)
-                                    .collection("waiting_list")
-                                    .document(e.getUserId())
-                                    .delete()
-                                    .addOnSuccessListener(aVoid -> 
-                                        Log.d(TAG, "✅ Removed non-selected " + e.getUserId() + " from waiting_list"))
-                                    .addOnFailureListener(ex -> 
-                                        Log.e(TAG, "❌ Failed to remove " + e.getUserId() + " from waiting_list", ex));
-                            writeTasks.add(removeTask);
-
-                            // Send notification to loser (US 01.04.02)
-                            Map<String, Object> notification = new HashMap<>();
-                            String eventName = (eventNameHolder[0] != null) ? eventNameHolder[0] : "this event";
-                            notification.put("eventId", eventId);
-                            notification.put("recipientUserId", e.getUserId()); // Fixed: use recipientUserId to match Notification model
-                            notification.put("senderUserId", "system"); // Organizer ID would be better, but system works for now
-                            notification.put("type", "LOTTERY_LOST"); // Fixed: use LOTTERY_LOST to match Notification enum
-                            notification.put("title", "Lottery Results - " + eventName);
-                            notification.put("message", "Thank you for your interest. Unfortunately, you were not selected in this lottery for " + eventName   + ". But don't worry! a spot might still open if someone else changes their mind.");
-                            notification.put("isRead", false);
-                            notification.put("sentAt", Timestamp.now()); // Fixed: use sentAt to match Notification model
-
-                            Task<Void> notificationTask = db.collection("notifications")
-                                    .add(notification)
-                                    .continueWith(t -> {
-                                        if (t.isSuccessful()) {
-                                            Log.d(TAG, "🔔 Sent 'not selected' notification to " + e.getUserId());
-                                        } else {
-                                            Log.e(TAG, "❌ Failed to send notification to " + e.getUserId(), t.getException());
+                                .get()
+                                .continueWithTask(eventTask -> {
+                                    String eventName = "this event";
+                                    if (eventTask.isSuccessful() && eventTask.getResult() != null) {
+                                        DocumentSnapshot eventDoc = eventTask.getResult();
+                                        String title = eventDoc.getString("title");
+                                        if (title != null && !title.isEmpty()) {
+                                            eventName = title;
                                         }
-                                        return null;
-                                    });
-                            writeTasks.add(notificationTask);
-                        }
+                                    }
+                                    
+                                    List<Task<Void>> writeTasks = new ArrayList<>();
 
-                        Log.d(TAG, "Lottery selected " + chosen.size() + " entrants, not selected " + notChosen.size() + ", executing " + writeTasks.size() + " write tasks");
-                        return Tasks.whenAll(writeTasks);
+                                    // Process WINNERS
+                                    for (WaitingListEntry e : chosen) {
+                                        e.setStatus("selected");
+
+                                        // Write to chosen_list
+                                        Task<Void> addTask = db.collection("events")
+                                                .document(eventId)
+                                                .collection("chosen_list")
+                                                .document(e.getUserId())
+                                                .set(e)
+                                                .addOnSuccessListener(aVoid -> 
+                                                    Log.d(TAG, "✅ Added " + e.getUserId() + " to chosen_list"))
+                                                .addOnFailureListener(ex -> 
+                                                    Log.e(TAG, "❌ Failed to add " + e.getUserId() + " to chosen_list", ex));
+                                        writeTasks.add(addTask);
+
+                                        // Remove from waiting_list
+                                        Task<Void> removeTask = db.collection("events")
+                                                .document(eventId)
+                                                .collection("waiting_list")
+                                                .document(e.getUserId())
+                                                .delete()
+                                                .addOnSuccessListener(aVoid -> 
+                                                    Log.d(TAG, "✅ Removed " + e.getUserId() + " from waiting_list"))
+                                                .addOnFailureListener(ex -> 
+                                                    Log.e(TAG, "❌ Failed to remove " + e.getUserId() + " from waiting_list", ex));
+                                        writeTasks.add(removeTask);
+
+                                        // Create PENDING invitation
+                                        Map<String, Object> invitation = new HashMap<>();
+                                        invitation.put("eventId", eventId);
+                                        invitation.put("entrantId", e.getUserId());
+                                        invitation.put("status", "PENDING");
+                                        invitation.put("createdAtUtc", System.currentTimeMillis());
+
+                                        Task<Void> invitationTask = db.collection("events")
+                                                .document(eventId)
+                                                .collection("invitations")
+                                                .document(e.getUserId())
+                                                .set(invitation, SetOptions.merge())
+                                                .addOnSuccessListener(aVoid ->
+                                                    Log.d(TAG, "📨 Created PENDING invitation for " + e.getUserId()))
+                                                .addOnFailureListener(ex ->
+                                                    Log.e(TAG, "❌ Failed to create invitation for " + e.getUserId(), ex));
+                                        writeTasks.add(invitationTask);
+
+                                        // Send notification to winner (US 01.04.01) with event name
+                                        Map<String, Object> notification = new HashMap<>();
+                                        notification.put("eventId", eventId);
+                                        notification.put("recipientUserId", e.getUserId());
+                                        notification.put("senderUserId", "system");
+                                        notification.put("type", "LOTTERY_WON");
+                                        notification.put("title", "🎉 You've been selected!");
+                                        notification.put("message", "Congratulations! You've been chosen in the lottery for \"" + eventName + "\". Go to the event details to accept or decline your invitation.");
+                                        notification.put("isRead", false);
+                                        notification.put("sentAt", Timestamp.now());
+
+                                        Task<Void> notificationTask = db.collection("notifications")
+                                                .add(notification)
+                                                .continueWith(t -> {
+                                                    if (t.isSuccessful()) {
+                                                        Log.d(TAG, "🔔 Sent notification to " + e.getUserId());
+                                                    } else {
+                                                        Log.e(TAG, "❌ Failed to send notification to " + e.getUserId(), t.getException());
+                                                    }
+                                                    return null;
+                                                });
+                                        writeTasks.add(notificationTask);
+                                    }
+
+                                    // Process LOSERS (not selected)
+                                    for (WaitingListEntry e : notChosen) {
+                                        // Add them to not_selected
+                                        Task<Void> addNotSelectedTask = db.collection("events")
+                                                .document(eventId)
+                                                .collection("not_selected")
+                                                .document(e.getUserId())
+                                                .set(e)
+                                                .addOnSuccessListener(aVoid ->
+                                                        Log.d(TAG, "📁 Added " + e.getUserId() + " to not_selected"))
+                                                .addOnFailureListener(ex ->
+                                                        Log.e(TAG, "❌ Failed to add " + e.getUserId() + " to not_selected", ex));
+                                        writeTasks.add(addNotSelectedTask);
+                                        // Remove from waiting_list
+                                        Task<Void> removeTask = db.collection("events")
+                                                .document(eventId)
+                                                .collection("waiting_list")
+                                                .document(e.getUserId())
+                                                .delete()
+                                                .addOnSuccessListener(aVoid -> 
+                                                    Log.d(TAG, "✅ Removed non-selected " + e.getUserId() + " from waiting_list"))
+                                                .addOnFailureListener(ex -> 
+                                                    Log.e(TAG, "❌ Failed to remove " + e.getUserId() + " from waiting_list", ex));
+                                        writeTasks.add(removeTask);
+
+                                        // Send notification to loser (US 01.04.02) with event name
+                                        Map<String, Object> notification = new HashMap<>();
+                                        notification.put("eventId", eventId);
+                                        notification.put("recipientUserId", e.getUserId());
+                                        notification.put("senderUserId", "system");
+                                        notification.put("type", "LOTTERY_LOST");
+                                        notification.put("title", "Lottery Results - " + eventName);
+                                        notification.put("message", "Thank you for your interest. Unfortunately, you were not selected in this lottery for \"" + eventName + "\". But don't worry! a spot might still open if someone else changes their mind.");
+                                        notification.put("isRead", false);
+                                        notification.put("sentAt", Timestamp.now());
+
+                                        Task<Void> notificationTask = db.collection("notifications")
+                                                .add(notification)
+                                                .continueWith(t -> {
+                                                    if (t.isSuccessful()) {
+                                                        Log.d(TAG, "🔔 Sent 'not selected' notification to " + e.getUserId());
+                                                    } else {
+                                                        Log.e(TAG, "❌ Failed to send notification to " + e.getUserId(), t.getException());
+                                                    }
+                                                    return null;
+                                                });
+                                        writeTasks.add(notificationTask);
+                                    }
+
+                                    Log.d(TAG, "Lottery selected " + chosen.size() + " entrants, not selected " + notChosen.size() + ", executing " + writeTasks.size() + " write tasks");
+                                    return Tasks.whenAll(writeTasks);
+                                });
                     } catch (Exception e) {
                         Log.e(TAG, "Exception in lottery operation", e);
                         return Tasks.forException(e);
