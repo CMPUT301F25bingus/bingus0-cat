@@ -6,6 +6,7 @@ import android.view.View;
 import android.util.Log;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -28,8 +29,7 @@ import com.example.eventmaster.ui.entrant.activities.EventDetailsActivity;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
-import com.google.android.material.chip.Chip;
-import com.google.android.material.chip.ChipGroup;
+import androidx.core.content.ContextCompat;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -61,8 +61,13 @@ public class EntrantHistoryActivity extends AppCompatActivity {
     private ProgressBar loadingIndicator;
     private LinearLayout emptyState;
     private BottomNavigationView bottomNavigationView;
-    private ChipGroup filterGroup;
-    private Chip chipAll, chipWaiting, chipSelected, chipEnded;
+    
+    // Filter bar components
+    private LinearLayout filterAll, filterWaiting, filterSelected, filterEnded;
+    private TextView labelAll, labelWaiting, labelSelected, labelEnded;
+    private TextView countAll, countWaiting, countSelected, countEnded;
+    private View indicatorAll, indicatorWaiting, indicatorSelected, indicatorEnded;
+    private String currentFilterType = "ALL";
 
     // Data
     private HistoryAdapter adapter;
@@ -98,11 +103,27 @@ public class EntrantHistoryActivity extends AppCompatActivity {
         loadingIndicator = findViewById(R.id.loading_indicator);
         emptyState = findViewById(R.id.empty_state);
         bottomNavigationView = findViewById(R.id.bottom_navigation);
-        filterGroup = findViewById(R.id.history_filter_group);
-        chipAll = findViewById(R.id.chip_all);
-        chipWaiting = findViewById(R.id.chip_waiting);
-        chipSelected = findViewById(R.id.chip_selected);
-        chipEnded = findViewById(R.id.chip_ended);
+        
+        // Filter bar views
+        filterAll = findViewById(R.id.history_filter_all);
+        filterWaiting = findViewById(R.id.history_filter_waiting);
+        filterSelected = findViewById(R.id.history_filter_selected);
+        filterEnded = findViewById(R.id.history_filter_ended);
+        
+        labelAll = findViewById(R.id.history_label_all);
+        labelWaiting = findViewById(R.id.history_label_waiting);
+        labelSelected = findViewById(R.id.history_label_selected);
+        labelEnded = findViewById(R.id.history_label_ended);
+        
+        countAll = findViewById(R.id.history_count_all);
+        countWaiting = findViewById(R.id.history_count_waiting);
+        countSelected = findViewById(R.id.history_count_selected);
+        countEnded = findViewById(R.id.history_count_ended);
+        
+        indicatorAll = findViewById(R.id.history_indicator_all);
+        indicatorWaiting = findViewById(R.id.history_indicator_waiting);
+        indicatorSelected = findViewById(R.id.history_indicator_selected);
+        indicatorEnded = findViewById(R.id.history_indicator_ended);
     }
 
     private void setupRecyclerView() {
@@ -118,13 +139,75 @@ public class EntrantHistoryActivity extends AppCompatActivity {
     }
 
     private void setupFilters() {
-        // Ensure a chip is selected to avoid NO_ID crashes on first filter pass
-        if (filterGroup != null && filterGroup.getCheckedChipIds().isEmpty() && chipAll != null) {
-            chipAll.setChecked(true);
+        // Initialize count text views with default values
+        if (countAll != null) {
+            countAll.setText("0");
+            countAll.setVisibility(View.VISIBLE);
         }
-        if (filterGroup != null) {
-            filterGroup.setOnCheckedStateChangeListener((group, checkedIds) -> applyFilter());
+        if (countWaiting != null) {
+            countWaiting.setText("0");
+            countWaiting.setVisibility(View.VISIBLE);
         }
+        if (countSelected != null) {
+            countSelected.setText("0");
+            countSelected.setVisibility(View.VISIBLE);
+        }
+        if (countEnded != null) {
+            countEnded.setText("0");
+            countEnded.setVisibility(View.VISIBLE);
+        }
+        
+        // Set click listeners for filter options
+        if (filterAll != null) {
+            filterAll.setOnClickListener(v -> selectFilter("ALL"));
+        }
+        if (filterWaiting != null) {
+            filterWaiting.setOnClickListener(v -> selectFilter("WAITING"));
+        }
+        if (filterSelected != null) {
+            filterSelected.setOnClickListener(v -> selectFilter("SELECTED"));
+        }
+        if (filterEnded != null) {
+            filterEnded.setOnClickListener(v -> selectFilter("ENDED"));
+        }
+        
+        // Set initial filter to ALL
+        selectFilter("ALL");
+    }
+    
+    private void selectFilter(String filter) {
+        currentFilterType = filter;
+        updateFilterIndicators();
+        applyFilter();
+    }
+    
+    private void updateFilterIndicators() {
+        int activeColor = ContextCompat.getColor(this, R.color.teal_dark);
+        int inactiveColor = ContextCompat.getColor(this, R.color.text_secondary_dark);
+        
+        // Update ALL
+        boolean allActive = "ALL".equals(currentFilterType);
+        if (labelAll != null) labelAll.setTextColor(allActive ? activeColor : inactiveColor);
+        if (countAll != null) countAll.setTextColor(allActive ? activeColor : inactiveColor);
+        if (indicatorAll != null) indicatorAll.setVisibility(allActive ? View.VISIBLE : View.INVISIBLE);
+        
+        // Update WAITING
+        boolean waitingActive = "WAITING".equals(currentFilterType);
+        if (labelWaiting != null) labelWaiting.setTextColor(waitingActive ? activeColor : inactiveColor);
+        if (countWaiting != null) countWaiting.setTextColor(waitingActive ? activeColor : inactiveColor);
+        if (indicatorWaiting != null) indicatorWaiting.setVisibility(waitingActive ? View.VISIBLE : View.INVISIBLE);
+        
+        // Update SELECTED
+        boolean selectedActive = "SELECTED".equals(currentFilterType);
+        if (labelSelected != null) labelSelected.setTextColor(selectedActive ? activeColor : inactiveColor);
+        if (countSelected != null) countSelected.setTextColor(selectedActive ? activeColor : inactiveColor);
+        if (indicatorSelected != null) indicatorSelected.setVisibility(selectedActive ? View.VISIBLE : View.INVISIBLE);
+        
+        // Update ENDED
+        boolean endedActive = "ENDED".equals(currentFilterType);
+        if (labelEnded != null) labelEnded.setTextColor(endedActive ? activeColor : inactiveColor);
+        if (countEnded != null) countEnded.setTextColor(endedActive ? activeColor : inactiveColor);
+        if (indicatorEnded != null) indicatorEnded.setVisibility(endedActive ? View.VISIBLE : View.INVISIBLE);
     }
 
     private void setupBottomNavigation() {
@@ -360,16 +443,16 @@ public class EntrantHistoryActivity extends AppCompatActivity {
         showLoading(false);
         allItems.clear();
         allItems.addAll(items);
+        updateFilterCounts();
         applyFilter();
     }
 
     private void applyFilter() {
         List<HistoryAdapter.HistoryItem> filtered = new ArrayList<>();
-        String filter = currentFilter();
         long now = System.currentTimeMillis();
 
         for (HistoryAdapter.HistoryItem item : allItems) {
-            switch (filter) {
+            switch (currentFilterType) {
                 case "WAITING":
                     if ("WAITING".equals(item.status)) filtered.add(item);
                     break;
@@ -396,19 +479,10 @@ public class EntrantHistoryActivity extends AppCompatActivity {
             adapter.replace(filtered);
         }
 
-        updateChipLabels();
+        updateFilterCounts();
     }
 
-    private String currentFilter() {
-        if (filterGroup == null) return "ALL";
-        int id = filterGroup.getCheckedChipId();
-        if (chipWaiting != null && id == chipWaiting.getId()) return "WAITING";
-        if (chipSelected != null && id == chipSelected.getId()) return "SELECTED";
-        if (chipEnded != null && id == chipEnded.getId()) return "ENDED";
-        return "ALL";
-    }
-
-    private void updateChipLabels() {
+    private void updateFilterCounts() {
         int allCount = allItems.size();
         int waiting = 0, selected = 0, ended = 0;
         long now = System.currentTimeMillis();
@@ -417,10 +491,28 @@ public class EntrantHistoryActivity extends AppCompatActivity {
             if ("SELECTED".equals(item.status)) selected++;
             if (item.eventDateMs > 0 && item.eventDateMs < now) ended++;
         }
-        if (chipAll != null) chipAll.setText("All (" + allCount + ")");
-        if (chipWaiting != null) chipWaiting.setText("Waiting (" + waiting + ")");
-        if (chipSelected != null) chipSelected.setText("Selected (" + selected + ")");
-        if (chipEnded != null) chipEnded.setText("Ended (" + ended + ")");
+        
+        if (countAll != null) {
+            countAll.setText(String.valueOf(allCount));
+            countAll.setVisibility(View.VISIBLE);
+        }
+        if (countWaiting != null) {
+            countWaiting.setText(String.valueOf(waiting));
+            countWaiting.setVisibility(View.VISIBLE);
+        }
+        if (countSelected != null) {
+            String selectedText = String.valueOf(selected);
+            countSelected.setText(selectedText);
+            countSelected.setVisibility(View.VISIBLE);
+            countSelected.invalidate(); // Force redraw
+            Log.d(TAG, "Selected count set to: " + selectedText);
+        } else {
+            Log.e(TAG, "countSelected TextView is null!");
+        }
+        if (countEnded != null) {
+            countEnded.setText(String.valueOf(ended));
+            countEnded.setVisibility(View.VISIBLE);
+        }
     }
 
     private String mapStatus(RegistrationStatus st) {

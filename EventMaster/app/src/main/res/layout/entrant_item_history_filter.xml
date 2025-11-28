@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginStart="20dp"
+    android:layout_marginEnd="20dp"
+    android:layout_marginBottom="12dp"
+    app:cardCornerRadius="22dp"
+    app:cardBackgroundColor="@color/teal_light"
+    app:strokeWidth="0dp">
+
+    <LinearLayout
+        android:id="@+id/history_filter_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:minHeight="44dp"
+        android:orientation="horizontal"
+        android:paddingHorizontal="2dp"
+        android:paddingVertical="4dp"
+        android:weightSum="4">
+
+        <LinearLayout
+            android:id="@+id/history_filter_all"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground"
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:paddingHorizontal="4dp"
+            android:paddingVertical="6dp">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/history_label_all"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="All"
+                    android:textAllCaps="true"
+                    android:textColor="@color/text_secondary_dark"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:maxLines="1"
+                    android:ellipsize="none"
+                    android:singleLine="true" />
+
+                <TextView
+                    android:id="@+id/history_count_all"
+                    android:layout_width="28dp"
+                    android:layout_height="20dp"
+                    android:layout_marginStart="6dp"
+                    android:background="@drawable/bg_status_badge"
+                    android:gravity="center"
+                    android:paddingHorizontal="4dp"
+                    android:paddingVertical="0dp"
+                    android:text="0"
+                    android:textColor="@color/text_secondary_dark"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:visibility="visible"
+                    android:ellipsize="none"
+                    android:maxLines="1"
+                    android:singleLine="true"
+                    android:includeFontPadding="false" />
+            </LinearLayout>
+
+            <View
+                android:id="@+id/history_indicator_all"
+                android:layout_width="match_parent"
+                android:layout_height="2dp"
+                android:layout_marginTop="4dp"
+                android:background="@color/teal_dark"
+                android:visibility="visible" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/history_filter_waiting"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground"
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:paddingHorizontal="4dp"
+            android:paddingVertical="6dp">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/history_label_waiting"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Waiting"
+                    android:textAllCaps="true"
+                    android:textColor="@color/text_secondary_dark"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:maxLines="1"
+                    android:ellipsize="none"
+                    android:singleLine="true" />
+
+                <TextView
+                    android:id="@+id/history_count_waiting"
+                    android:layout_width="28dp"
+                    android:layout_height="20dp"
+                    android:layout_marginStart="6dp"
+                    android:background="@drawable/bg_status_badge"
+                    android:gravity="center"
+                    android:paddingHorizontal="4dp"
+                    android:paddingVertical="0dp"
+                    android:text="0"
+                    android:textColor="@color/text_secondary_dark"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:visibility="visible"
+                    android:ellipsize="none"
+                    android:maxLines="1"
+                    android:singleLine="true"
+                    android:includeFontPadding="false" />
+            </LinearLayout>
+
+            <View
+                android:id="@+id/history_indicator_waiting"
+                android:layout_width="match_parent"
+                android:layout_height="2dp"
+                android:layout_marginTop="4dp"
+                android:background="@color/teal_dark"
+                android:visibility="invisible" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/history_filter_selected"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground"
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:paddingHorizontal="2dp"
+            android:paddingVertical="6dp">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/history_label_selected"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Selected"
+                    android:textAllCaps="true"
+                    android:textColor="@color/text_secondary_dark"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:maxLines="1"
+                    android:ellipsize="none"
+                    android:singleLine="true" />
+
+                <TextView
+                    android:id="@+id/history_count_selected"
+                    android:layout_width="26dp"
+                    android:layout_height="20dp"
+                    android:layout_marginStart="4dp"
+                    android:background="@drawable/bg_status_badge"
+                    android:gravity="center"
+                    android:paddingHorizontal="3dp"
+                    android:paddingVertical="0dp"
+                    android:text="0"
+                    android:textColor="@color/text_secondary_dark"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:visibility="visible"
+                    android:ellipsize="none"
+                    android:maxLines="1"
+                    android:singleLine="true"
+                    android:includeFontPadding="false" />
+            </LinearLayout>
+
+            <View
+                android:id="@+id/history_indicator_selected"
+                android:layout_width="match_parent"
+                android:layout_height="2dp"
+                android:layout_marginTop="4dp"
+                android:background="@color/teal_dark"
+                android:visibility="invisible" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/history_filter_ended"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground"
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:paddingHorizontal="4dp"
+            android:paddingVertical="6dp">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/history_label_ended"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Ended"
+                    android:textAllCaps="true"
+                    android:textColor="@color/text_secondary_dark"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:maxLines="1"
+                    android:ellipsize="none"
+                    android:singleLine="true" />
+
+                <TextView
+                    android:id="@+id/history_count_ended"
+                    android:layout_width="28dp"
+                    android:layout_height="20dp"
+                    android:layout_marginStart="6dp"
+                    android:background="@drawable/bg_status_badge"
+                    android:gravity="center"
+                    android:paddingHorizontal="4dp"
+                    android:paddingVertical="0dp"
+                    android:text="0"
+                    android:textColor="@color/text_secondary_dark"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:visibility="visible"
+                    android:ellipsize="none"
+                    android:maxLines="1"
+                    android:singleLine="true"
+                    android:includeFontPadding="false" />
+            </LinearLayout>
+
+            <View
+                android:id="@+id/history_indicator_ended"
+                android:layout_width="match_parent"
+                android:layout_height="2dp"
+                android:layout_marginTop="4dp"
+                android:background="@color/teal_dark"
+                android:visibility="invisible" />
+        </LinearLayout>
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>
+
