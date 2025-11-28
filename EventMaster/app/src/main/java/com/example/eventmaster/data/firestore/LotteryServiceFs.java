@@ -3,6 +3,7 @@ package com.example.eventmaster.data.firestore;
 import android.util.Log;
 
 import com.example.eventmaster.data.api.LotteryService;
+import com.example.eventmaster.model.Profile;
 import com.example.eventmaster.model.WaitingListEntry;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
@@ -17,6 +18,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Firestore implementation of LotteryService.
@@ -31,6 +33,7 @@ import java.util.Map;
 public class LotteryServiceFs implements LotteryService {
 
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
+    private final ProfileRepositoryFs profileRepo = new ProfileRepositoryFs();
     private static final String TAG = "LotteryServiceFs";
 
     /**
@@ -95,13 +98,17 @@ public class LotteryServiceFs implements LotteryService {
                                 .document(eventId)
                                 .get()
                                 .continueWithTask(eventTask -> {
-                                    String eventName = "this event";
+                                    final String eventName;
                                     if (eventTask.isSuccessful() && eventTask.getResult() != null) {
                                         DocumentSnapshot eventDoc = eventTask.getResult();
                                         String title = eventDoc.getString("title");
                                         if (title != null && !title.isEmpty()) {
                                             eventName = title;
+                                        } else {
+                                            eventName = "this event";
                                         }
+                                    } else {
+                                        eventName = "this event";
                                     }
                                     
                                     List<Task<Void>> writeTasks = new ArrayList<>();
@@ -152,28 +159,56 @@ public class LotteryServiceFs implements LotteryService {
                                                     Log.e(TAG, "❌ Failed to create invitation for " + e.getUserId(), ex));
                                         writeTasks.add(invitationTask);
 
-                                        // Send notification to winner (US 01.04.01) with event name
-                                        Map<String, Object> notification = new HashMap<>();
-                                        notification.put("eventId", eventId);
-                                        notification.put("recipientUserId", e.getUserId());
-                                        notification.put("senderUserId", "system");
-                                        notification.put("type", "LOTTERY_WON");
-                                        notification.put("title", "🎉 You've been selected!");
-                                        notification.put("message", "Congratulations! You've been chosen in the lottery for \"" + eventName + "\". Go to the event details to accept or decline your invitation.");
-                                        notification.put("isRead", false);
-                                        notification.put("sentAt", Timestamp.now());
+                                        // Send notification to winner (US 01.04.01) with event name - check opt-out preference
+                                        String winnerUserId = e.getUserId();
+                                        profileRepo.get(winnerUserId)
+                                                .addOnSuccessListener(profile -> {
+                                                    // Only send notification if user has notifications enabled
+                                                    if (profile != null && profile.isNotificationsEnabled()) {
+                                                        Map<String, Object> notification = new HashMap<>();
+                                                        notification.put("eventId", eventId);
+                                                        notification.put("recipientUserId", winnerUserId);
+                                                        notification.put("senderUserId", "system");
+                                                        notification.put("type", "LOTTERY_WON");
+                                                        notification.put("title", "🎉 You've been selected!");
+                                                        notification.put("message", "Congratulations! You've been chosen in the lottery for \"" + eventName + "\". Go to the event details to accept or decline your invitation.");
+                                                        notification.put("isRead", false);
+                                                        notification.put("sentAt", Timestamp.now());
 
-                                        Task<Void> notificationTask = db.collection("notifications")
-                                                .add(notification)
-                                                .continueWith(t -> {
-                                                    if (t.isSuccessful()) {
-                                                        Log.d(TAG, "🔔 Sent notification to " + e.getUserId());
+                                                        db.collection("notifications")
+                                                                .add(notification)
+                                                                .addOnSuccessListener(docRef -> {
+                                                                    Log.d(TAG, "🔔 Sent notification to " + winnerUserId);
+                                                                })
+                                                                .addOnFailureListener(ex -> {
+                                                                    Log.e(TAG, "❌ Failed to send notification to " + winnerUserId, ex);
+                                                                });
                                                     } else {
-                                                        Log.e(TAG, "❌ Failed to send notification to " + e.getUserId(), t.getException());
+                                                        Log.d(TAG, "⏭️ Skipping notification for " + winnerUserId + " (opted out)");
                                                     }
-                                                    return null;
+                                                })
+                                                .addOnFailureListener(ex -> {
+                                                    // If we can't fetch profile, default to sending notification (backward compatibility)
+                                                    Log.w(TAG, "⚠️ Could not fetch profile for " + winnerUserId + ", sending notification anyway", ex);
+                                                    Map<String, Object> notification = new HashMap<>();
+                                                    notification.put("eventId", eventId);
+                                                    notification.put("recipientUserId", winnerUserId);
+                                                    notification.put("senderUserId", "system");
+                                                    notification.put("type", "LOTTERY_WON");
+                                                    notification.put("title", "🎉 You've been selected!");
+                                                    notification.put("message", "Congratulations! You've been chosen in the lottery for \"" + eventName + "\". Go to the event details to accept or decline your invitation.");
+                                                    notification.put("isRead", false);
+                                                    notification.put("sentAt", Timestamp.now());
+
+                                                    db.collection("notifications")
+                                                            .add(notification)
+                                                            .addOnSuccessListener(docRef -> {
+                                                                Log.d(TAG, "🔔 Sent notification to " + winnerUserId + " (profile fetch failed)");
+                                                            })
+                                                            .addOnFailureListener(err -> {
+                                                                Log.e(TAG, "❌ Failed to send notification to " + winnerUserId, err);
+                                                            });
                                                 });
-                                        writeTasks.add(notificationTask);
                                     }
 
                                     // Process LOSERS (not selected)
@@ -201,28 +236,56 @@ public class LotteryServiceFs implements LotteryService {
                                                     Log.e(TAG, "❌ Failed to remove " + e.getUserId() + " from waiting_list", ex));
                                         writeTasks.add(removeTask);
 
-                                        // Send notification to loser (US 01.04.02) with event name
-                                        Map<String, Object> notification = new HashMap<>();
-                                        notification.put("eventId", eventId);
-                                        notification.put("recipientUserId", e.getUserId());
-                                        notification.put("senderUserId", "system");
-                                        notification.put("type", "LOTTERY_LOST");
-                                        notification.put("title", "Lottery Results - " + eventName);
-                                        notification.put("message", "Thank you for your interest. Unfortunately, you were not selected in this lottery for \"" + eventName + "\". But don't worry! a spot might still open if someone else changes their mind.");
-                                        notification.put("isRead", false);
-                                        notification.put("sentAt", Timestamp.now());
+                                        // Send notification to loser (US 01.04.02) with event name - check opt-out preference
+                                        String loserUserId = e.getUserId();
+                                        profileRepo.get(loserUserId)
+                                                .addOnSuccessListener(profile -> {
+                                                    // Only send notification if user has notifications enabled
+                                                    if (profile != null && profile.isNotificationsEnabled()) {
+                                                        Map<String, Object> notification = new HashMap<>();
+                                                        notification.put("eventId", eventId);
+                                                        notification.put("recipientUserId", loserUserId);
+                                                        notification.put("senderUserId", "system");
+                                                        notification.put("type", "LOTTERY_LOST");
+                                                        notification.put("title", "Lottery Results - " + eventName);
+                                                        notification.put("message", "Thank you for your interest. Unfortunately, you were not selected in this lottery for \"" + eventName + "\". But don't worry! a spot might still open if someone else changes their mind.");
+                                                        notification.put("isRead", false);
+                                                        notification.put("sentAt", Timestamp.now());
 
-                                        Task<Void> notificationTask = db.collection("notifications")
-                                                .add(notification)
-                                                .continueWith(t -> {
-                                                    if (t.isSuccessful()) {
-                                                        Log.d(TAG, "🔔 Sent 'not selected' notification to " + e.getUserId());
+                                                        db.collection("notifications")
+                                                                .add(notification)
+                                                                .addOnSuccessListener(docRef -> {
+                                                                    Log.d(TAG, "🔔 Sent 'not selected' notification to " + loserUserId);
+                                                                })
+                                                                .addOnFailureListener(ex -> {
+                                                                    Log.e(TAG, "❌ Failed to send notification to " + loserUserId, ex);
+                                                                });
                                                     } else {
-                                                        Log.e(TAG, "❌ Failed to send notification to " + e.getUserId(), t.getException());
+                                                        Log.d(TAG, "⏭️ Skipping notification for " + loserUserId + " (opted out)");
                                                     }
-                                                    return null;
+                                                })
+                                                .addOnFailureListener(ex -> {
+                                                    // If we can't fetch profile, default to sending notification (backward compatibility)
+                                                    Log.w(TAG, "⚠️ Could not fetch profile for " + loserUserId + ", sending notification anyway", ex);
+                                                    Map<String, Object> notification = new HashMap<>();
+                                                    notification.put("eventId", eventId);
+                                                    notification.put("recipientUserId", loserUserId);
+                                                    notification.put("senderUserId", "system");
+                                                    notification.put("type", "LOTTERY_LOST");
+                                                    notification.put("title", "Lottery Results - " + eventName);
+                                                    notification.put("message", "Thank you for your interest. Unfortunately, you were not selected in this lottery for \"" + eventName + "\". But don't worry! a spot might still open if someone else changes their mind.");
+                                                    notification.put("isRead", false);
+                                                    notification.put("sentAt", Timestamp.now());
+
+                                                    db.collection("notifications")
+                                                            .add(notification)
+                                                            .addOnSuccessListener(docRef -> {
+                                                                Log.d(TAG, "🔔 Sent 'not selected' notification to " + loserUserId + " (profile fetch failed)");
+                                                            })
+                                                            .addOnFailureListener(err -> {
+                                                                Log.e(TAG, "❌ Failed to send notification to " + loserUserId, err);
+                                                            });
                                                 });
-                                        writeTasks.add(notificationTask);
                                     }
 
                                     Log.d(TAG, "Lottery selected " + chosen.size() + " entrants, not selected " + notChosen.size() + ", executing " + writeTasks.size() + " write tasks");

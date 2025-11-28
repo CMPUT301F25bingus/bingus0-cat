@@ -1193,8 +1193,13 @@ public class EventDetailsFragment extends Fragment {
         
         Log.d(TAG, "Sending notification: eventId=" + eventId + ", recipientUserId=" + recipientUserId + ", deviceId=" + deviceIdForNotification);
         
-        // Fetch event details to include event name in notification
-        eventRepository.getEventById(eventId, new EventRepository.OnEventListener() {
+        // First, check if user has notifications enabled
+        profileRepo.get(recipientUserId)
+                .addOnSuccessListener(profile -> {
+                    // Only send notification if user has notifications enabled
+                    if (profile != null && profile.isNotificationsEnabled()) {
+                        // Fetch event details to include event name in notification
+                        eventRepository.getEventById(eventId, new EventRepository.OnEventListener() {
             @Override
             public void onSuccess(Event event) {
                 String eventName = event != null ? event.getName() : "this event";
@@ -1252,8 +1257,51 @@ public class EventDetailsFragment extends Fragment {
                             docRef.update("notificationId", docRef.getId());
                         })
                         .addOnFailureListener(err -> Log.e(TAG, "❌ Failed to send notification", err));
-            }
-        });
+                            }
+                        });
+                    } else {
+                        Log.d(TAG, "⏭️ Skipping waiting list notification for " + recipientUserId + " (opted out)");
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    // If we can't fetch profile, default to sending notification (backward compatibility)
+                    Log.w(TAG, "⚠️ Could not fetch profile for " + recipientUserId + ", sending notification anyway", e);
+                    eventRepository.getEventById(eventId, new EventRepository.OnEventListener() {
+                        @Override
+                        public void onSuccess(Event event) {
+                            String eventName = event != null ? event.getName() : "this event";
+                            
+                            FirebaseFirestore db = FirebaseFirestore.getInstance();
+                            
+                            Map<String, Object> notification = new HashMap<>();
+                            notification.put("eventId", eventId);
+                            notification.put("recipientUserId", recipientUserId);
+                            notification.put("recipientId", recipientUserId);
+                            if (!recipientUserId.equals(deviceIdForNotification)) {
+                                notification.put("deviceId", deviceIdForNotification);
+                            }
+                            notification.put("senderUserId", "system");
+                            notification.put("type", "GENERAL");
+                            notification.put("title", "Joined Waiting List");
+                            notification.put("message", "You've successfully joined the waiting list for \"" + eventName + "\". Good luck!");
+                            notification.put("isRead", false);
+                            notification.put("sentAt", com.google.firebase.Timestamp.now());
+                            
+                            db.collection("notifications")
+                                    .add(notification)
+                                    .addOnSuccessListener(docRef -> {
+                                        Log.d(TAG, "✅ Sent waiting list notification to userId: " + recipientUserId + " (profile fetch failed)");
+                                        docRef.update("notificationId", docRef.getId());
+                                    })
+                                    .addOnFailureListener(err -> Log.e(TAG, "❌ Failed to send notification", err));
+                        }
+                        
+                        @Override
+                        public void onFailure(Exception err) {
+                            Log.e(TAG, "Failed to fetch event for notification", err);
+                        }
+                    });
+                });
     }
 
     /**
@@ -1281,66 +1329,114 @@ public class EventDetailsFragment extends Fragment {
         
         Log.d(TAG, "Sending invitation accepted notification: eventId=" + eventId + ", recipientUserId=" + recipientUserId);
         
-        // Fetch event details to include event name
-        eventRepository.getEventById(eventId, new EventRepository.OnEventListener() {
-            @Override
-            public void onSuccess(Event event) {
-                String eventName = event != null ? event.getName() : "this event";
-                
-                FirebaseFirestore db = FirebaseFirestore.getInstance();
-                
-                Map<String, Object> notification = new HashMap<>();
-                notification.put("eventId", eventId);
-                notification.put("recipientUserId", recipientUserId);
-                notification.put("recipientId", recipientUserId); // Legacy field
-                // Also store deviceId for query flexibility
-                if (!recipientUserId.equals(deviceIdForNotification)) {
-                    notification.put("deviceId", deviceIdForNotification);
-                }
-                notification.put("senderUserId", "system");
-                notification.put("type", "INVITATION");
-                notification.put("title", "🎉 You're Enrolled!");
-                notification.put("message", "Congratulations! You've successfully enrolled in \"" + eventName + "\". We look forward to seeing you there!");
-                notification.put("isRead", false);
-                notification.put("sentAt", com.google.firebase.Timestamp.now());
-                
-                db.collection("notifications")
-                        .add(notification)
-                        .addOnSuccessListener(docRef -> {
-                            Log.d(TAG, "✅ Sent invitation accepted notification to userId: " + recipientUserId);
-                            docRef.update("notificationId", docRef.getId());
-                        })
-                        .addOnFailureListener(e -> Log.e(TAG, "❌ Failed to send notification", e));
-            }
-            
-            @Override
-            public void onFailure(Exception e) {
-                Log.e(TAG, "Failed to fetch event for notification", e);
-                // Fallback message
-                FirebaseFirestore db = FirebaseFirestore.getInstance();
-                Map<String, Object> notification = new HashMap<>();
-                notification.put("eventId", eventId);
-                notification.put("recipientUserId", recipientUserId);
-                notification.put("recipientId", recipientUserId);
-                if (!recipientUserId.equals(deviceIdForNotification)) {
-                    notification.put("deviceId", deviceIdForNotification);
-                }
-                notification.put("senderUserId", "system");
-                notification.put("type", "INVITATION");
-                notification.put("title", "🎉 You're Enrolled!");
-                notification.put("message", "Congratulations! You've successfully enrolled in this event. We look forward to seeing you there!");
-                notification.put("isRead", false);
-                notification.put("sentAt", com.google.firebase.Timestamp.now());
-                
-                db.collection("notifications")
-                        .add(notification)
-                        .addOnSuccessListener(docRef -> {
-                            Log.d(TAG, "✅ Sent invitation accepted notification (fallback) to userId: " + recipientUserId);
-                            docRef.update("notificationId", docRef.getId());
-                        })
-                        .addOnFailureListener(err -> Log.e(TAG, "❌ Failed to send notification", err));
-            }
-        });
+        // First, check if user has notifications enabled
+        profileRepo.get(recipientUserId)
+                .addOnSuccessListener(profile -> {
+                    // Only send notification if user has notifications enabled
+                    if (profile != null && profile.isNotificationsEnabled()) {
+                        // Fetch event details to include event name
+                        eventRepository.getEventById(eventId, new EventRepository.OnEventListener() {
+                            @Override
+                            public void onSuccess(Event event) {
+                                String eventName = event != null ? event.getName() : "this event";
+                                
+                                FirebaseFirestore db = FirebaseFirestore.getInstance();
+                                
+                                Map<String, Object> notification = new HashMap<>();
+                                notification.put("eventId", eventId);
+                                notification.put("recipientUserId", recipientUserId);
+                                notification.put("recipientId", recipientUserId); // Legacy field
+                                // Also store deviceId for query flexibility
+                                if (!recipientUserId.equals(deviceIdForNotification)) {
+                                    notification.put("deviceId", deviceIdForNotification);
+                                }
+                                notification.put("senderUserId", "system");
+                                notification.put("type", "INVITATION");
+                                notification.put("title", "🎉 You're Enrolled!");
+                                notification.put("message", "Congratulations! You've successfully enrolled in \"" + eventName + "\". We look forward to seeing you there!");
+                                notification.put("isRead", false);
+                                notification.put("sentAt", com.google.firebase.Timestamp.now());
+                                
+                                db.collection("notifications")
+                                        .add(notification)
+                                        .addOnSuccessListener(docRef -> {
+                                            Log.d(TAG, "✅ Sent invitation accepted notification to userId: " + recipientUserId);
+                                            docRef.update("notificationId", docRef.getId());
+                                        })
+                                        .addOnFailureListener(e -> Log.e(TAG, "❌ Failed to send notification", e));
+                            }
+                            
+                            @Override
+                            public void onFailure(Exception e) {
+                                Log.e(TAG, "Failed to fetch event for notification", e);
+                                // Fallback message
+                                FirebaseFirestore db = FirebaseFirestore.getInstance();
+                                Map<String, Object> notification = new HashMap<>();
+                                notification.put("eventId", eventId);
+                                notification.put("recipientUserId", recipientUserId);
+                                notification.put("recipientId", recipientUserId);
+                                if (!recipientUserId.equals(deviceIdForNotification)) {
+                                    notification.put("deviceId", deviceIdForNotification);
+                                }
+                                notification.put("senderUserId", "system");
+                                notification.put("type", "INVITATION");
+                                notification.put("title", "🎉 You're Enrolled!");
+                                notification.put("message", "Congratulations! You've successfully enrolled in this event. We look forward to seeing you there!");
+                                notification.put("isRead", false);
+                                notification.put("sentAt", com.google.firebase.Timestamp.now());
+                                
+                                db.collection("notifications")
+                                        .add(notification)
+                                        .addOnSuccessListener(docRef -> {
+                                            Log.d(TAG, "✅ Sent invitation accepted notification (fallback) to userId: " + recipientUserId);
+                                            docRef.update("notificationId", docRef.getId());
+                                        })
+                                        .addOnFailureListener(err -> Log.e(TAG, "❌ Failed to send notification", err));
+                            }
+                        });
+                    } else {
+                        Log.d(TAG, "⏭️ Skipping enrollment notification for " + recipientUserId + " (opted out)");
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    // If we can't fetch profile, default to sending notification (backward compatibility)
+                    Log.w(TAG, "⚠️ Could not fetch profile for " + recipientUserId + ", sending notification anyway", e);
+                    eventRepository.getEventById(eventId, new EventRepository.OnEventListener() {
+                        @Override
+                        public void onSuccess(Event event) {
+                            String eventName = event != null ? event.getName() : "this event";
+                            
+                            FirebaseFirestore db = FirebaseFirestore.getInstance();
+                            
+                            Map<String, Object> notification = new HashMap<>();
+                            notification.put("eventId", eventId);
+                            notification.put("recipientUserId", recipientUserId);
+                            notification.put("recipientId", recipientUserId);
+                            if (!recipientUserId.equals(deviceIdForNotification)) {
+                                notification.put("deviceId", deviceIdForNotification);
+                            }
+                            notification.put("senderUserId", "system");
+                            notification.put("type", "INVITATION");
+                            notification.put("title", "🎉 You're Enrolled!");
+                            notification.put("message", "Congratulations! You've successfully enrolled in \"" + eventName + "\". We look forward to seeing you there!");
+                            notification.put("isRead", false);
+                            notification.put("sentAt", com.google.firebase.Timestamp.now());
+                            
+                            db.collection("notifications")
+                                    .add(notification)
+                                    .addOnSuccessListener(docRef -> {
+                                        Log.d(TAG, "✅ Sent invitation accepted notification to userId: " + recipientUserId + " (profile fetch failed)");
+                                        docRef.update("notificationId", docRef.getId());
+                                    })
+                                    .addOnFailureListener(err -> Log.e(TAG, "❌ Failed to send notification", err));
+                        }
+                        
+                        @Override
+                        public void onFailure(Exception err) {
+                            Log.e(TAG, "Failed to fetch event for notification", err);
+                        }
+                    });
+                });
     }
 
     private void toast(String msg) {

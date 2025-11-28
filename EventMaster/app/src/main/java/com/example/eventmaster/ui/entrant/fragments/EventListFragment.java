@@ -952,8 +952,13 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
         
         Log.d("EventListFragment", "Sending notification: eventId=" + eventId + ", recipientUserId=" + recipientUserId + ", deviceId=" + deviceIdForNotification);
         
-        // Fetch event details to include event name in notification
-        eventRepository.getEventById(eventId, new EventRepository.OnEventListener() {
+        // First, check if user has notifications enabled
+        profileRepo.get(recipientUserId)
+                .addOnSuccessListener(profile -> {
+                    // Only send notification if user has notifications enabled
+                    if (profile != null && profile.isNotificationsEnabled()) {
+                        // Fetch event details to include event name in notification
+                        eventRepository.getEventById(eventId, new EventRepository.OnEventListener() {
             @Override
             public void onSuccess(Event event) {
                 String eventName = event != null ? event.getName() : "this event";
@@ -1011,8 +1016,51 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
                             docRef.update("notificationId", docRef.getId());
                         })
                         .addOnFailureListener(err -> Log.e("EventListFragment", "❌ Failed to send notification", err));
-            }
-        });
+                            }
+                        });
+                    } else {
+                        Log.d("EventListFragment", "⏭️ Skipping waiting list notification for " + recipientUserId + " (opted out)");
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    // If we can't fetch profile, default to sending notification (backward compatibility)
+                    Log.w("EventListFragment", "⚠️ Could not fetch profile for " + recipientUserId + ", sending notification anyway", e);
+                    eventRepository.getEventById(eventId, new EventRepository.OnEventListener() {
+                        @Override
+                        public void onSuccess(Event event) {
+                            String eventName = event != null ? event.getName() : "this event";
+                            
+                            FirebaseFirestore db = FirebaseFirestore.getInstance();
+                            
+                            Map<String, Object> notification = new HashMap<>();
+                            notification.put("eventId", eventId);
+                            notification.put("recipientUserId", recipientUserId);
+                            notification.put("recipientId", recipientUserId);
+                            if (!recipientUserId.equals(deviceIdForNotification)) {
+                                notification.put("deviceId", deviceIdForNotification);
+                            }
+                            notification.put("senderUserId", "system");
+                            notification.put("type", "GENERAL");
+                            notification.put("title", "Joined Waiting List");
+                            notification.put("message", "You've successfully joined the waiting list for \"" + eventName + "\". Good luck!");
+                            notification.put("isRead", false);
+                            notification.put("sentAt", Timestamp.now());
+                            
+                            db.collection("notifications")
+                                    .add(notification)
+                                    .addOnSuccessListener(docRef -> {
+                                        Log.d("EventListFragment", "✅ Sent waiting list notification to userId: " + recipientUserId + " (profile fetch failed)");
+                                        docRef.update("notificationId", docRef.getId());
+                                    })
+                                    .addOnFailureListener(err -> Log.e("EventListFragment", "❌ Failed to send notification", err));
+                        }
+                        
+                        @Override
+                        public void onFailure(Exception err) {
+                            Log.e("EventListFragment", "Failed to fetch event for notification", err);
+                        }
+                    });
+                });
     }
 
     /**
