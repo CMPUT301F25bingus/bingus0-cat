@@ -95,8 +95,7 @@ public class EventTest {
 
     @Test
     public void testGeolocationRequired() {
-        assertFalse(event.isGeolocationRequired()); // Default should be false
-
+        assertFalse(event.isGeolocationRequired());
         event.setGeolocationRequired(true);
         assertTrue(event.isGeolocationRequired());
     }
@@ -114,7 +113,26 @@ public class EventTest {
         Event emptyEvent = new Event();
         assertNotNull(emptyEvent);
     }
+
+    @Test
+    public void testPosterUrlReplacedCorrectly() {
+        // Set initial poster URL
+        event.setPosterUrl("https://example.com/oldPoster.jpg");
+        assertEquals("https://example.com/oldPoster.jpg", event.getPosterUrl());
+
+        // Replace with new URL (US 02.04.02 requirement)
+        event.setPosterUrl("https://example.com/newPoster.jpg");
+        assertEquals("https://example.com/newPoster.jpg", event.getPosterUrl());
+
+        // Ensure old value was overridden
+        assertNotEquals("Old poster should be replaced",
+                "https://example.com/oldPoster.jpg",
+                event.getPosterUrl());
+    }
+
+
 }
+
 
 
 

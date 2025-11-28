@@ -5,11 +5,13 @@ import android.graphics.Bitmap;
 
 import com.example.eventmaster.ui.organizer.activities.OrganizerCreateEventActivity;
 import com.example.eventmaster.utils.QRCodeGenerator;
+import com.google.android.material.checkbox.MaterialCheckBox;
 import com.google.firebase.Timestamp;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 
@@ -21,7 +23,10 @@ public class OrganizerCreateEventUnitTest {
 
     @Before
     public void setUp() {
-        activity = new OrganizerCreateEventActivity();
+        activity = Robolectric.buildActivity(OrganizerCreateEventActivity.class)
+                .create()
+                .start()
+                .get();
     }
 
     @Test
@@ -48,5 +53,23 @@ public class OrganizerCreateEventUnitTest {
     public void testGenerateQRCode_bitmapSquare() {
         Bitmap qr = QRCodeGenerator.generateQRCode("test");
         assertEquals("QR should be square", qr.getWidth(), qr.getHeight());
+    }
+
+    @Test
+    public void testGeolocationCheckbox_toggle() {
+        MaterialCheckBox cb = activity.findViewById(R.id.cbRequireLocation);
+
+        assertNotNull("Geolocation checkbox should exist", cb);
+
+        // Default should be false
+        assertFalse(cb.isChecked());
+
+        // Toggle ON
+        cb.setChecked(true);
+        assertTrue(cb.isChecked());
+
+        // Toggle OFF
+        cb.setChecked(false);
+        assertFalse(cb.isChecked());
     }
 }

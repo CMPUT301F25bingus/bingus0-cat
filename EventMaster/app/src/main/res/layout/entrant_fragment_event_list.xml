@@ -15,7 +15,10 @@
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_margin="20dp"
+            android:layout_marginStart="20dp"
+            android:layout_marginEnd="20dp"
+            android:layout_marginTop="20dp"
+            android:layout_marginBottom="12dp"
             app:cardCornerRadius="25dp"
             app:cardElevation="4dp"
             app:cardBackgroundColor="#D9E3E3">
@@ -50,6 +53,18 @@
                     android:inputType="text"
                     android:maxLines="1" />
 
+                <!-- QR Scanner Button -->
+                <ImageButton
+                    android:id="@+id/qr_scanner_button"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:src="@drawable/ic_qr_scanner"
+                    android:background="@drawable/qr_scanner_button_background"
+                    android:padding="10dp"
+                    android:scaleType="fitCenter"
+                    android:contentDescription="Scan QR Code"
+                    android:layout_marginEnd="4dp" />
+
                 <!-- Filter Button -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/filter_button"
@@ -66,6 +81,7 @@
             </LinearLayout>
 
         </androidx.cardview.widget.CardView>
+
 
         <!-- Events RecyclerView -->
         <androidx.recyclerview.widget.RecyclerView
@@ -95,15 +111,22 @@
     <!-- Bottom Navigation Bar -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottom_navigation"
+        style="@style/CompactBottomNav"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        android:layout_margin="16dp"
-        app:backgroundTint="#D9E3E3"
-        app:elevation="8dp"
-        app:itemIconTint="@android:color/black"
-        app:itemTextColor="@android:color/black"
-        app:labelVisibilityMode="unlabeled"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="12dp"
+        android:background="@drawable/bottom_nav_background"
+        app:elevation="4dp"
+        app:itemIconTint="@color/bottom_nav_item_colors"
+        app:itemTextColor="@color/bottom_nav_item_colors"
+        app:labelVisibilityMode="labeled"
+        app:itemIconSize="20dp"
+        app:itemRippleColor="@android:color/transparent"
+        app:itemTextAppearanceActive="@style/BottomNavTextStyle"
+        app:itemTextAppearanceInactive="@style/BottomNavTextStyle"
         app:menu="@menu/bottom_nav_menu" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

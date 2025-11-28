@@ -6,10 +6,18 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.LinearLayout;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -18,7 +26,9 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.ConcatAdapter;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -31,9 +41,12 @@ import com.example.eventmaster.data.firestore.WaitingListRepositoryFs;
 import com.example.eventmaster.model.Event;
 import com.example.eventmaster.model.Profile;
 import com.example.eventmaster.model.WaitingListEntry;
+import com.example.eventmaster.ui.entrant.activities.EntrantHistoryActivity;
 import com.example.eventmaster.ui.entrant.activities.EntrantNotificationsActivity;
 import com.example.eventmaster.ui.entrant.activities.EventDetailsActivity;
 import com.example.eventmaster.ui.entrant.adapters.EventListAdapter;
+import com.example.eventmaster.ui.entrant.adapters.StatusFilterAdapter;
+import com.example.eventmaster.ui.entrant.model.StatusFilter;
 import com.example.eventmaster.ui.shared.activities.ProfileActivity;
 import com.example.eventmaster.ui.shared.activities.QRScannerActivity;
 import com.example.eventmaster.utils.DeviceUtils;
@@ -41,6 +54,10 @@ import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.checkbox.MaterialCheckBox;
+import com.google.android.material.textfield.TextInputEditText;
+import com.google.firebase.Timestamp;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
@@ -66,10 +83,128 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
     private RecyclerView recyclerView;
     private EditText searchEditText;
     private MaterialButton filterButton;
+    private ImageButton qrScannerButton;
     private TextView emptyStateText;
     private BottomNavigationView bottomNavigationView;
+    private StatusFilterAdapter statusFilterAdapter;
+    private ConcatAdapter concatAdapter;
 
     private List<Event> allEvents = new ArrayList<>();
+    private Map<String, Integer> waitingListCounts = new HashMap<>(); // eventId -> count
+
+    // Filter state variables
+    private List<Event> filteredEvents = new ArrayList<>();
+    private List<Event> statusFilteredEvents = new ArrayList<>();
+    private String sortOrder = "newest"; // "newest" or "oldest"
+    private Double maxPrice = null; // null means no price limit
+    private String locationFilter = null;
+    private boolean onlyAvailableSpots = false;
+    private StatusFilter currentStatusFilter = StatusFilter.ALL;
+
+    private static final String TAG = "EventListFragment";
+
+    private void selectStatusFilter(StatusFilter newFilter) {
+        if (currentStatusFilter == newFilter) {
+            return;
+        }
+        currentStatusFilter = newFilter;
+        if (statusFilterAdapter != null) {
+            statusFilterAdapter.setCurrentFilter(currentStatusFilter);
+        }
+        applyStatusFilterAndRefresh();
+    }
+
+    private void applyStatusFilterAndRefresh() {
+        if (filteredEvents == null) {
+            filteredEvents = new ArrayList<>();
+        }
+        statusFilteredEvents = new ArrayList<>();
+        Date now = new Date();
+        for (Event event : filteredEvents) {
+            EventLifecycleState state = resolveLifecycleState(event, now);
+            if (matchesCurrentFilter(state)) {
+                statusFilteredEvents.add(event);
+            }
+        }
+
+        CharSequence query = searchEditText != null ? searchEditText.getText() : null;
+        if (query != null && query.length() > 0) {
+            adapter.filter(query.toString(), statusFilteredEvents);
+        } else {
+            adapter.setEvents(statusFilteredEvents);
+        }
+        // Ensure waiting list counts are always available in adapter
+        if (adapter != null && !waitingListCounts.isEmpty()) {
+            adapter.setWaitingListCounts(waitingListCounts);
+        }
+        updateEmptyState();
+    }
+
+    private boolean matchesCurrentFilter(EventLifecycleState state) {
+        if (currentStatusFilter == StatusFilter.ALL) return true;
+        if (currentStatusFilter == StatusFilter.OPEN && state == EventLifecycleState.OPEN) return true;
+        if (currentStatusFilter == StatusFilter.CLOSED && state == EventLifecycleState.CLOSED) return true;
+        return currentStatusFilter == StatusFilter.DONE && state == EventLifecycleState.DONE;
+    }
+
+    private EventLifecycleState resolveLifecycleState(Event event, Date referenceDate) {
+        if (event == null) return EventLifecycleState.OPEN;
+
+        String status = event.getStatus();
+        if (status != null) {
+            String normalized = status.trim().toUpperCase();
+            if ("DONE".equals(normalized) || "COMPLETED".equals(normalized)) {
+                return EventLifecycleState.DONE;
+            }
+            if ("CLOSED".equals(normalized)) {
+                return EventLifecycleState.CLOSED;
+            }
+        }
+
+        Date eventDate = event.getEventDate();
+        if (eventDate != null && !eventDate.after(referenceDate)) {
+            return EventLifecycleState.DONE;
+        }
+
+        Date regEnd = event.getRegistrationEndDate();
+        if (regEnd != null && regEnd.before(referenceDate)) {
+            return EventLifecycleState.CLOSED;
+        }
+
+        return EventLifecycleState.OPEN;
+    }
+
+    private void updateStatusCounts() {
+        if (statusFilterAdapter == null) return;
+        int total = allEvents != null ? allEvents.size() : 0;
+        int open = 0;
+        int closed = 0;
+        int done = 0;
+        Date now = new Date();
+        if (allEvents != null) {
+            for (Event event : allEvents) {
+                EventLifecycleState state = resolveLifecycleState(event, now);
+                switch (state) {
+                    case DONE:
+                        done++;
+                        break;
+                    case CLOSED:
+                        closed++;
+                        break;
+                    case OPEN:
+                    default:
+                        open++;
+                        break;
+                }
+            }
+        }
+
+        statusFilterAdapter.setCounts(total, open, closed, done);
+    }
+
+    private enum EventLifecycleState {
+        OPEN, CLOSED, DONE
+    }
 
     // --- GEOLOCATION SUPPORT ---
     private Event pendingGeolocationEvent; // Store event requiring location
@@ -128,6 +263,7 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
         recyclerView = view.findViewById(R.id.events_recycler_view);
         searchEditText = view.findViewById(R.id.search_edit_text);
         filterButton = view.findViewById(R.id.filter_button);
+        qrScannerButton = view.findViewById(R.id.qr_scanner_button);
         emptyStateText = view.findViewById(R.id.empty_state_text);
         bottomNavigationView = view.findViewById(R.id.bottom_navigation);
 
@@ -139,6 +275,9 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
 
         // Setup filter button
         filterButton.setOnClickListener(v -> showFilterDialog());
+
+        // Setup QR scanner button
+        qrScannerButton.setOnClickListener(v -> openQRScanner());
 
         // Setup bottom navigation
         setupBottomNavigation();
@@ -154,7 +293,9 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
      */
     private void setupRecyclerView() {
         adapter = new EventListAdapter(this);
-        recyclerView.setAdapter(adapter);
+        statusFilterAdapter = new StatusFilterAdapter(this::selectStatusFilter);
+        concatAdapter = new ConcatAdapter(statusFilterAdapter, adapter);
+        recyclerView.setAdapter(concatAdapter);
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
     }
 
@@ -168,7 +309,16 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                adapter.filter(s.toString(), allEvents);
+                String query = s.toString().trim();
+                List<Event> eventsToSearch = statusFilteredEvents.isEmpty()
+                        ? filteredEvents
+                        : statusFilteredEvents;
+
+                if (query.isEmpty()) {
+                    adapter.setEvents(eventsToSearch);
+                } else {
+                    adapter.filter(query, eventsToSearch);
+                }
                 updateEmptyState();
             }
 
@@ -181,21 +331,30 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
      * Sets up bottom navigation item selection.
      */
     private void setupBottomNavigation() {
+        // Set Home as selected (current screen)
+        bottomNavigationView.setSelectedItemId(R.id.nav_home);
+
         bottomNavigationView.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
-
-            if (itemId == R.id.nav_search) {
+            
+            if (itemId == R.id.nav_home) {
+                // Already on Home (Browse Events) screen
                 return true;
-            } else if (itemId == R.id.nav_profile) {
-                startActivity(new Intent(requireContext(), ProfileActivity.class));
-                return true;
-            } else if (itemId == R.id.nav_notifications) {
-                Intent intent = new Intent(requireContext(), EntrantNotificationsActivity.class);
+            } else if (itemId == R.id.nav_history) {
+                Intent intent = new Intent(requireContext(), EntrantHistoryActivity.class);
                 startActivity(intent);
                 return true;
-            } else if (itemId == R.id.nav_scan_qr){
-                Intent i = new Intent(requireContext(), QRScannerActivity.class);
-                startActivity(i);
+            } else if (itemId == R.id.nav_alerts) {
+               Intent intent = new Intent(requireContext(), EntrantNotificationsActivity.class);
+               startActivity(intent);
+//            } else if (itemId == R.id.nav_notifications) {
+//                Intent intent = new Intent(requireContext(), EntrantNotificationsActivity.class);
+//                startActivity(intent);
+//                return true;
+            } else if (itemId == R.id.nav_profile) {
+                Intent intent = new Intent(requireContext(), ProfileActivity.class);
+                startActivity(intent);
+                return true;
             }
             return false;
         });
@@ -209,7 +368,10 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
             @Override
             public void onSuccess(List<Event> events) {
                 allEvents = events;
-                adapter.setEvents(events);
+                filteredEvents = new ArrayList<>(events); // Initialize filteredEvents with all events
+                updateStatusCounts(); // Update the status tab counts
+                loadWaitingListCounts(events); // Load waiting list counts for all events
+                applyStatusFilterAndRefresh(); // Apply status filter and refresh the display
                 updateEmptyState();
             }
 
@@ -221,6 +383,57 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
                 updateEmptyState();
             }
         });
+    }
+
+    /**
+     * Loads waiting list counts for all events and updates the adapter.
+     */
+    private void loadWaitingListCounts(List<Event> events) {
+        if (events == null || events.isEmpty()) {
+            return;
+        }
+
+        waitingListCounts.clear();
+        final int[] completedCount = {0};
+        final int totalCount = events.size();
+
+        for (Event event : events) {
+            if (event == null || event.getId() == null) {
+                completedCount[0]++;
+                continue;
+            }
+
+            String eventId = event.getId();
+            waitingListRepository.getWaitingListCount(eventId, new WaitingListRepository.OnCountListener() {
+                @Override
+                public void onSuccess(int count) {
+                    waitingListCounts.put(eventId, count);
+                    completedCount[0]++;
+
+                    // Update adapter when all counts are loaded
+                    if (completedCount[0] == totalCount && adapter != null) {
+                        adapter.setWaitingListCounts(waitingListCounts);
+                    }
+                }
+
+                @Override
+                public void onFailure(Exception e) {
+                    // Default to 0 if fetch fails
+                    waitingListCounts.put(eventId, 0);
+                    completedCount[0]++;
+
+                    // Update adapter when all counts are loaded
+                    if (completedCount[0] == totalCount && adapter != null) {
+                        adapter.setWaitingListCounts(waitingListCounts);
+                    }
+                }
+            });
+        }
+
+        // If no events, update adapter immediately
+        if (totalCount == 0 && adapter != null) {
+            adapter.setWaitingListCounts(waitingListCounts);
+        }
     }
 
     /**
@@ -237,10 +450,219 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
     }
 
     /**
-     * Shows filter dialog (placeholder for future implementation).
+     * Shows filter dialog with options for sorting and filtering events.
+     * Implements US 01.01.04 - Filter events by interest or availability.
      */
     private void showFilterDialog() {
-        Toast.makeText(requireContext(), "Filter options coming soon!", Toast.LENGTH_SHORT).show();
+        View dialogView = LayoutInflater.from(requireContext())
+                .inflate(R.layout.dialog_filter_events, null);
+
+        // Get UI elements from dialog
+        RadioGroup radioGroupSort = dialogView.findViewById(R.id.radioGroupSort);
+        RadioButton radioSortNewest = dialogView.findViewById(R.id.radioSortNewest);
+        RadioButton radioSortOldest = dialogView.findViewById(R.id.radioSortOldest);
+        SeekBar seekBarPrice = dialogView.findViewById(R.id.seekBarPrice);
+        TextView textPriceValue = dialogView.findViewById(R.id.textPriceValue);
+        TextInputEditText editLocation = dialogView.findViewById(R.id.editLocation);
+        AutoCompleteTextView autoCompleteEventType = dialogView.findViewById(R.id.autoCompleteEventType);
+        LinearLayout layoutEventTypes = dialogView.findViewById(R.id.layoutEventTypes);
+        MaterialCheckBox checkAvailableSpots = dialogView.findViewById(R.id.checkAvailableSpots);
+        MaterialButton btnClearFilters = dialogView.findViewById(R.id.btnClearFilters);
+        MaterialButton btnApplyFilters = dialogView.findViewById(R.id.btnApplyFilters);
+
+        // Price ranges: 0=$0, 1=$50, 2=$100, 3=$150, 4=$200+
+        final double[] priceRanges = {0, 50, 100, 150, 200};
+
+        // Set up Event Type dropdown
+        String[] eventTypes = {"All types", "Recreational", "Athletic", "Educational", "Social", "Cultural"};
+        ArrayAdapter<String> eventTypeAdapter = new ArrayAdapter<>(
+            requireContext(),
+            android.R.layout.simple_dropdown_item_1line,
+            eventTypes
+        );
+        autoCompleteEventType.setAdapter(eventTypeAdapter);
+        autoCompleteEventType.setFocusable(true);
+        autoCompleteEventType.setFocusableInTouchMode(true);
+
+        // Set current filter values
+        if (sortOrder.equals("newest")) {
+            radioSortNewest.setChecked(true);
+        } else {
+            radioSortOldest.setChecked(true);
+        }
+
+        // Set price seekbar
+        if (maxPrice != null) {
+            int priceIndex = 4; // Default to $200+
+            for (int i = 0; i < priceRanges.length; i++) {
+                if (maxPrice <= priceRanges[i]) {
+                    priceIndex = i;
+                    break;
+                }
+            }
+            seekBarPrice.setProgress(priceIndex);
+        } else {
+            seekBarPrice.setProgress(4); // $200+ (no limit)
+        }
+        updatePriceText(textPriceValue, seekBarPrice.getProgress(), priceRanges);
+
+        if (locationFilter != null) {
+            editLocation.setText(locationFilter);
+        }
+
+        checkAvailableSpots.setChecked(onlyAvailableSpots);
+
+        // SeekBar listener to update price text
+        seekBarPrice.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                updatePriceText(textPriceValue, progress, priceRanges);
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {}
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {}
+        });
+
+        // Event type dropdown handler
+        autoCompleteEventType.setOnItemClickListener((parent, view, position, id) -> {
+            String selected = eventTypes[position];
+            autoCompleteEventType.setText(selected, false);
+            if (position == 0) {
+                layoutEventTypes.setVisibility(View.GONE);
+            } else {
+                layoutEventTypes.setVisibility(View.VISIBLE);
+            }
+        });
+
+        autoCompleteEventType.setOnClickListener(v -> autoCompleteEventType.showDropDown());
+
+        // Create dialog
+        AlertDialog dialog = new AlertDialog.Builder(requireContext())
+                .setView(dialogView)
+                .create();
+
+        // Apply filters button
+        btnApplyFilters.setOnClickListener(v -> {
+            // Get sort order
+            int selectedRadioId = radioGroupSort.getCheckedRadioButtonId();
+            if (selectedRadioId == R.id.radioSortNewest) {
+                sortOrder = "newest";
+            } else {
+                sortOrder = "oldest";
+            }
+
+            // Get price filter
+            int priceProgress = seekBarPrice.getProgress();
+            if (priceProgress < 4) {
+                maxPrice = priceRanges[priceProgress];
+            } else {
+                maxPrice = null; // No limit
+            }
+
+            // Get location filter
+            String locationText = editLocation.getText() != null
+                ? editLocation.getText().toString().trim()
+                : "";
+            locationFilter = locationText.isEmpty() ? null : locationText;
+
+            // Get availability filter
+            onlyAvailableSpots = checkAvailableSpots.isChecked();
+
+            // Apply filters
+            applyFilters();
+
+            // Clear search when filters are applied
+            searchEditText.setText("");
+
+            dialog.dismiss();
+        });
+
+        // Clear filters button
+        btnClearFilters.setOnClickListener(v -> {
+            sortOrder = "newest";
+            maxPrice = null;
+            locationFilter = null;
+            onlyAvailableSpots = false;
+
+            // Reset dialog UI
+            radioSortNewest.setChecked(true);
+            seekBarPrice.setProgress(4);
+            updatePriceText(textPriceValue, 4, priceRanges);
+            editLocation.setText("");
+            checkAvailableSpots.setChecked(false);
+            autoCompleteEventType.setText("All types", false);
+            layoutEventTypes.setVisibility(View.GONE);
+
+            // Apply cleared filters
+            applyFilters();
+
+            // Clear search
+            searchEditText.setText("");
+
+            dialog.dismiss();
+        });
+
+        dialog.show();
+    }
+
+    /**
+     * Updates the price text display based on seekbar progress.
+     */
+    private void updatePriceText(TextView textView, int progress, double[] priceRanges) {
+        if (progress >= priceRanges.length) {
+            textView.setText("Max Price: $200+ (No limit)");
+        } else if (progress == 0) {
+            textView.setText("Max Price: Free events only ($0)");
+        } else {
+            textView.setText(String.format("Max Price: $%.0f", priceRanges[progress]));
+        }
+    }
+
+    /**
+     * Applies active filters to the event list.
+     */
+    private void applyFilters() {
+        filteredEvents = new ArrayList<>(allEvents);
+
+        // Filter by price
+        if (maxPrice != null) {
+            filteredEvents.removeIf(event -> event.getPrice() > maxPrice);
+        }
+
+        // Filter by location
+        if (locationFilter != null && !locationFilter.isEmpty()) {
+            String locationLower = locationFilter.toLowerCase();
+            filteredEvents.removeIf(event ->
+                event.getLocation() == null ||
+                !event.getLocation().toLowerCase().contains(locationLower)
+            );
+        }
+
+        // Filter by available spots
+        if (onlyAvailableSpots) {
+            filteredEvents.removeIf(event -> event.getCapacity() <= 0);
+        }
+
+        // Sort by date
+        filteredEvents.sort((e1, e2) -> {
+            Date date1 = e1.getRegistrationStartDate();
+            Date date2 = e2.getRegistrationStartDate();
+
+            if (date1 == null && date2 == null) return 0;
+            if (date1 == null) return 1;
+            if (date2 == null) return -1;
+
+            int comparison = date1.compareTo(date2);
+            return sortOrder.equals("newest") ? -comparison : comparison;
+        });
+
+        updateStatusCounts();
+        applyStatusFilterAndRefresh();
+
+        Log.d(TAG, "Applied filters - showing " + filteredEvents.size() + " of " + allEvents.size() + " events before status filter");
     }
 
     @Override
@@ -361,6 +783,9 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
                         Toast.makeText(requireContext(),
                                 "Successfully joined with location!",
                                 Toast.LENGTH_SHORT).show();
+                        
+                        // Send notification when user joins waiting list with location
+                        sendJoinedWaitingListNotification(event.getEventId(), userId);
                     }
                     @Override
                     public void onFailure(Exception e) {
@@ -394,6 +819,9 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
                         Toast.makeText(requireContext(),
                                 "Successfully joined waiting list for " + event.getName(),
                                 Toast.LENGTH_SHORT).show();
+                        
+                        // Send notification when user joins waiting list
+                        sendJoinedWaitingListNotification(event.getEventId(), userId);
                     }
 
                     @Override
@@ -411,4 +839,65 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
         onEventClick(event);
         Toast.makeText(requireContext(), "QR Code for " + event.getName(), Toast.LENGTH_SHORT).show();
     }
+
+    /**
+     * Opens the QR code scanner activity.
+     */
+    private void openQRScanner() {
+        Intent intent = new Intent(requireContext(), QRScannerActivity.class);
+        startActivity(intent);
+    }
+
+    /**
+     * Send notification when user joins waiting list
+     */
+    private void sendJoinedWaitingListNotification(String eventId, String userId) {
+        if (eventId == null || userId == null) {
+            Log.w("EventListFragment", "Cannot send notification: missing eventId or userId");
+            return;
+        }
+        
+        // Get the Firebase Auth UID if available, otherwise use the provided userId (deviceId)
+        final String recipientUserId = getCurrentFirebaseUserId() != null ? getCurrentFirebaseUserId() : userId;
+        final String deviceIdForNotification = userId;
+        
+        Log.d("EventListFragment", "Sending notification: eventId=" + eventId + ", recipientUserId=" + recipientUserId + ", deviceId=" + deviceIdForNotification);
+        
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        
+        Map<String, Object> notification = new HashMap<>();
+        notification.put("eventId", eventId);
+        notification.put("recipientUserId", recipientUserId); // Use Firebase Auth UID (primary field)
+        notification.put("recipientId", recipientUserId); // Also add legacy field for backward compatibility
+        // Also store deviceId for query flexibility
+        if (!recipientUserId.equals(deviceIdForNotification)) {
+            notification.put("deviceId", deviceIdForNotification);
+        }
+        notification.put("senderUserId", "system");
+        notification.put("type", "GENERAL"); // Use valid NotificationType
+        notification.put("title", "Joined Waiting List");
+        notification.put("message", "You've successfully joined the waiting list for this event. Good luck!");
+        notification.put("isRead", false);
+        notification.put("sentAt", Timestamp.now()); // Use sentAt (matches Notification model)
+        
+        db.collection("notifications")
+                .add(notification)
+                .addOnSuccessListener(docRef -> {
+                    Log.d("EventListFragment", "✅ Sent waiting list notification to userId: " + recipientUserId);
+                    // Update with notificationId
+                    docRef.update("notificationId", docRef.getId());
+                })
+                .addOnFailureListener(e -> Log.e("EventListFragment", "❌ Failed to send notification", e));
+    }
+
+    /**
+     * Gets the current Firebase Auth UID if user is authenticated, otherwise null
+     */
+    private String getCurrentFirebaseUserId() {
+        if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+            return FirebaseAuth.getInstance().getCurrentUser().getUid();
+        }
+        return null;
+    }
 }
+
