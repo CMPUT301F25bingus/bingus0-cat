@@ -34,17 +34,21 @@ import java.util.List;
  * Implements US 03.04.01 - Admin can browse events.
  * Admins can only delete events, not edit or manage them.
  */
-public class AdminEventListFragment extends Fragment implements AdminEventListAdapter.OnAdminEventClickListener {
+public class AdminEventListFragment extends Fragment
+        implements AdminEventListAdapter.OnAdminEventClickListener {
 
+    private static final String TAG = "AdminEventListFragment";
+    private static final String TOAST_FILTER_COMING_SOON = "Filter options coming soon!";
+    private static final String TOAST_DELETE_SUCCESS = "Event deleted successfully";
+    private static final String TOAST_DELETE_FAILED_PREFIX = "Failed to delete event: ";
+    private static final String TOAST_LOAD_FAILED_PREFIX = "Failed to load events: ";
     private EventRepository eventRepository;
     private AdminEventListAdapter adapter;
-
     private ImageView backButton;
     private RecyclerView recyclerView;
     private EditText searchEditText;
     private MaterialButton filterButton;
     private TextView emptyStateText;
-
     private List<Event> allEvents = new ArrayList<>();
 
     public AdminEventListFragment() {
@@ -58,74 +62,99 @@ public class AdminEventListFragment extends Fragment implements AdminEventListAd
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        
-        // Initialize repository
+
+        // Initialize repository once for the fragment lifecycle
         eventRepository = new EventRepositoryFs();
     }
 
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
+    public View onCreateView(@NonNull LayoutInflater inflater,
+                             @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.admin_fragment_event_list, container, false);
 
-        // Initialize UI elements
-        backButton = view.findViewById(R.id.back_button);
-        recyclerView = view.findViewById(R.id.events_recycler_view);
-        searchEditText = view.findViewById(R.id.search_edit_text);
-        filterButton = view.findViewById(R.id.filter_button);
-        emptyStateText = view.findViewById(R.id.empty_state_text);
+        final View root = inflater.inflate(
+                R.layout.admin_fragment_event_list,
+                container,
+                false
+        );
 
-        // Setup back button
-        backButton.setOnClickListener(v -> requireActivity().onBackPressed());
+        // Wire UI references
+        initViews(root);
 
-        // Setup RecyclerView
-        setupRecyclerView();
+        // Configure UI behavior and data bindings
+        initRecyclerView();
+        initSearch();
+        initBackButton();
+        initFilterButton();
 
-        // Setup search functionality
-        setupSearch();
-
-        // Setup filter button
-        filterButton.setOnClickListener(v -> showFilterDialog());
-
-        // Load events
+        // Initial data load
         loadEvents();
 
-        return view;
+        return root;
     }
 
     /**
-     * Sets up the RecyclerView with adapter and layout manager.
+     * Finds and assigns all required views from the layout.
      */
-    private void setupRecyclerView() {
+    private void initViews(@NonNull View root) {
+        backButton = root.findViewById(R.id.back_button);
+        recyclerView = root.findViewById(R.id.events_recycler_view);
+        searchEditText = root.findViewById(R.id.search_edit_text);
+        filterButton = root.findViewById(R.id.filter_button);
+        emptyStateText = root.findViewById(R.id.empty_state_text);
+    }
+
+    /**
+     * Sets up the RecyclerView with its adapter and layout manager.
+     */
+    private void initRecyclerView() {
         adapter = new AdminEventListAdapter(this);
         recyclerView.setAdapter(adapter);
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
     }
 
     /**
-     * Sets up the search functionality with text watcher.
+     * Sets up the search EditText with a TextWatcher.
      */
-    private void setupSearch() {
+    private void initSearch() {
         searchEditText.addTextChangedListener(new TextWatcher() {
+
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                // No-op by design
             }
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
+                // Keep same behavior: filter adapter and update empty state
                 adapter.filter(s.toString(), allEvents);
                 updateEmptyState();
             }
 
             @Override
             public void afterTextChanged(Editable s) {
+                // No-op by design
             }
         });
     }
 
     /**
-     * Loads all events from Firebase.
+     * Initializes the back button behavior to delegate back navigation to activity.
+     */
+    private void initBackButton() {
+        backButton.setOnClickListener(v -> requireActivity().onBackPressed());
+    }
+
+    /**
+     * Initializes the filter button click listener.
+     */
+    private void initFilterButton() {
+        filterButton.setOnClickListener(v -> showFilterDialog());
+    }
+
+    /**
+     * Loads all events from the repository and updates the list.
      */
     private void loadEvents() {
         eventRepository.getAllEvents(new EventRepository.OnEventListListener() {
@@ -138,19 +167,24 @@ public class AdminEventListFragment extends Fragment implements AdminEventListAd
 
             @Override
             public void onFailure(Exception e) {
-                Toast.makeText(requireContext(), 
-                        "Failed to load events: " + e.getMessage(), 
-                        Toast.LENGTH_SHORT).show();
+                Toast.makeText(
+                        requireContext(),
+                        TOAST_LOAD_FAILED_PREFIX + e.getMessage(),
+                        Toast.LENGTH_SHORT
+                ).show();
                 updateEmptyState();
             }
         });
     }
 
     /**
-     * Updates the empty state visibility based on event count.
+     * Toggles between the empty state text and the RecyclerView
+     * depending on whether there are items to show.
      */
     private void updateEmptyState() {
-        if (adapter.getItemCount() == 0) {
+        final boolean isEmpty = (adapter == null || adapter.getItemCount() == 0);
+
+        if (isEmpty) {
             recyclerView.setVisibility(View.GONE);
             emptyStateText.setVisibility(View.VISIBLE);
         } else {
@@ -159,19 +193,31 @@ public class AdminEventListFragment extends Fragment implements AdminEventListAd
         }
     }
 
+
     /**
-     * Shows filter dialog (placeholder for future implementation).
+     * Placeholder for future filter functionality.
+     * Currently shows a Toast only.
      */
     private void showFilterDialog() {
-        Toast.makeText(requireContext(), "Filter options coming soon!", Toast.LENGTH_SHORT).show();
+        Toast.makeText(
+                requireContext(),
+                TOAST_FILTER_COMING_SOON,
+                Toast.LENGTH_SHORT
+        ).show();
         // TODO: Implement filter dialog
     }
 
     @Override
     public void onEventClick(Event event) {
         // Navigate to admin event details (read-only view)
-        Intent intent = new Intent(requireContext(), com.example.eventmaster.ui.admin.activities.AdminEventDetailsActivity.class);
-        intent.putExtra(com.example.eventmaster.ui.admin.activities.AdminEventDetailsActivity.EXTRA_EVENT_ID, event.getEventId());
+        Intent intent = new Intent(
+                requireContext(),
+                com.example.eventmaster.ui.admin.activities.AdminEventDetailsActivity.class
+        );
+        intent.putExtra(
+                com.example.eventmaster.ui.admin.activities.AdminEventDetailsActivity.EXTRA_EVENT_ID,
+                event.getEventId()
+        );
         startActivity(intent);
     }
 
@@ -185,24 +231,24 @@ public class AdminEventListFragment extends Fragment implements AdminEventListAd
                 .setPositiveButton("Delete", (dialog, which) -> deleteEvent(event))
                 .show();
     }
-
     /**
-     * Deletes an event from Firebase.
+     * Deletes an event from the repository and refreshes the list.
      */
     private void deleteEvent(Event event) {
         eventRepository.delete(event.getEventId())
                 .addOnSuccessListener(aVoid -> {
-                    Toast.makeText(requireContext(), 
-                            "Event deleted successfully", 
-                            Toast.LENGTH_SHORT).show();
+                    Toast.makeText(
+                            requireContext(),
+                            TOAST_DELETE_SUCCESS,
+                            Toast.LENGTH_SHORT
+                    ).show();
                     // Reload events to refresh the list
                     loadEvents();
                 })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(requireContext(), 
-                            "Failed to delete event: " + e.getMessage(), 
-                            Toast.LENGTH_SHORT).show();
-                });
+                .addOnFailureListener(e -> Toast.makeText(
+                        requireContext(),
+                        TOAST_DELETE_FAILED_PREFIX + e.getMessage(),
+                        Toast.LENGTH_SHORT
+                ).show());
     }
 }
-
