@@ -1,4 +1,5 @@
 package com.example.eventmaster.ui.admin.adapters;
+import com.bumptech.glide.Glide;
 
 import android.view.LayoutInflater;
 import android.view.View;
@@ -9,6 +10,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.example.eventmaster.R;
 import com.example.eventmaster.model.Event;
 import com.google.android.material.button.MaterialButton;
@@ -32,6 +34,7 @@ public class AdminEventListAdapter extends RecyclerView.Adapter<AdminEventListAd
      */
     public interface OnAdminEventClickListener {
         void onEventClick(Event event);
+
         void onDeleteEventClick(Event event);
     }
 
@@ -53,25 +56,25 @@ public class AdminEventListAdapter extends RecyclerView.Adapter<AdminEventListAd
     /**
      * Filters the event list based on search query.
      *
-     * @param query Search query
+     * @param query     Search query
      * @param allEvents The complete list of events to filter from
      */
     public void filter(String query, List<Event> allEvents) {
         List<Event> filteredList = new ArrayList<>();
-        
+
         if (query.isEmpty()) {
             filteredList = allEvents;
         } else {
             String lowerCaseQuery = query.toLowerCase(Locale.getDefault());
             for (Event event : allEvents) {
                 if (event.getName() != null && event.getName().toLowerCase(Locale.getDefault()).contains(lowerCaseQuery) ||
-                    event.getDescription() != null && event.getDescription().toLowerCase(Locale.getDefault()).contains(lowerCaseQuery) ||
-                    event.getLocation() != null && event.getLocation().toLowerCase(Locale.getDefault()).contains(lowerCaseQuery)) {
+                        event.getDescription() != null && event.getDescription().toLowerCase(Locale.getDefault()).contains(lowerCaseQuery) ||
+                        event.getLocation() != null && event.getLocation().toLowerCase(Locale.getDefault()).contains(lowerCaseQuery)) {
                     filteredList.add(event);
                 }
             }
         }
-        
+
         setEvents(filteredList);
     }
 
@@ -98,7 +101,7 @@ public class AdminEventListAdapter extends RecyclerView.Adapter<AdminEventListAd
      * ViewHolder for admin event items.
      */
     static class AdminEventViewHolder extends RecyclerView.ViewHolder {
-        
+
         private final ImageView thumbnail;
         private final TextView eventName;
         private final TextView eventDateText;
@@ -120,7 +123,7 @@ public class AdminEventListAdapter extends RecyclerView.Adapter<AdminEventListAd
             // Set event name
             eventName.setText(event.getName() != null ? event.getName() : "Unnamed Event");
 
-            // Format event date range
+            // Format event date
             if (event.getEventDate() != null) {
                 SimpleDateFormat dateFormat = new SimpleDateFormat("MMM dd - MMM dd, yyyy", Locale.getDefault());
                 String dateRange = "Date → " + dateFormat.format(event.getEventDate());
@@ -138,15 +141,25 @@ public class AdminEventListAdapter extends RecyclerView.Adapter<AdminEventListAd
                 registrationDeadlineText.setText("Registration deadline → TBA");
             }
 
-            // Set joined count (placeholder - will be updated with actual count)
+            // Set joined count (placeholder - will be updated with actual count if needed)
             joinedCountText.setText("Joined → 0");
 
-            // TODO: Load thumbnail image if posterUrl is available
+            // 🔹 Load thumbnail image from poster URL (same data used in details screen)
+            String posterUrl = event.getPosterUrl();   // use the same getter your details screen uses
+            if (posterUrl != null && !posterUrl.isEmpty()) {
+                Glide.with(thumbnail.getContext())
+                        .load(posterUrl)
+                        .centerCrop()
+                        .into(thumbnail);
+            } else {
+                // leave the default grey image or set a fallback if you have one
+                // thumbnail.setImageResource(R.drawable.your_placeholder);
+            }
 
-            // Set click listeners
+            // Click listeners
             itemView.setOnClickListener(v -> listener.onEventClick(event));
             deleteEventButton.setOnClickListener(v -> listener.onDeleteEventClick(event));
         }
     }
-}
 
+}
