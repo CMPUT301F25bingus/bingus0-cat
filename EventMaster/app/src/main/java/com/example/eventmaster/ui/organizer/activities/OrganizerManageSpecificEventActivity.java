@@ -259,7 +259,7 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
                     eventLocation.setText("📍 " + doc.getString("location"));
 
                     Long cap = doc.getLong("capacity");
-                    if (cap != null) eventCapacity.setText("👥 " + cap);
+                    if (cap != null) eventCapacity.setText(String.valueOf(cap));
 
                     eventDescription.setText(doc.getString("description"));
 

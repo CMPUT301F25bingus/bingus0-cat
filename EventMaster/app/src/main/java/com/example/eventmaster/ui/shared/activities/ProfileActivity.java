@@ -7,7 +7,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
+import android.content.DialogInterface;
+
 import androidx.appcompat.app.AlertDialog;
+import androidx.core.content.ContextCompat;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.eventmaster.R;
@@ -193,12 +196,27 @@ public class ProfileActivity extends AppCompatActivity {
      * Handles logout: signs out from Firebase Auth and navigates to role selection screen.
      */
     private void handleLogout() {
-        new AlertDialog.Builder(this)
+        AlertDialog dialog = new AlertDialog.Builder(this)
                 .setTitle("Log Out?")
                 .setMessage("Are you sure you want to log out?")
                 .setNegativeButton("Cancel", null)
                 .setPositiveButton("Log Out", (d, which) -> handleLogoutAndNavigateHome())
-                .show();
+                .create();
+        
+        // Change button colors from purple to teal
+        dialog.setOnShowListener(new DialogInterface.OnShowListener() {
+            @Override
+            public void onShow(DialogInterface d) {
+                dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(
+                    ContextCompat.getColor(ProfileActivity.this, R.color.teal_dark)
+                );
+                dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(
+                    ContextCompat.getColor(ProfileActivity.this, R.color.teal_dark)
+                );
+            }
+        });
+        
+        dialog.show();
     }
 
     /**
