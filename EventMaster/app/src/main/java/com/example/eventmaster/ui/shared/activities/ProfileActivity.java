@@ -14,15 +14,23 @@ import androidx.core.content.ContextCompat;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.eventmaster.R;
+import com.example.eventmaster.data.api.EventRepository;
+import com.example.eventmaster.data.api.NotificationService;
+import com.example.eventmaster.data.firestore.EventRepositoryFs;
+import com.example.eventmaster.data.firestore.NotificationServiceFs;
 import com.example.eventmaster.data.firestore.ProfileRepositoryFs;
+import com.example.eventmaster.model.Event;
 import com.example.eventmaster.model.Profile;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FirebaseFirestore;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -41,6 +49,9 @@ public class ProfileActivity extends AppCompatActivity {
 
     // === Data repositories ===
     private final ProfileRepositoryFs profileRepo = new ProfileRepositoryFs();
+    private final EventRepository eventRepository = new EventRepositoryFs();
+    private final NotificationService notificationService = new NotificationServiceFs();
+    private final FirebaseFirestore db = FirebaseFirestore.getInstance();
     // Temporary fallback ID; replaced by FirebaseAuth UID if logged in
     private String currentId = "demoUser123";
 
@@ -180,16 +191,213 @@ public class ProfileActivity extends AppCompatActivity {
     private void confirmDelete() {
         new AlertDialog.Builder(this)
                 .setTitle("Delete profile?")
-                .setMessage("This removes your profile from the system.")
+                .setMessage("This removes your profile and all associated data from the system.")
                 .setNegativeButton("Cancel", null)
-                .setPositiveButton("Delete", (d, which) ->
+                .setPositiveButton("Delete", (d, which) -> {
+                    // Get deviceId before deleting to also delete any profiles with same deviceId
+                    String deviceId = currentProfile != null ? currentProfile.getDeviceId() : null;
+                    
+                    // First, delete all user-related data (registrations, waiting list, notifications)
+                    deleteAllUserData(currentId, deviceId, () -> {
+                        // Then delete the profile by userId
                         profileRepo.delete(
                                 currentId,
-                                v -> handleLogoutAndNavigateHome(),
+                                v -> {
+                                    // Also delete any other profiles with the same deviceId to prevent restoration
+                                    if (deviceId != null && !deviceId.isEmpty()) {
+                                        deleteAllProfilesByDeviceId(deviceId, () -> handleLogoutAndNavigateHome());
+                                    } else {
+                                        handleLogoutAndNavigateHome();
+                                    }
+                                },
                                 err -> android.widget.Toast.makeText(this,
                                         "Delete failed: " + err.getMessage(),
-                                        android.widget.Toast.LENGTH_LONG).show()))
+                                        android.widget.Toast.LENGTH_LONG).show());
+                    });
+                })
                 .show();
+    }
+
+    /**
+     * Deletes all user-related data: registrations, waiting list entries, chosen list entries, and notifications.
+     */
+    private void deleteAllUserData(String userId, String deviceId, Runnable onComplete) {
+        android.util.Log.d("ProfileActivity", "Starting deletion of all user data for userId: " + userId);
+        
+        // Step 1: Delete all notifications
+        deleteAllNotifications(userId, deviceId, () -> {
+            // Step 2: Delete all event-related data (registrations, waiting list, chosen list)
+            deleteAllEventData(userId, onComplete);
+        });
+    }
+
+    /**
+     * Deletes all notifications for the user.
+     */
+    private void deleteAllNotifications(String userId, String deviceId, Runnable onComplete) {
+        android.util.Log.d("ProfileActivity", "Deleting notifications for userId: " + userId);
+        
+        // Delete notifications by userId
+        notificationService.deleteAllNotificationsForUser(
+                userId,
+                () -> {
+                    android.util.Log.d("ProfileActivity", "Successfully deleted notifications for userId: " + userId);
+                    // Also delete by deviceId if different
+                    if (deviceId != null && !deviceId.isEmpty() && !deviceId.equals(userId)) {
+                        notificationService.deleteAllNotificationsForUser(
+                                deviceId,
+                                () -> {
+                                    android.util.Log.d("ProfileActivity", "Successfully deleted notifications for deviceId: " + deviceId);
+                                    onComplete.run();
+                                },
+                                error -> {
+                                    android.util.Log.w("ProfileActivity", "Failed to delete notifications by deviceId: " + error);
+                                    // Continue even if this fails
+                                    onComplete.run();
+                                });
+                    } else {
+                        onComplete.run();
+                    }
+                },
+                error -> {
+                    android.util.Log.w("ProfileActivity", "Failed to delete notifications by userId: " + error);
+                    // Continue even if this fails
+                    onComplete.run();
+                });
+    }
+
+    /**
+     * Deletes all event-related data: registrations, waiting list entries, and chosen list entries.
+     * Deletes by both userId and deviceId to ensure all data is removed.
+     */
+    private void deleteAllEventData(String userId, Runnable onComplete) {
+        // Get deviceId from current profile
+        String deviceId = currentProfile != null ? currentProfile.getDeviceId() : null;
+        
+        android.util.Log.d("ProfileActivity", "Deleting event data for userId: " + userId + ", deviceId: " + deviceId);
+        
+        // Get all events
+        eventRepository.getAllEvents()
+                .addOnSuccessListener(events -> {
+                    if (events == null || events.isEmpty()) {
+                        android.util.Log.d("ProfileActivity", "No events found, skipping event data deletion");
+                        onComplete.run();
+                        return;
+                    }
+                    
+                    android.util.Log.d("ProfileActivity", "Found " + events.size() + " events, deleting user data from each");
+                    
+                    // Delete user data from each event
+                    int totalEvents = events.size();
+                    final int[] completedEvents = {0};
+                    
+                    if (totalEvents == 0) {
+                        onComplete.run();
+                        return;
+                    }
+                    
+                    for (Event event : events) {
+                        String eventId = event.getId();
+                        if (eventId == null || eventId.isEmpty()) {
+                            completedEvents[0]++;
+                            if (completedEvents[0] >= totalEvents) {
+                                android.util.Log.d("ProfileActivity", "Completed deleting event data");
+                                onComplete.run();
+                            }
+                            continue;
+                        }
+                        
+                        // Delete by both userId and deviceId (if different)
+                        deleteEventUserData(eventId, userId, deviceId, () -> {
+                            completedEvents[0]++;
+                            if (completedEvents[0] >= totalEvents) {
+                                android.util.Log.d("ProfileActivity", "Completed deleting event data from all events");
+                                onComplete.run();
+                            }
+                        });
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    android.util.Log.e("ProfileActivity", "Failed to get events for deletion: " + e.getMessage());
+                    // Continue even if this fails
+                    onComplete.run();
+                });
+    }
+
+    /**
+     * Deletes user data from a specific event: registration, waiting list entry, and chosen list entry.
+     * Deletes by both userId and deviceId to ensure all data is removed.
+     */
+    private void deleteEventUserData(String eventId, String userId, String deviceId, Runnable onComplete) {
+        List<com.google.android.gms.tasks.Task<?>> deleteTasks = new ArrayList<>();
+        
+        // Delete by userId
+        deleteTasks.add(db.collection("events").document(eventId)
+                .collection("registrations").document(userId).delete());
+        deleteTasks.add(db.collection("events").document(eventId)
+                .collection("waiting_list").document(userId).delete());
+        deleteTasks.add(db.collection("events").document(eventId)
+                .collection("chosen_list").document(userId).delete());
+        
+        // Also delete by deviceId if it's different from userId
+        if (deviceId != null && !deviceId.isEmpty() && !deviceId.equals(userId)) {
+            deleteTasks.add(db.collection("events").document(eventId)
+                    .collection("registrations").document(deviceId).delete());
+            deleteTasks.add(db.collection("events").document(eventId)
+                    .collection("waiting_list").document(deviceId).delete());
+            deleteTasks.add(db.collection("events").document(eventId)
+                    .collection("chosen_list").document(deviceId).delete());
+        }
+        
+        // Wait for all deletions to complete
+        com.google.android.gms.tasks.Tasks.whenAllComplete(deleteTasks)
+                .addOnCompleteListener(task -> {
+                    android.util.Log.d("ProfileActivity", "Completed deleting user data from event: " + eventId);
+                    onComplete.run();
+                });
+    }
+
+    /**
+     * Deletes all profiles with the given deviceId to prevent profile restoration after deletion.
+     * Uses a safety counter to prevent infinite recursion.
+     */
+    private void deleteAllProfilesByDeviceId(String deviceId, Runnable onComplete) {
+        deleteAllProfilesByDeviceId(deviceId, onComplete, 0);
+    }
+
+    /**
+     * Helper method with recursion safety counter.
+     */
+    private void deleteAllProfilesByDeviceId(String deviceId, Runnable onComplete, int iteration) {
+        // Safety check: prevent infinite recursion (max 10 iterations)
+        if (iteration >= 10) {
+            android.util.Log.w("ProfileActivity", "Reached max iterations for deleting profiles by deviceId");
+            onComplete.run();
+            return;
+        }
+
+        // Query all profiles with this deviceId
+        profileRepo.getByDeviceId(deviceId)
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful() && task.getResult() != null) {
+                        Profile profile = task.getResult();
+                        // Delete this profile (it might have a different userId)
+                        profileRepo.delete(
+                                profile.getUserId(),
+                                v -> {
+                                    // Recursively check for more profiles with the same deviceId
+                                    deleteAllProfilesByDeviceId(deviceId, onComplete, iteration + 1);
+                                },
+                                err -> {
+                                    // Continue even if deletion fails
+                                    android.util.Log.w("ProfileActivity", "Failed to delete profile by deviceId: " + err.getMessage());
+                                    deleteAllProfilesByDeviceId(deviceId, onComplete, iteration + 1);
+                                });
+                    } else {
+                        // No more profiles with this deviceId, we're done
+                        onComplete.run();
+                    }
+                });
     }
 
     /**
