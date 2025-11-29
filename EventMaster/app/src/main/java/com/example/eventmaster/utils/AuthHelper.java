@@ -32,39 +32,56 @@ public class AuthHelper {
                             String uid = user.getUid();
                             String deviceId = DeviceUtils.getDeviceId(context);
 
-                            profileRepo.get(uid).addOnCompleteListener(profileTask -> {
-                                if (profileTask.isSuccessful() && profileTask.getResult() != null) {
-
-                                    Profile existingProfile = profileTask.getResult();
-                                    if (existingProfile.getDeviceId() == null ||
-                                            existingProfile.getDeviceId().isEmpty()) {
-
-                                        existingProfile.setDeviceId(deviceId);
-                                        profileRepo.upsert(existingProfile)
-                                                .addOnCompleteListener(updateTask ->
-                                                        listener.onSuccess(user, existingProfile));
-                                    } else {
-                                        listener.onSuccess(user, existingProfile);
-                                    }
-
-                                } else {
-                                    Profile profile = new Profile();
-                                    profile.setUserId(uid);
-                                    profile.setDeviceId(deviceId);
-                                    profile.setRole("entrant");
-                                    profile.setActive(true);
-                                    profile.setBanned(false);
-
-                                    profileRepo.upsert(profile)
-                                            .addOnCompleteListener(createTask -> {
-                                                if (createTask.isSuccessful()) {
-                                                    listener.onSuccess(user, profile);
+                            profileRepo.get(uid)
+                                    .addOnCompleteListener(profileTask -> {
+                                        try {
+                                            if (profileTask.isSuccessful() && profileTask.getResult() != null) {
+                                                Profile existingProfile = profileTask.getResult();
+                                                if (existingProfile.getDeviceId() == null ||
+                                                        existingProfile.getDeviceId().isEmpty()) {
+                                                    existingProfile.setDeviceId(deviceId);
+                                                    profileRepo.upsert(existingProfile)
+                                                            .addOnCompleteListener(updateTask -> {
+                                                                if (updateTask.isSuccessful()) {
+                                                                    listener.onSuccess(user, existingProfile);
+                                                                } else {
+                                                                    listener.onError(updateTask.getException());
+                                                                }
+                                                            })
+                                                            .addOnFailureListener(e -> {
+                                                                listener.onError(e);
+                                                            });
                                                 } else {
-                                                    listener.onError(createTask.getException());
+                                                    listener.onSuccess(user, existingProfile);
                                                 }
-                                            });
-                                }
-                            });
+                                            } else {
+                                                // Profile doesn't exist, create new one
+                                                Profile profile = new Profile();
+                                                profile.setUserId(uid);
+                                                profile.setDeviceId(deviceId);
+                                                profile.setRole("entrant");
+                                                profile.setActive(true);
+                                                profile.setBanned(false);
+
+                                                profileRepo.upsert(profile)
+                                                        .addOnCompleteListener(createTask -> {
+                                                            if (createTask.isSuccessful()) {
+                                                                listener.onSuccess(user, profile);
+                                                            } else {
+                                                                listener.onError(createTask.getException());
+                                                            }
+                                                        })
+                                                        .addOnFailureListener(e -> {
+                                                            listener.onError(e);
+                                                        });
+                                            }
+                                        } catch (Exception e) {
+                                            listener.onError(e);
+                                        }
+                                    })
+                                    .addOnFailureListener(e -> {
+                                        listener.onError(new IllegalStateException("Failed to get profile: " + e.getMessage(), e));
+                                    });
                         } else {
                             listener.onError(new IllegalStateException("User is null after anonymous sign-in"));
                         }
@@ -135,22 +152,29 @@ public class AuthHelper {
                         if (user != null) {
                             String uid = user.getUid();
 
-                            profileRepo.get(uid).addOnCompleteListener(profileTask -> {
-                                if (profileTask.isSuccessful() && profileTask.getResult() != null) {
-
-                                    Profile profile = profileTask.getResult();
-
-                                    if (expectedRole.equals(profile.getRole())) {
-                                        listener.onSuccess(user, profile);
-                                    } else {
-                                        auth.signOut();
-                                        listener.onError(new IllegalStateException("role mismatch"));
-                                    }
-
-                                } else {
-                                    listener.onError(new IllegalStateException("Profile not found"));
-                                }
-                            });
+                            profileRepo.get(uid)
+                                    .addOnCompleteListener(profileTask -> {
+                                        try {
+                                            if (profileTask.isSuccessful() && profileTask.getResult() != null) {
+                                                Profile profile = profileTask.getResult();
+                                                if (expectedRole.equals(profile.getRole())) {
+                                                    listener.onSuccess(user, profile);
+                                                } else {
+                                                    auth.signOut();
+                                                    listener.onError(new IllegalStateException("role mismatch"));
+                                                }
+                                            } else {
+                                                Exception e = profileTask.getException();
+                                                String errorMsg = e != null ? e.getMessage() : "Profile not found";
+                                                listener.onError(new IllegalStateException("Profile not found: " + errorMsg));
+                                            }
+                                        } catch (Exception e) {
+                                            listener.onError(e);
+                                        }
+                                    })
+                                    .addOnFailureListener(e -> {
+                                        listener.onError(new IllegalStateException("Failed to get profile: " + e.getMessage(), e));
+                                    });
 
                         } else {
                             listener.onError(new IllegalStateException("User is null after sign-in"));

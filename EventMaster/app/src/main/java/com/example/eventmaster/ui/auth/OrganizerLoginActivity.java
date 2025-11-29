@@ -114,22 +114,24 @@ public class OrganizerLoginActivity extends AppCompatActivity {
                 new AuthHelper.OnAuthCompleteListener() {
                     @Override
                     public void onSuccess(FirebaseUser user, Profile profile) {
-
-                        primaryButton.setEnabled(true);
-                        primaryButton.setText("Sign Up");
-
-                        Toast.makeText(OrganizerLoginActivity.this,
-                                "Account created successfully!",
-                                Toast.LENGTH_SHORT).show();
-
-                        navigateToOrganizerHome();
+                        runOnUiThread(() -> {
+                            primaryButton.setEnabled(true);
+                            primaryButton.setText("Sign Up");
+                            Toast.makeText(OrganizerLoginActivity.this,
+                                    "Account created successfully!",
+                                    Toast.LENGTH_SHORT).show();
+                            navigateToOrganizerHome();
+                        });
                     }
 
                     @Override
                     public void onError(Exception error) {
-                        primaryButton.setEnabled(true);
-                        primaryButton.setText("Sign Up");
-                        handleSignUpError(error);
+                        runOnUiThread(() -> {
+                            primaryButton.setEnabled(true);
+                            primaryButton.setText("Sign Up");
+                            handleSignUpError(error);
+                            android.util.Log.e("OrganizerLogin", "Sign-up error: " + (error != null ? error.getMessage() : "Unknown"), error);
+                        });
                     }
                 });
     }
@@ -153,19 +155,24 @@ public class OrganizerLoginActivity extends AppCompatActivity {
                 new AuthHelper.OnAuthCompleteListener() {
                     @Override
                     public void onSuccess(FirebaseUser user, Profile profile) {
-                        primaryButton.setEnabled(true);
-                        primaryButton.setText("Sign In");
-                        Toast.makeText(OrganizerLoginActivity.this,
-                                "Signed in successfully!",
-                                Toast.LENGTH_SHORT).show();
-                        navigateToOrganizerHome();
+                        runOnUiThread(() -> {
+                            primaryButton.setEnabled(true);
+                            primaryButton.setText("Sign In");
+                            Toast.makeText(OrganizerLoginActivity.this,
+                                    "Signed in successfully!",
+                                    Toast.LENGTH_SHORT).show();
+                            navigateToOrganizerHome();
+                        });
                     }
 
                     @Override
                     public void onError(Exception error) {
-                        primaryButton.setEnabled(true);
-                        primaryButton.setText("Sign In");
-                        handleSignInError(error);
+                        runOnUiThread(() -> {
+                            primaryButton.setEnabled(true);
+                            primaryButton.setText("Sign In");
+                            handleSignInError(error);
+                            android.util.Log.e("OrganizerLogin", "Sign-in error: " + (error != null ? error.getMessage() : "Unknown"), error);
+                        });
                     }
                 });
     }

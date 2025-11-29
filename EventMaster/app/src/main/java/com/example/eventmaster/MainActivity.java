@@ -94,9 +94,9 @@ public class MainActivity extends AppCompatActivity {
     private void showRoleSelection() {
         setContentView(R.layout.temp_activity_main_roles);
 
-        MaterialButton btnAdmin = findViewById(R.id.btnAdmin);
-        MaterialButton btnOrganizer = findViewById(R.id.btnOrganizer);
-        MaterialButton btnEntrant = findViewById(R.id.btnEntrant);
+        com.google.android.material.card.MaterialCardView btnAdmin = findViewById(R.id.btnAdmin);
+        com.google.android.material.card.MaterialCardView btnOrganizer = findViewById(R.id.btnOrganizer);
+        com.google.android.material.card.MaterialCardView btnEntrant = findViewById(R.id.btnEntrant);
 
         btnAdmin.setOnClickListener(v ->
                 startActivity(new Intent(this, AdminLoginActivity.class)));
@@ -105,126 +105,198 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(new Intent(this, OrganizerLoginActivity.class)));
 
         btnEntrant.setOnClickListener(v -> {
-            // Check for existing profile by device ID first
-            MaterialButton btn = (MaterialButton) v;
+            com.google.android.material.card.MaterialCardView btn = (com.google.android.material.card.MaterialCardView) v;
             btn.setEnabled(false);
-            btn.setText("Signing in...");
+            btn.setClickable(false);
+            btn.setAlpha(0.6f); // Visual feedback
 
             String deviceId = DeviceUtils.getDeviceId(this);
             ProfileRepositoryFs profileRepo = new ProfileRepositoryFs();
 
-            // First, try to find existing profile for this device
+            // First, check for existing profile by device ID
             profileRepo.getByDeviceId(deviceId).addOnCompleteListener(deviceProfileTask -> {
-                if (deviceProfileTask.isSuccessful()) {
-                    Profile existingProfile = deviceProfileTask.getResult();
-                    if (existingProfile != null) {
-                        // Found existing profile for this device
-                        // Check if user is already signed in with this profile's userId
-                        FirebaseAuth auth = FirebaseAuth.getInstance();
-                        if (auth.getCurrentUser() != null && existingProfile.getUserId().equals(auth.getCurrentUser().getUid())) {
-                            // Already signed in with correct user, just route
-                            routeEntrant(existingProfile);
-                            btn.setEnabled(true);
-                            btn.setText("Entrant Portal");
+                if (isFinishing() || isDestroyed()) {
+                    return;
+                }
+
+                try {
+                    if (deviceProfileTask.isSuccessful()) {
+                        Profile existingProfile = deviceProfileTask.getResult();
+                        
+                        if (existingProfile != null) {
+                            // Found existing profile for this device
+                            FirebaseAuth auth = FirebaseAuth.getInstance();
+                            
+                            // Check if user is already signed in with this profile's userId
+                            if (auth.getCurrentUser() != null && existingProfile.getUserId() != null
+                                    && existingProfile.getUserId().equals(auth.getCurrentUser().getUid())) {
+                                // Already signed in with correct user, just route
+                                runOnUiThread(() -> {
+                                    btn.setEnabled(true);
+                                    btn.setClickable(true);
+                                    btn.setAlpha(1.0f);
+                                });
+                                routeEntrant(existingProfile);
+                            } else {
+                                // Sign in anonymously and update profile userId if needed
+                                // We already have the existing profile, so we'll update it with the new userId
+                                FirebaseAuth.getInstance().signInAnonymously()
+                                        .addOnCompleteListener(task -> {
+                                            if (isFinishing() || isDestroyed()) {
+                                                return;
+                                            }
+
+                                            if (task.isSuccessful()) {
+                                                com.google.firebase.auth.FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+                                                if (user != null && user.getUid() != null
+                                                        && !user.getUid().equals(existingProfile.getUserId())) {
+                                                    // Update existing profile with new anonymous userId
+                                                    existingProfile.setUserId(user.getUid());
+                                                    profileRepo.upsert(existingProfile).addOnCompleteListener(updateTask -> {
+                                                        runOnUiThread(() -> {
+                                                            btn.setEnabled(true);
+                                                            btn.setClickable(true);
+                                                            btn.setAlpha(1.0f);
+                                                        });
+
+                                                        if (updateTask.isSuccessful()) {
+                                                            routeEntrant(existingProfile);
+                                                        } else {
+                                                            // Even if update fails, route with existing profile
+                                                            android.util.Log.w("MainActivity", "Failed to update profile userId, routing anyway: " + updateTask.getException());
+                                                            routeEntrant(existingProfile);
+                                                        }
+                                                    });
+                                                } else {
+                                                    // User ID already matches or user is null
+                                                    runOnUiThread(() -> {
+                                                        btn.setEnabled(true);
+                                                        btn.setClickable(true);
+                                                        btn.setAlpha(1.0f);
+                                                    });
+                                                    routeEntrant(existingProfile);
+                                                }
+                                            } else {
+                                                // Sign in failed
+                                                runOnUiThread(() -> {
+                                                    btn.setEnabled(true);
+                                                    btn.setClickable(true);
+                                                    btn.setAlpha(1.0f);
+                                                    android.widget.Toast.makeText(MainActivity.this,
+                                                            "Failed to sign in: " + (task.getException() != null ? task.getException().getMessage() : "Unknown error"),
+                                                            android.widget.Toast.LENGTH_LONG).show();
+                                                });
+                                                android.util.Log.e("MainActivity", "Error signing in anonymously: " + (task.getException() != null ? task.getException().getMessage() : "Unknown"), task.getException());
+                                            }
+                                        });
+                            }
                         } else {
-                            // Sign in anonymously and update profile userId if needed
-                            AuthHelper.signInAnonymously(this, new AuthHelper.OnAuthCompleteListener() {
+                            // No existing profile for this device - first-time user
+                            // Sign in anonymously and create new profile
+                            AuthHelper.signInAnonymously(MainActivity.this, new AuthHelper.OnAuthCompleteListener() {
                                 @Override
                                 public void onSuccess(com.google.firebase.auth.FirebaseUser user, Profile profile) {
-                                    btn.setEnabled(true);
-                                    btn.setText("Entrant Portal");
-
-                                    // Update profile userId if it changed (new anonymous user)
-                                    if (!existingProfile.getUserId().equals(user.getUid())) {
-                                        existingProfile.setUserId(user.getUid());
-                                        profileRepo.upsert(existingProfile).addOnCompleteListener(updateTask -> {
-                                            routeEntrant(existingProfile);
-                                        });
-                                    } else {
-                                        routeEntrant(existingProfile);
+                                    if (isFinishing() || isDestroyed()) {
+                                        return;
                                     }
+
+                                    runOnUiThread(() -> {
+                                        btn.setEnabled(true);
+                                        btn.setClickable(true);
+                                        btn.setAlpha(1.0f);
+
+                                        // Navigate based on profile completeness
+                                        Intent intent;
+                                        if (profile != null && profile.getName() != null && !profile.getName().isEmpty()
+                                                && profile.getEmail() != null && !profile.getEmail().isEmpty()) {
+                                            // Profile complete, go to welcome screen
+                                            intent = new Intent(MainActivity.this, EntrantWelcomeActivity.class);
+                                        } else {
+                                            // Profile incomplete, go to create profile
+                                            intent = new Intent(MainActivity.this, CreateProfileActivity.class);
+                                        }
+                                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                                        startActivity(intent);
+                                        finish();
+                                    });
                                 }
 
                                 @Override
                                 public void onError(Exception error) {
-                                    btn.setEnabled(true);
-                                    btn.setText("Entrant Portal");
-                                    android.widget.Toast.makeText(MainActivity.this,
-                                            "Failed to sign in: " + (error != null ? error.getMessage() : "Unknown error"),
-                                            android.widget.Toast.LENGTH_LONG).show();
+                                    if (isFinishing() || isDestroyed()) {
+                                        return;
+                                    }
+
+                                    runOnUiThread(() -> {
+                                        btn.setEnabled(true);
+                                        btn.setClickable(true);
+                                        btn.setAlpha(1.0f);
+                                        android.widget.Toast.makeText(MainActivity.this,
+                                                "Failed to sign in: " + (error != null ? error.getMessage() : "Unknown error"),
+                                                android.widget.Toast.LENGTH_LONG).show();
+                                    });
+
+                                    android.util.Log.e("MainActivity", "Error signing in anonymously: " + (error != null ? error.getMessage() : "Unknown"), error);
                                 }
                             });
                         }
                     } else {
-                        // No existing profile for this device (this is normal for first-time users)
-                        // Create new anonymous user
-                        AuthHelper.signInAnonymously(this, new AuthHelper.OnAuthCompleteListener() {
+                        // Error getting profile by device ID, try normal anonymous login as fallback
+                        android.util.Log.w("MainActivity", "Error getting profile by device ID, falling back to anonymous login");
+                        AuthHelper.signInAnonymously(MainActivity.this, new AuthHelper.OnAuthCompleteListener() {
                             @Override
                             public void onSuccess(com.google.firebase.auth.FirebaseUser user, Profile profile) {
-                                btn.setEnabled(true);
-                                btn.setText("Entrant Portal");
-
-                                // Check if profile is complete
-                                if (profile.getName() != null && !profile.getName().isEmpty()
-                                        && profile.getEmail() != null && !profile.getEmail().isEmpty()) {
-                                    // Profile complete, go to home
-                                    Intent intent = new Intent(MainActivity.this, EntrantWelcomeActivity.class);
-                                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                                    startActivity(intent);
-                                    finish();
-                                } else {
-                                    // Profile incomplete, go to create profile
-                                    Intent intent = new Intent(MainActivity.this, CreateProfileActivity.class);
-                                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                                    startActivity(intent);
-                                    finish();
+                                if (isFinishing() || isDestroyed()) {
+                                    return;
                                 }
+
+                                runOnUiThread(() -> {
+                                    btn.setEnabled(true);
+                                    btn.setClickable(true);
+                                    btn.setAlpha(1.0f);
+
+                                    // Navigate based on profile completeness
+                                    Intent intent;
+                                    if (profile != null && profile.getName() != null && !profile.getName().isEmpty()
+                                            && profile.getEmail() != null && !profile.getEmail().isEmpty()) {
+                                        intent = new Intent(MainActivity.this, EntrantWelcomeActivity.class);
+                                    } else {
+                                        intent = new Intent(MainActivity.this, CreateProfileActivity.class);
+                                    }
+                                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                                    startActivity(intent);
+                                    finish();
+                                });
                             }
 
                             @Override
                             public void onError(Exception error) {
-                                btn.setEnabled(true);
-                                btn.setText("Entrant Portal");
-                                android.widget.Toast.makeText(MainActivity.this,
-                                        "Failed to sign in: " + (error != null ? error.getMessage() : "Unknown error"),
-                                        android.widget.Toast.LENGTH_LONG).show();
+                                if (isFinishing() || isDestroyed()) {
+                                    return;
+                                }
+
+                                runOnUiThread(() -> {
+                                    btn.setEnabled(true);
+                                    btn.setClickable(true);
+                                    btn.setAlpha(1.0f);
+                                    android.widget.Toast.makeText(MainActivity.this,
+                                            "Failed to sign in: " + (error != null ? error.getMessage() : "Unknown error"),
+                                            android.widget.Toast.LENGTH_LONG).show();
+                                });
+
+                                android.util.Log.e("MainActivity", "Error signing in anonymously: " + (error != null ? error.getMessage() : "Unknown"), error);
                             }
                         });
                     }
-                } else {
-                    // Error getting profile by device ID, try normal anonymous login
-                    AuthHelper.signInAnonymously(this, new AuthHelper.OnAuthCompleteListener() {
-                        @Override
-                        public void onSuccess(com.google.firebase.auth.FirebaseUser user, Profile profile) {
+                } catch (Exception e) {
+                    android.util.Log.e("MainActivity", "Error processing device profile: " + e.getMessage(), e);
+                    if (!isFinishing() && !isDestroyed()) {
+                        runOnUiThread(() -> {
                             btn.setEnabled(true);
-                            btn.setText("Entrant Portal");
-
-                            // Check if profile is complete
-                            if (profile.getName() != null && !profile.getName().isEmpty()
-                                    && profile.getEmail() != null && !profile.getEmail().isEmpty()) {
-                                // Profile complete, go to home
-                                Intent intent = new Intent(MainActivity.this, EntrantWelcomeActivity.class);
-                                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                                startActivity(intent);
-                                finish();
-                            } else {
-                                // Profile incomplete, go to create profile
-                                Intent intent = new Intent(MainActivity.this, CreateProfileActivity.class);
-                                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                                startActivity(intent);
-                                finish();
-                            }
-                        }
-
-                        @Override
-                        public void onError(Exception error) {
-                            btn.setEnabled(true);
-                            btn.setText("Entrant Portal");
-                            android.widget.Toast.makeText(MainActivity.this,
-                                    "Failed to sign in: " + (error != null ? error.getMessage() : "Unknown error"),
-                                    android.widget.Toast.LENGTH_LONG).show();
-                        }
-                    });
+                            btn.setClickable(true);
+                            btn.setAlpha(1.0f);
+                        });
+                    }
                 }
             });
         });
