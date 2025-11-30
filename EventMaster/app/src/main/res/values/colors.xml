@@ -29,4 +29,6 @@
     <color name="shadow">#33000000</color>
     <color name="backgroundColor">#64C3BF</color>
     <color name="status_badge_bg">#F2F6F6</color>
+    <color name="teal_admin_bg">#6FAEAA</color>
+    <color name="header_light">#CFE0DF</color>
 </resources>
