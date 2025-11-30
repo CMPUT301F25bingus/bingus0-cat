@@ -2,26 +2,31 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fillViewport="true">
+    android:fillViewport="true"
+    android:background="@color/teal_admin_bg">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:padding="16dp">
 
         <!-- Top bar -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="56dp"
             android:orientation="horizontal"
+            android:background="@color/header_light"
+            android:elevation="4dp"
             android:gravity="center_vertical"
             android:paddingStart="8dp"
-            android:paddingEnd="16dp">
+            android:paddingEnd="16dp"
+            android:layout_marginBottom="16dp">
 
             <TextView
                 android:id="@+id/btnBack"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:gravity="center"
                 android:text="‹"
                 android:textSize="22sp" />
@@ -29,92 +34,141 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Organizer profile"
+                android:layout_marginStart="12dp"
+                android:text="My Profile"
                 android:textStyle="bold"
-                android:textSize="18sp"
-                android:layout_marginStart="8dp" />
+                android:textSize="18sp" />
         </LinearLayout>
 
-        <!-- Header card -->
+        <!-- Profile card -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:padding="16dp"
+            android:background="@android:color/white"
+            android:elevation="2dp"
+            android:layout_marginBottom="16dp"
+            android:backgroundTintMode="src_over"
+            android:clipToOutline="true"
+            android:outlineProvider="background">
 
-            <TextView android:text="Name" android:textStyle="bold"
-                android:layout_width="wrap_content" android:layout_height="wrap_content"/>
-            <TextView
-                android:id="@+id/tvName"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textSize="16sp"
-                android:layout_marginBottom="12dp"/>
+                android:orientation="horizontal">
 
-            <TextView android:text="Email" android:textStyle="bold"
-                android:layout_width="wrap_content" android:layout_height="wrap_content"/>
-            <TextView
-                android:id="@+id/tvEmail"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textSize="16sp"
-                android:layout_marginBottom="12dp"/>
+                <!-- Avatar circle -->
+                <ImageView
+                    android:layout_width="64dp"
+                    android:layout_height="64dp"
+                    android:background="@drawable/bg_avatar_circle"
+                    android:layout_marginEnd="16dp" />
 
-            <TextView android:text="Phone" android:textStyle="bold"
-                android:layout_width="wrap_content" android:layout_height="wrap_content"/>
-            <TextView
-                android:id="@+id/tvPhone"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textSize="16sp"
-                android:layout_marginBottom="12dp"/>
+                <!-- Text block -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
 
-            <TextView android:text="Status" android:textStyle="bold"
-                android:layout_width="wrap_content" android:layout_height="wrap_content"/>
-            <TextView
-                android:id="@+id/tvState"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textSize="15sp"
-                android:layout_marginBottom="16dp"/>
+                    <TextView
+                        android:text="Name:"
+                        android:textStyle="bold"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+
+                    <TextView
+                        android:id="@+id/tvName"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="16sp"
+                        android:layout_marginBottom="8dp" />
+
+                    <TextView
+                        android:text="Email:"
+                        android:textStyle="bold"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+
+                    <TextView
+                        android:id="@+id/tvEmail"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="14sp"
+                        android:layout_marginBottom="8dp" />
+
+                    <TextView
+                        android:text="Phone:"
+                        android:textStyle="bold"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+
+                    <TextView
+                        android:id="@+id/tvPhone"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="14sp"
+                        android:layout_marginBottom="8dp" />
+
+                    <TextView
+                        android:text="Status:"
+                        android:textStyle="bold"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+
+                    <TextView
+                        android:id="@+id/tvState"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="14sp"
+                        android:layout_marginBottom="4dp" />
+                </LinearLayout>
+            </LinearLayout>
         </LinearLayout>
 
-        <!-- Ban/Unban -->
+        <!-- Ban/Unban button -->
         <Button
             android:id="@+id/btnBan"
             android:layout_width="match_parent"
             android:layout_height="48dp"
             android:layout_marginHorizontal="16dp"
-            android:layout_marginTop="8dp"
-            android:text="Ban organizer" />
+            android:layout_marginBottom="16dp"
+            android:backgroundTint="#F36C6C"
+            android:textColor="@android:color/white"
+            android:text="Ban organizer"
+            android:textAllCaps="false" />
 
-        <!-- Events organized -->
+        <!-- Events organized header -->
         <TextView
             android:id="@+id/headerEvents"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Events organized"
+            android:text="Events organized:"
             android:textStyle="bold"
             android:textSize="16sp"
             android:layout_marginStart="16dp"
-            android:layout_marginTop="24dp"
-            android:layout_marginBottom="8dp"/>
+            android:layout_marginBottom="8dp" />
 
+        <!-- Events list -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rvEvents"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingBottom="16dp"/>
+            android:paddingHorizontal="16dp"
+            android:paddingBottom="24dp" />
 
-        <!-- View notification logs button -->
+        <!-- View notification logs (bottom, centered, link-ish) -->
         <Button
             android:id="@+id/btnViewNotificationLogs"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:text="View notification logs"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp"
-            android:layout_marginTop="16dp"
-            android:layout_marginBottom="24dp"/>
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:backgroundTint="@android:color/transparent"
+            android:textColor="@android:color/black"
+            android:textAllCaps="false"
+            android:text="[ 📒 View Notification Logs ]"
+            android:layout_marginBottom="24dp" />
+
     </LinearLayout>
 </ScrollView>
