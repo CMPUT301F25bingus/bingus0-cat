@@ -13,11 +13,15 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import android.content.Intent;
+
 import com.bumptech.glide.Glide;
 import com.example.eventmaster.R;
 import com.example.eventmaster.data.api.EventRepository;
 import com.example.eventmaster.data.firestore.EventRepositoryFs;
 import com.example.eventmaster.model.Event;
+import com.example.eventmaster.ui.admin.activities.AdminNotificationLogActivity;
+import com.google.android.material.button.MaterialButton;
 
 import java.text.SimpleDateFormat;
 import java.util.Locale;
@@ -46,6 +50,7 @@ public class AdminEventDetailsFragment extends Fragment {
     private TextView capacityText;
     private TextView registrationDateText;
     private TextView descriptionText;
+    private MaterialButton btnViewNotificationLogs;
 
     public static AdminEventDetailsFragment newInstance(String eventId) {
         AdminEventDetailsFragment fragment = new AdminEventDetailsFragment();
@@ -85,8 +90,10 @@ public class AdminEventDetailsFragment extends Fragment {
         capacityText = view.findViewById(R.id.event_capacity_text);
         registrationDateText = view.findViewById(R.id.registration_date_text);
         descriptionText = view.findViewById(R.id.event_description_text);
+        btnViewNotificationLogs = view.findViewById(R.id.btn_view_notification_logs);
 
         backButton.setOnClickListener(v -> requireActivity().onBackPressed());
+        btnViewNotificationLogs.setOnClickListener(v -> openNotificationLogs());
 
         // Load event details
         loadEventDetails();
@@ -171,6 +178,17 @@ public class AdminEventDetailsFragment extends Fragment {
             Glide.with(requireContext())
                     .load(event.getPosterUrl())
                     .into(posterImage);
+        }
+    }
+
+    /**
+     * Opens notification logs filtered by this event.
+     */
+    private void openNotificationLogs() {
+        if (eventId != null) {
+            Intent intent = new Intent(requireContext(), AdminNotificationLogActivity.class);
+            intent.putExtra("eventId", eventId);
+            startActivity(intent);
         }
     }
 }
