@@ -249,11 +249,52 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
         // --- Load profile for attaching to waiting list entries ---
         profileRepo.getByDeviceId(userId)
                 .addOnSuccessListener(profile -> {
-                    if (profile != null) currentProfile = profile;
-                    else {
-                        Profile newP = new Profile(userId, "Guest User", "", null);
-                        profileRepo.upsert(newP);
-                        currentProfile = newP;
+                    if (profile != null) {
+                        currentProfile = profile;
+                    } else {
+                        // No profile found by deviceId
+                        // Check if user is signed in with Firebase
+                        com.google.firebase.auth.FirebaseUser firebaseUser = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser();
+                        if (firebaseUser != null && firebaseUser.getUid() != null) {
+                            // User is signed in, check profile by Firebase UID
+                            profileRepo.get(firebaseUser.getUid())
+                                    .addOnSuccessListener(existingProfile -> {
+                                        if (existingProfile != null) {
+                                            // Profile exists by UID, update deviceId if needed
+                                            if (existingProfile.getDeviceId() == null || existingProfile.getDeviceId().isEmpty()) {
+                                                existingProfile.setDeviceId(userId);
+                                                profileRepo.upsert(existingProfile);
+                                            }
+                                            currentProfile = existingProfile;
+                                        } else {
+                                            // No profile by UID either, create new one with Firebase UID
+                                            Profile newP = new Profile();
+                                            newP.setUserId(firebaseUser.getUid());
+                                            newP.setDeviceId(userId);
+                                            newP.setName("Guest User");
+                                            newP.setEmail("");
+                                            newP.setRole("entrant");
+                                            newP.setActive(true);
+                                            newP.setBanned(false);
+                                            profileRepo.upsert(newP);
+                                            currentProfile = newP;
+                                        }
+                                    })
+                                    .addOnFailureListener(e -> {
+                                        // Error getting by UID, create new profile with Firebase UID
+                                        Profile newP = new Profile();
+                                        newP.setUserId(firebaseUser.getUid());
+                                        newP.setDeviceId(userId);
+                                        newP.setName("Guest User");
+                                        newP.setEmail("");
+                                        newP.setRole("entrant");
+                                        newP.setActive(true);
+                                        newP.setBanned(false);
+                                        profileRepo.upsert(newP);
+                                        currentProfile = newP;
+                                    });
+                        }
+                        // If not signed in, don't create profile - wait for proper sign-in
                     }
                 });
     }

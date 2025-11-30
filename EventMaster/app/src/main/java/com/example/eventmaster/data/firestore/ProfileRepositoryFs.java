@@ -229,6 +229,28 @@ public class ProfileRepositoryFs {
 
     public Task<List<Profile>> getEntrants() { return getByRole("entrant"); }
     public Task<List<Profile>> getOrganizers() { return getByRole("organizer"); }
+    
+    /** Get profile by email (for checking duplicates). 
+     * Returns null if not found. */
+    public Task<Profile> getByEmail(@NonNull String email) {
+        return db.collection(COLL)
+                .whereEqualTo("email", email)
+                .limit(1)
+                .get()
+                .continueWith(task -> {
+                    if (!task.isSuccessful()) throw task.getException();
+                    QuerySnapshot snap = task.getResult();
+                    if (snap != null && !snap.isEmpty()) {
+                        for (DocumentSnapshot doc : snap.getDocuments()) {
+                            Profile p = fromDoc(doc);
+                            if (p.getActive() && !p.getBanned()) {
+                                return p;
+                            }
+                        }
+                    }
+                    return null;
+                });
+    }
 
     // ---------- Reads (callback overloads) ----------
 

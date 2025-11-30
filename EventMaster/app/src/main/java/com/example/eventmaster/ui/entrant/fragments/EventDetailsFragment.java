@@ -157,8 +157,8 @@ public class EventDetailsFragment extends Fragment {
 
     /**
      * Retrieves the user's profile using the device ID. If no existing profile
-     * is found, a default "Guest User" profile is created and saved. This ensures
-     * that every entrant interacting with the system has a valid profile record.
+     * is found, it tries to get Firebase UID and create profile properly.
+     * This ensures that every entrant interacting with the system has a valid profile record.
      */
     private void loadUserProfile() {
         profileRepo.getByDeviceId(userId)
@@ -167,23 +167,70 @@ public class EventDetailsFragment extends Fragment {
                         currentProfile = profile;
                         Log.d(TAG, "Loaded profile for device: " + profile.getName());
                     } else {
-                        //
-                        Profile newProf = new Profile(
-                                userId,
-                                "Guest User",
-                                "",
-                                null
-                        );
-                        profileRepo.upsert(newProf);
-                        currentProfile = newProf;
-                        Log.d(TAG, "Created new profile for device.");
+                        // No profile found by deviceId
+                        // Check if user is signed in with Firebase
+                        com.google.firebase.auth.FirebaseUser firebaseUser = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser();
+                        if (firebaseUser != null && firebaseUser.getUid() != null) {
+                            // User is signed in, check profile by Firebase UID
+                            profileRepo.get(firebaseUser.getUid())
+                                    .addOnSuccessListener(existingProfile -> {
+                                        if (existingProfile != null) {
+                                            // Profile exists by UID, update deviceId if needed
+                                            if (existingProfile.getDeviceId() == null || existingProfile.getDeviceId().isEmpty()) {
+                                                existingProfile.setDeviceId(userId);
+                                                profileRepo.upsert(existingProfile);
+                                            }
+                                            currentProfile = existingProfile;
+                                            Log.d(TAG, "Loaded profile by Firebase UID: " + existingProfile.getName());
+                                        } else {
+                                            // No profile by UID either, create new one with Firebase UID
+                                            Profile newProf = new Profile();
+                                            newProf.setUserId(firebaseUser.getUid());
+                                            newProf.setDeviceId(userId);
+                                            newProf.setName("Guest User");
+                                            newProf.setEmail("");
+                                            newProf.setRole("entrant");
+                                            newProf.setActive(true);
+                                            newProf.setBanned(false);
+                                            profileRepo.upsert(newProf);
+                                            currentProfile = newProf;
+                                            Log.d(TAG, "Created new profile with Firebase UID.");
+                                        }
+                                    })
+                                    .addOnFailureListener(e -> {
+                                        // Error getting by UID, create new profile with Firebase UID
+                                        Profile newProf = new Profile();
+                                        newProf.setUserId(firebaseUser.getUid());
+                                        newProf.setDeviceId(userId);
+                                        newProf.setName("Guest User");
+                                        newProf.setEmail("");
+                                        newProf.setRole("entrant");
+                                        newProf.setActive(true);
+                                        newProf.setBanned(false);
+                                        profileRepo.upsert(newProf);
+                                        currentProfile = newProf;
+                                        Log.d(TAG, "Created new profile with Firebase UID (fallback).");
+                                    });
+                        } else {
+                            // Not signed in - this shouldn't happen for entrants, but handle gracefully
+                            Log.w(TAG, "No Firebase user signed in, cannot create profile properly");
+                            // Don't create profile with deviceId as userId - wait for proper sign-in
+                        }
                     }
                 })
                 .addOnFailureListener(e -> {
-                    Log.e(TAG, "Profile load failed, creating fallback profile", e);
-                    Profile fallback = new Profile(userId, "Guest User", "", null);
-                    profileRepo.upsert(fallback);
-                    currentProfile = fallback;
+                    Log.e(TAG, "Profile load failed", e);
+                    // Try to get Firebase user as fallback
+                    com.google.firebase.auth.FirebaseUser firebaseUser = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser();
+                    if (firebaseUser != null && firebaseUser.getUid() != null) {
+                        profileRepo.get(firebaseUser.getUid())
+                                .addOnSuccessListener(profile -> {
+                                    if (profile != null) {
+                                        currentProfile = profile;
+                                        Log.d(TAG, "Loaded profile by Firebase UID (fallback): " + profile.getName());
+                                    }
+                                });
+                    }
                 });
     }
 
