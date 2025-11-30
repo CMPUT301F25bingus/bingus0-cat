@@ -180,5 +180,37 @@ public final class FirestoreFields {
     
     /** Notification read status field */
     public static final String IS_READ = "isRead";
+    
+    // ==================== Organizer Application Fields ====================
+    
+    /** Application ID field */
+    public static final String APPLICATION_ID = "applicationId";
+    
+    /** Applicant email field */
+    public static final String APPLICANT_EMAIL = "applicantEmail";
+    
+    /** Applicant name field */
+    public static final String APPLICANT_NAME = "applicantName";
+    
+    /** Encrypted password field */
+    public static final String ENCRYPTED_PASSWORD = "encryptedPassword";
+    
+    /** Application reason field */
+    public static final String REASON = "reason";
+    
+    /** Application status field */
+    public static final String APPLICATION_STATUS = "status";
+    
+    /** Submitted at timestamp field */
+    public static final String SUBMITTED_AT = "submittedAt";
+    
+    /** Reviewed at timestamp field */
+    public static final String REVIEWED_AT = "reviewedAt";
+    
+    /** Reviewed by user ID field */
+    public static final String REVIEWED_BY = "reviewedBy";
+    
+    /** Rejection reason field */
+    public static final String REJECTION_REASON = "rejectionReason";
 }
 

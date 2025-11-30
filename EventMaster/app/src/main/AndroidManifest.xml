@@ -58,6 +58,10 @@
             android:exported="false"
             android:label="Admin Login" />
         <activity
+            android:name=".ui.auth.SharedLoginActivity"
+            android:exported="false"
+            android:label="Log in" />
+        <activity
             android:name=".ui.auth.CreateProfileActivity"
             android:exported="false"
             android:label="Create Profile" />
@@ -110,9 +114,14 @@
             android:name=".ui.admin.activities.AdminProfileDetailActivity"
             android:parentActivityName=".ui.admin.activities.BrowseOrganizersActivity"
             android:exported="false"/>
+        <activity
+            android:name=".ui.admin.activities.AdminReviewApplicationsActivity"
+            android:parentActivityName=".ui.admin.activities.AdminBrowseActivity"
+            android:exported="false"/>
 
-
-
+        <!-- Auth screens -->
+        <activity android:name=".ui.auth.ApplyOrganizerActivity" android:exported="false"/>
+        <activity android:name=".ui.auth.ApplicationSubmittedActivity" android:exported="false"/>
 
         <!-- QR scanner -->
         <activity

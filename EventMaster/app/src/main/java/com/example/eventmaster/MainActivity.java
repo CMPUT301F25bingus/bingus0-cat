@@ -8,11 +8,11 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.eventmaster.data.firestore.ProfileRepositoryFs;
 import com.example.eventmaster.model.Profile;
 import com.example.eventmaster.ui.admin.activities.AdminWelcomeActivity;
-import com.example.eventmaster.ui.auth.AdminLoginActivity;
 import com.example.eventmaster.ui.auth.CreateProfileActivity;
-import com.example.eventmaster.ui.auth.OrganizerLoginActivity;
+import com.example.eventmaster.ui.auth.SharedLoginActivity;
 import com.example.eventmaster.ui.entrant.activities.EntrantWelcomeActivity;
 import com.example.eventmaster.utils.AuthHelper;
+import com.example.eventmaster.utils.CredentialStorageHelper;
 import com.example.eventmaster.utils.DeviceUtils;
 import com.google.android.material.button.MaterialButton;
 import com.google.firebase.auth.FirebaseAuth;
@@ -32,9 +32,95 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Always show role selection screen first, regardless of authentication status
-        // Users must explicitly choose their role (Entrant/Organizer/Admin)
-        showRoleSelection();
+        // First, check if user is already signed in
+        FirebaseAuth auth = FirebaseAuth.getInstance();
+        if (auth.getCurrentUser() != null) {
+            // User is already authenticated, get profile and route
+            AuthHelper.getCurrentUserProfile(new AuthHelper.OnAuthCompleteListener() {
+                @Override
+                public void onSuccess(com.google.firebase.auth.FirebaseUser user, com.example.eventmaster.model.Profile profile) {
+                    routeBasedOnRole(profile);
+                }
+
+                @Override
+                public void onError(Exception error) {
+                    // Error getting profile, try auto-login or show role selection
+                    attemptAutoLogin();
+                }
+            });
+        } else {
+            // No user signed in, check for saved credentials for auto-login
+            attemptAutoLogin();
+        }
+    }
+
+    /**
+     * Attempts to auto-login using saved "Remember me" credentials.
+     * If no credentials are saved, shows role selection.
+     */
+    private void attemptAutoLogin() {
+        if (CredentialStorageHelper.hasSavedCredentials(this)) {
+            String savedEmail = CredentialStorageHelper.getSavedEmail(this);
+            String savedPassword = CredentialStorageHelper.getSavedPassword(this);
+
+            if (savedEmail != null && savedPassword != null) {
+                // Attempt auto-login
+                AuthHelper.signInWithEmailAndGetRole(savedEmail, savedPassword, new AuthHelper.OnAuthCompleteListener() {
+                    @Override
+                    public void onSuccess(com.google.firebase.auth.FirebaseUser user, com.example.eventmaster.model.Profile profile) {
+                        routeBasedOnRole(profile);
+                    }
+
+                    @Override
+                    public void onError(Exception error) {
+                        // Auto-login failed, clear credentials and show role selection
+                        CredentialStorageHelper.clearCredentials(MainActivity.this);
+                        showRoleSelection();
+                    }
+                });
+            } else {
+                // Credentials exist but couldn't be retrieved, clear and show role selection
+                CredentialStorageHelper.clearCredentials(this);
+                showRoleSelection();
+            }
+        } else {
+            // No saved credentials, show role selection
+            showRoleSelection();
+        }
+    }
+
+    /**
+     * Routes user to appropriate activity based on their role.
+     */
+    private void routeBasedOnRole(com.example.eventmaster.model.Profile profile) {
+        String role = profile.getRole();
+        Intent intent = null;
+
+        if ("admin".equals(role)) {
+            intent = new Intent(MainActivity.this, AdminWelcomeActivity.class);
+        } else if ("organizer".equals(role)) {
+            intent = new Intent(MainActivity.this, com.example.eventmaster.ui.organizer.activities.OrganizerHomeActivity.class);
+        } else if ("entrant".equals(role)) {
+            // Entrants use device ID login, so clear any saved email/password credentials
+            CredentialStorageHelper.clearCredentials(this);
+            // Check if profile is complete (has name and email)
+            if (profile.getName() != null && !profile.getName().isEmpty()
+                    && profile.getEmail() != null && !profile.getEmail().isEmpty()) {
+                intent = new Intent(MainActivity.this, EntrantWelcomeActivity.class);
+            } else {
+                // Profile incomplete, go to create profile
+                intent = new Intent(MainActivity.this, CreateProfileActivity.class);
+            }
+        }
+
+        if (intent != null) {
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+            finish();
+        } else {
+            // Unknown role, show role selection
+            showRoleSelection();
+        }
     }
 
     @Override
@@ -94,16 +180,14 @@ public class MainActivity extends AppCompatActivity {
     private void showRoleSelection() {
         setContentView(R.layout.temp_activity_main_roles);
 
-        com.google.android.material.card.MaterialCardView btnAdmin = findViewById(R.id.btnAdmin);
-        com.google.android.material.card.MaterialCardView btnOrganizer = findViewById(R.id.btnOrganizer);
+        com.google.android.material.card.MaterialCardView btnLogin = findViewById(R.id.btnLogin);
         com.google.android.material.card.MaterialCardView btnEntrant = findViewById(R.id.btnEntrant);
 
-        btnAdmin.setOnClickListener(v ->
-                startActivity(new Intent(this, AdminLoginActivity.class)));
+        // Log in button - navigates to shared login page
+        btnLogin.setOnClickListener(v ->
+                startActivity(new Intent(this, SharedLoginActivity.class)));
 
-        btnOrganizer.setOnClickListener(v ->
-                startActivity(new Intent(this, OrganizerLoginActivity.class)));
-
+        // Continue as Entrant button - uses device ID login
         btnEntrant.setOnClickListener(v -> {
             com.google.android.material.card.MaterialCardView btn = (com.google.android.material.card.MaterialCardView) v;
             btn.setEnabled(false);

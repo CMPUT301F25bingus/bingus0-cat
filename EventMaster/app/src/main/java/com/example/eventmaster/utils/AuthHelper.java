@@ -188,6 +188,56 @@ public class AuthHelper {
 
 
     /**
+     * Signs in with email/password and returns the user's profile with role.
+     * Unlike signInWithEmail(), this method does NOT validate the role - it just returns
+     * whatever role is in the profile, allowing the caller to check and route accordingly.
+     * 
+     * This is used by the shared login page where we don't know if the user is admin or organizer.
+     */
+    public static void signInWithEmailAndGetRole(@NonNull String email,
+                                                 @NonNull String password,
+                                                 @NonNull OnAuthCompleteListener listener) {
+
+        auth.signInWithEmailAndPassword(email, password)
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+
+                        FirebaseUser user = auth.getCurrentUser();
+                        if (user != null) {
+                            String uid = user.getUid();
+
+                            profileRepo.get(uid)
+                                    .addOnCompleteListener(profileTask -> {
+                                        try {
+                                            if (profileTask.isSuccessful() && profileTask.getResult() != null) {
+                                                Profile profile = profileTask.getResult();
+                                                // Return profile with role - caller will check the role
+                                                listener.onSuccess(user, profile);
+                                            } else {
+                                                Exception e = profileTask.getException();
+                                                String errorMsg = e != null ? e.getMessage() : "Profile not found";
+                                                listener.onError(new IllegalStateException("Profile not found: " + errorMsg));
+                                            }
+                                        } catch (Exception e) {
+                                            listener.onError(e);
+                                        }
+                                    })
+                                    .addOnFailureListener(e -> {
+                                        listener.onError(new IllegalStateException("Failed to get profile: " + e.getMessage(), e));
+                                    });
+
+                        } else {
+                            listener.onError(new IllegalStateException("User is null after sign-in"));
+                        }
+
+                    } else {
+                        listener.onError(task.getException());
+                    }
+                });
+    }
+
+
+    /**
      * Get currently authenticated user's profile.
      */
     public static void getCurrentUserProfile(@NonNull OnAuthCompleteListener listener) {

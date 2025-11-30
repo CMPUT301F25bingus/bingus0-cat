@@ -42,7 +42,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="EventMaster Roles"
+            android:text="Welcome to EventMaster"
             android:textSize="24sp"
             android:textStyle="bold"
             android:textColor="#111827"
@@ -52,118 +52,12 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Choose your role to get started"
+            android:text="Continue as entrant or log in to your account"
             android:textSize="14sp"
             android:textColor="#6B7280"
             android:layout_marginBottom="32dp" />
 
-        <!-- Admin Portal Card -->
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/btnAdmin"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="4dp"
-            app:cardBackgroundColor="#F3E5F5"
-            android:clickable="true"
-            android:focusable="true">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="20dp"
-                android:gravity="center_vertical">
-
-                <!-- Shield Icon -->
-                <ImageView
-                    android:layout_width="56dp"
-                    android:layout_height="56dp"
-                    android:src="@drawable/ic_shield_outline"
-                    android:contentDescription="Admin shield icon"
-                    app:tint="#9C27B0"
-                    android:layout_marginEnd="16dp" />
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Admin Portal"
-                        android:textSize="18sp"
-                        android:textStyle="bold"
-                        android:textColor="#111827"
-                        android:layout_marginBottom="4dp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Manage the entire platform and oversee all operations."
-                        android:textSize="14sp"
-                        android:textColor="#6B7280" />
-                </LinearLayout>
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Organizer Portal Card -->
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/btnOrganizer"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="4dp"
-            app:cardBackgroundColor="#E8F5E9"
-            android:clickable="true"
-            android:focusable="true">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="20dp"
-                android:gravity="center_vertical">
-
-                <!-- Briefcase Icon -->
-                <ImageView
-                    android:layout_width="56dp"
-                    android:layout_height="56dp"
-                    android:src="@drawable/ic_briefcase_outline"
-                    android:contentDescription="Organizer briefcase icon"
-                    app:tint="#4CAF50"
-                    android:layout_marginEnd="16dp" />
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Organizer Portal"
-                        android:textSize="18sp"
-                        android:textStyle="bold"
-                        android:textColor="#111827"
-                        android:layout_marginBottom="4dp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Create and manage your events with ease."
-                        android:textSize="14sp"
-                        android:textColor="#6B7280" />
-                </LinearLayout>
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Entrant Portal Card -->
+        <!-- Continue as Entrant Card -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/btnEntrant"
             android:layout_width="match_parent"
@@ -199,7 +93,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Entrant Portal"
+                        android:text="Continue as Entrant"
                         android:textSize="18sp"
                         android:textStyle="bold"
                         android:textColor="#111827"
@@ -209,6 +103,58 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Discover and join events through fair lotteries."
+                        android:textSize="14sp"
+                        android:textColor="#6B7280" />
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Log in Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/btnLogin"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="#E3F2FD"
+            android:clickable="true"
+            android:focusable="true">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="20dp"
+                android:gravity="center_vertical">
+
+                <!-- Lock/Login Icon -->
+                <ImageView
+                    android:layout_width="56dp"
+                    android:layout_height="56dp"
+                    android:src="@drawable/ic_shield_outline"
+                    android:contentDescription="Login icon"
+                    app:tint="#2196F3"
+                    android:layout_marginEnd="16dp" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Log in"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="#111827"
+                        android:layout_marginBottom="4dp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Sign in as admin or organizer."
                         android:textSize="14sp"
                         android:textColor="#6B7280" />
                 </LinearLayout>

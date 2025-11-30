@@ -22,6 +22,7 @@ public class AdminBrowseActivity extends AppCompatActivity {
         MaterialButton btnProfiles = findViewById(R.id.btnProfiles);
         MaterialButton btnImages = findViewById(R.id.btnImages);
         MaterialButton btnNotifications = findViewById(R.id.btnNotifications);
+        MaterialButton btnReviewApplications = findViewById(R.id.btnReviewApplications);
 
         btnOrganizers.setOnClickListener(v ->
                 startActivity(new Intent(this, BrowseOrganizersActivity.class)));
@@ -37,6 +38,11 @@ public class AdminBrowseActivity extends AppCompatActivity {
 
         btnNotifications.setOnClickListener(v ->
                 startActivity(new Intent(this, AdminNotificationLogActivity.class)));
+
+        if (btnReviewApplications != null) {
+            btnReviewApplications.setOnClickListener(v ->
+                    startActivity(new Intent(this, AdminReviewApplicationsActivity.class)));
+        }
     }
 }
 
