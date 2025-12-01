@@ -140,6 +140,38 @@ public class ProfileRepositoryFs {
         return db.collection(COLL).document(userId).set(fields);
     }
 
+    // ---------- Entrant helpers (deviceId-based profiles) ----------
+
+    /**
+     * For entrants: profile doc ID = deviceId.
+     * Creates or overwrites the entrant profile for this device.
+     */
+    public Task<Void> upsertEntrantByDeviceId(@NonNull Profile p) {
+        String deviceId = p.getDeviceId();
+        if (deviceId == null || deviceId.isEmpty()) {
+            return Tasks.forException(new IllegalArgumentException("deviceId is required for entrants"));
+        }
+        Map<String, Object> data = toMap(p, /*includeId*/ false);
+        return db.collection(COLL).document(deviceId).set(data);
+    }
+
+    /**
+     * Get entrant profile by deviceId, using deviceId as the document ID.
+     * Returns null if the profile does not exist yet.
+     */
+    public Task<Profile> getEntrantByDeviceIdDoc(@NonNull String deviceId) {
+        return db.collection(COLL).document(deviceId)
+                .get()
+                .continueWith(task -> {
+                    if (!task.isSuccessful()) throw task.getException();
+                    DocumentSnapshot doc = task.getResult();
+                    if (doc == null || !doc.exists()) {
+                        return null;
+                    }
+                    return fromDoc(doc);
+                });
+    }
+
     /** Partial update (merge). */
     public Task<Void> update(@NonNull String userId, @NonNull Map<String, Object> fields) {
         if (fields.containsKey("phone")) {

@@ -120,10 +120,8 @@ public class ProfileActivity extends AppCompatActivity {
             btnBack.setOnClickListener(v -> finish());
         }
 
-        // 🔹 Use real UID if Firebase Auth user exists
-        if (FirebaseAuth.getInstance().getCurrentUser() != null) {
-            currentId = FirebaseAuth.getInstance().getCurrentUser().getUid();
-        }
+        // 🔹 For entrants, identity = deviceId (not Firebase UID)
+        currentId = com.example.eventmaster.utils.DeviceUtils.getDeviceId(this);
 
         // 🔹 Bind layout views
         tvHeroName = findViewById(R.id.tvHeroName);
@@ -227,17 +225,30 @@ public class ProfileActivity extends AppCompatActivity {
      * Updates name, email, phone, and banned chip.
      */
     private void loadProfile() {
-        profileRepo.get(currentId, p -> {
+        if (currentId == null || currentId.isEmpty()) {
+            if (tvHeroName != null) {
+                tvHeroName.setText("Error");
+            }
+            Toast.makeText(this, "Missing device ID", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Entrant profile is stored with doc ID = deviceId
+        profileRepo.getEntrantByDeviceIdDoc(currentId).addOnCompleteListener(task -> {
+            if (!task.isSuccessful() || task.getResult() == null) {
+                if (tvHeroName != null) {
+                    tvHeroName.setText("Error");
+                }
+                Toast.makeText(this, "Failed to load profile", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            Profile p = task.getResult();
             currentProfile = p;
             if (isEditing) {
                 exitEditMode(false);
             }
             applyProfile(p);
-        }, e -> {
-            if (tvHeroName != null) {
-                tvHeroName.setText("Error");
-            }
-            Toast.makeText(this, "Failed to load profile", Toast.LENGTH_SHORT).show();
         });
     }
 
