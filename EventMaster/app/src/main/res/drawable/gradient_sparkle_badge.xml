@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Base dark green gradient - matching button -->
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:type="linear"
+                android:angle="135"
+                android:startColor="#0A6B67"
+                android:centerColor="#0F8A86"
+                android:endColor="#15837C" />
+            <corners android:radius="24dp" />
+        </shape>
+    </item>
+    <!-- Shine overlay for glossy effect -->
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:type="linear"
+                android:angle="90"
+                android:startColor="#40FFFFFF"
+                android:endColor="#00FFFFFF" />
+            <corners android:radius="24dp" />
+        </shape>
+    </item>
+</layer-list>

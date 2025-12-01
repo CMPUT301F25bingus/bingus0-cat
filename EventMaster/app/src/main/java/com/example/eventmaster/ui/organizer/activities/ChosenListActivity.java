@@ -2,6 +2,8 @@ package com.example.eventmaster.ui.organizer.activities;
 
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -20,7 +22,6 @@ import com.example.eventmaster.model.Event;
 import com.example.eventmaster.model.Profile;
 import com.example.eventmaster.model.WaitingListEntry;
 import com.example.eventmaster.ui.organizer.adapters.ChosenListAdapter;
-import com.google.android.material.appbar.MaterialToolbar;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
@@ -47,6 +48,7 @@ public class ChosenListActivity extends AppCompatActivity {
     private ChosenListAdapter adapter;
     private TextView totalChosenText;
     private TextView textSendNotification;
+    private TextView emptyStateText;
 
     private String eventId;
 
@@ -72,7 +74,8 @@ public class ChosenListActivity extends AppCompatActivity {
         recyclerView = findViewById(R.id.recyclerViewChosenList);
         totalChosenText = findViewById(R.id.textTotalChosen);
         textSendNotification = findViewById(R.id.textSendNotification);
-        MaterialToolbar btnBack = findViewById(R.id.btnBack);
+        emptyStateText = findViewById(R.id.empty_state_text);
+        ImageButton btnBack = findViewById(R.id.btnBack);
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         adapter = new ChosenListAdapter(new ArrayList<>());
@@ -81,7 +84,6 @@ public class ChosenListActivity extends AppCompatActivity {
         // Cancel entrants link
         TextView cancelEntrantsLink = findViewById(R.id.cancel_entrants_link);
         cancelEntrantsLink.setOnClickListener(v -> cancelAllPendingInvitations());
-
 
         btnBack.setOnClickListener(v -> finish());
 
@@ -109,6 +111,15 @@ public class ChosenListActivity extends AppCompatActivity {
                 currentChosenList = entries;
                 adapter.updateList(entries);
                 totalChosenText.setText("Total chosen entrants: " + entries.size());
+                
+                // Show/hide empty state
+                if (entries.isEmpty()) {
+                    if (emptyStateText != null) emptyStateText.setVisibility(View.VISIBLE);
+                    recyclerView.setVisibility(View.GONE);
+                } else {
+                    if (emptyStateText != null) emptyStateText.setVisibility(View.GONE);
+                    recyclerView.setVisibility(View.VISIBLE);
+                }
             }
 
             @Override

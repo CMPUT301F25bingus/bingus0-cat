@@ -12,11 +12,15 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import android.content.DialogInterface;
+
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.bumptech.glide.Glide;
@@ -84,10 +88,12 @@ public class EventDetailsFragment extends Fragment {
     private TextView eventNameText;
     private TextView organizerText;
     private TextView eventDateText;
+    private TextView eventTimeText;
     private TextView locationText;
     private TextView priceText;
     private TextView capacityText;
     private TextView registrationDateText;
+    private TextView registrationEndText;
     private TextView descriptionText;
     private TextView waitingListCountText;
     private MaterialButton joinButton;
@@ -153,8 +159,8 @@ public class EventDetailsFragment extends Fragment {
 
     /**
      * Retrieves the user's profile using the device ID. If no existing profile
-     * is found, a default "Guest User" profile is created and saved. This ensures
-     * that every entrant interacting with the system has a valid profile record.
+     * is found, it tries to get Firebase UID and create profile properly.
+     * This ensures that every entrant interacting with the system has a valid profile record.
      */
     private void loadUserProfile() {
         profileRepo.getByDeviceId(userId)
@@ -163,23 +169,70 @@ public class EventDetailsFragment extends Fragment {
                         currentProfile = profile;
                         Log.d(TAG, "Loaded profile for device: " + profile.getName());
                     } else {
-                        //
-                        Profile newProf = new Profile(
-                                userId,
-                                "Guest User",
-                                "",
-                                null
-                        );
-                        profileRepo.upsert(newProf);
-                        currentProfile = newProf;
-                        Log.d(TAG, "Created new profile for device.");
+                        // No profile found by deviceId
+                        // Check if user is signed in with Firebase
+                        com.google.firebase.auth.FirebaseUser firebaseUser = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser();
+                        if (firebaseUser != null && firebaseUser.getUid() != null) {
+                            // User is signed in, check profile by Firebase UID
+                            profileRepo.get(firebaseUser.getUid())
+                                    .addOnSuccessListener(existingProfile -> {
+                                        if (existingProfile != null) {
+                                            // Profile exists by UID, update deviceId if needed
+                                            if (existingProfile.getDeviceId() == null || existingProfile.getDeviceId().isEmpty()) {
+                                                existingProfile.setDeviceId(userId);
+                                                profileRepo.upsert(existingProfile);
+                                            }
+                                            currentProfile = existingProfile;
+                                            Log.d(TAG, "Loaded profile by Firebase UID: " + existingProfile.getName());
+                                        } else {
+                                            // No profile by UID either, create new one with Firebase UID
+                                            Profile newProf = new Profile();
+                                            newProf.setUserId(firebaseUser.getUid());
+                                            newProf.setDeviceId(userId);
+                                            newProf.setName("Guest User");
+                                            newProf.setEmail("");
+                                            newProf.setRole("entrant");
+                                            newProf.setActive(true);
+                                            newProf.setBanned(false);
+                                            profileRepo.upsert(newProf);
+                                            currentProfile = newProf;
+                                            Log.d(TAG, "Created new profile with Firebase UID.");
+                                        }
+                                    })
+                                    .addOnFailureListener(e -> {
+                                        // Error getting by UID, create new profile with Firebase UID
+                                        Profile newProf = new Profile();
+                                        newProf.setUserId(firebaseUser.getUid());
+                                        newProf.setDeviceId(userId);
+                                        newProf.setName("Guest User");
+                                        newProf.setEmail("");
+                                        newProf.setRole("entrant");
+                                        newProf.setActive(true);
+                                        newProf.setBanned(false);
+                                        profileRepo.upsert(newProf);
+                                        currentProfile = newProf;
+                                        Log.d(TAG, "Created new profile with Firebase UID (fallback).");
+                                    });
+                        } else {
+                            // Not signed in - this shouldn't happen for entrants, but handle gracefully
+                            Log.w(TAG, "No Firebase user signed in, cannot create profile properly");
+                            // Don't create profile with deviceId as userId - wait for proper sign-in
+                        }
                     }
                 })
                 .addOnFailureListener(e -> {
-                    Log.e(TAG, "Profile load failed, creating fallback profile", e);
-                    Profile fallback = new Profile(userId, "Guest User", "", null);
-                    profileRepo.upsert(fallback);
-                    currentProfile = fallback;
+                    Log.e(TAG, "Profile load failed", e);
+                    // Try to get Firebase user as fallback
+                    com.google.firebase.auth.FirebaseUser firebaseUser = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser();
+                    if (firebaseUser != null && firebaseUser.getUid() != null) {
+                        profileRepo.get(firebaseUser.getUid())
+                                .addOnSuccessListener(profile -> {
+                                    if (profile != null) {
+                                        currentProfile = profile;
+                                        Log.d(TAG, "Loaded profile by Firebase UID (fallback): " + profile.getName());
+                                    }
+                                });
+                    }
                 });
     }
 
@@ -196,10 +249,12 @@ public class EventDetailsFragment extends Fragment {
         eventNameText = view.findViewById(R.id.event_name_text);
         organizerText = view.findViewById(R.id.event_organizer_text);
         eventDateText = view.findViewById(R.id.event_date_text);
+        eventTimeText = view.findViewById(R.id.event_time_text);
         locationText = view.findViewById(R.id.event_location_text);
         priceText = view.findViewById(R.id.event_price_text);
         capacityText = view.findViewById(R.id.event_capacity_text);
         registrationDateText = view.findViewById(R.id.registration_date_text);
+        registrationEndText = view.findViewById(R.id.registration_end_text);
         descriptionText = view.findViewById(R.id.event_description_text);
         waitingListCountText = view.findViewById(R.id.waiting_list_count_text);
         joinButton = view.findViewById(R.id.join_waiting_list_button);
@@ -662,15 +717,21 @@ public class EventDetailsFragment extends Fragment {
         if (event.getRegistrationStartDate() != null && event.getRegistrationEndDate() != null) {
             String start = shortDateFormat.format(event.getRegistrationStartDate());
             String end = shortDateFormat.format(event.getRegistrationEndDate());
-            registrationDateText.setText("Registration: " + start + " - " + end);
+            registrationDateText.setText(start);
+            registrationEndText.setText(end);
         } else {
-            registrationDateText.setText("Registration: TBA");
+            registrationDateText.setText("TBA");
+            registrationEndText.setText("TBA");
         }
 
         if (event.getEventDate() != null) {
             eventDateText.setText(eventDateFormat.format(event.getEventDate()));
+            // Format time in 12-hour format (e.g., "4:30 PM")
+            SimpleDateFormat timeFormat = new SimpleDateFormat("h:mm a", Locale.getDefault());
+            eventTimeText.setText(timeFormat.format(event.getEventDate()));
         } else {
             eventDateText.setText("TBA");
+            eventTimeText.setText("TBA");
         }
 
         // Poster image
@@ -706,7 +767,7 @@ public class EventDetailsFragment extends Fragment {
         waitingListRepository.getWaitingListCount(eventId, new WaitingListRepository.OnCountListener() {
             @Override
             public void onSuccess(int count) {
-                waitingListCountText.setText(count + " people have joined the waiting list");
+                waitingListCountText.setText(String.valueOf(count));
 
                 // CODE CHECK START
 
@@ -772,11 +833,33 @@ public class EventDetailsFragment extends Fragment {
                 .placeholder(R.drawable.ic_launcher_background)
                 .into(qrImage);
 
-        new MaterialAlertDialogBuilder(requireContext())
+        AlertDialog dialog = new MaterialAlertDialogBuilder(requireContext())
                 .setTitle("Event QR Code")
                 .setView(dialogView)
                 .setPositiveButton("Close", null)
-                .show();
+                .create();
+        
+        // Change dialog background from purple to white and make it smaller
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.white);
+            android.view.WindowManager.LayoutParams params = dialog.getWindow().getAttributes();
+            int screenWidth = getResources().getDisplayMetrics().widthPixels;
+            int maxWidth = (int) (screenWidth * 0.85); // 85% of screen width
+            params.width = maxWidth;
+            dialog.getWindow().setAttributes(params);
+        }
+        
+        // Change Close button color from purple to teal
+        dialog.setOnShowListener(new DialogInterface.OnShowListener() {
+            @Override
+            public void onShow(DialogInterface d) {
+                dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(
+                    ContextCompat.getColor(requireContext(), R.color.teal_dark)
+                );
+            }
+        });
+        
+        dialog.show();
     }
 
     /**
@@ -928,6 +1011,10 @@ public class EventDetailsFragment extends Fragment {
                         Toast.LENGTH_SHORT).show();
 
                 isInWaitingList = true;
+                
+                // Send notification when user joins waiting list with geolocation
+                sendJoinedWaitingListNotification(eventId, userId);
+                
                 loadEventDetails(); // refresh count & button state
             }
 
@@ -944,16 +1031,11 @@ public class EventDetailsFragment extends Fragment {
     // CODE CHECK DEV END ^
 
     /**
-     * Handles the standard process of joining the waiting list when no
-     * geolocation requirement exists. Validates registration dates, event
-     * data, and user identity before creating a waiting list entry.
+     * Handles the process of joining the waiting list. Validates registration dates,
+     * event data, and user identity before showing the guidelines dialog.
+     * The guidelines dialog will handle geolocation requirements if needed.
      */
     private void handleJoinWaitingList() {
-        // --- GEOLOCATION REQUIREMENT CHECK ---
-        if (currentEvent != null && currentEvent.isGeolocationRequired()) {
-            requestLocationThenJoin();
-            return; // stop normal joining path
-        }
         // Validate eventId and userId first
         if (eventId == null || eventId.isEmpty()) {
             Toast.makeText(requireContext(), "Error: Event ID is missing", Toast.LENGTH_LONG).show();
@@ -1161,37 +1243,78 @@ public class EventDetailsFragment extends Fragment {
             return;
         }
         
-        // Get the Firebase Auth UID if available, otherwise use the provided userId (deviceId)
-        final String recipientUserId = getCurrentFirebaseUserId() != null ? getCurrentFirebaseUserId() : userId;
+        // For entrants: ALWAYS use deviceId as recipientUserId (userId parameter IS the deviceId)
+        // Don't use Firebase UID even if available - entrants are identified by deviceId
+        final String recipientUserId = userId; // deviceId for entrants
         final String deviceIdForNotification = userId;
         
-        Log.d(TAG, "Sending notification: eventId=" + eventId + ", recipientUserId=" + recipientUserId + ", deviceId=" + deviceIdForNotification);
+        Log.d(TAG, "Sending notification: eventId=" + eventId + ", recipientUserId=" + recipientUserId + " (deviceId), deviceId=" + deviceIdForNotification);
         
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        // Helper method to create and send notification
+        java.util.function.Consumer<String> sendNotification = (eventName) -> {
+            FirebaseFirestore db = FirebaseFirestore.getInstance();
+            
+            Map<String, Object> notification = new HashMap<>();
+            notification.put("eventId", eventId);
+            notification.put("recipientUserId", recipientUserId); // deviceId
+            notification.put("recipientId", recipientUserId); // deviceId (legacy)
+            notification.put("deviceId", deviceIdForNotification); // deviceId
+            notification.put("senderUserId", "system");
+            notification.put("type", "GENERAL");
+            notification.put("title", "Joined Waiting List");
+            notification.put("message", "You've successfully joined the waiting list for \"" + eventName + "\". Good luck!");
+            notification.put("isRead", false);
+            notification.put("sentAt", com.google.firebase.Timestamp.now());
+            
+            db.collection("notifications")
+                    .add(notification)
+                    .addOnSuccessListener(docRef -> {
+                        Log.d(TAG, "✅ Sent waiting list notification to deviceId: " + deviceIdForNotification);
+                        docRef.update("notificationId", docRef.getId());
+                    })
+                    .addOnFailureListener(e -> Log.e(TAG, "❌ Failed to send notification", e));
+        };
         
-        Map<String, Object> notification = new HashMap<>();
-        notification.put("eventId", eventId);
-        notification.put("recipientUserId", recipientUserId); // Use Firebase Auth UID (primary field)
-        notification.put("recipientId", recipientUserId); // Also add legacy field for backward compatibility
-        // Also store deviceId for query flexibility
-        if (!recipientUserId.equals(deviceIdForNotification)) {
-            notification.put("deviceId", deviceIdForNotification);
-        }
-        notification.put("senderUserId", "system");
-        notification.put("type", "GENERAL"); // Use valid NotificationType
-        notification.put("title", "Joined Waiting List");
-        notification.put("message", "You've successfully joined the waiting list for this event. Good luck!");
-        notification.put("isRead", false);
-        notification.put("sentAt", com.google.firebase.Timestamp.now()); // Use sentAt (matches Notification model)
-        
-        db.collection("notifications")
-                .add(notification)
-                .addOnSuccessListener(docRef -> {
-                    Log.d(TAG, "✅ Sent waiting list notification to userId: " + recipientUserId);
-                    // Update with notificationId
-                    docRef.update("notificationId", docRef.getId());
+        // Try to get profile by deviceId (for entrants, profile doc ID = deviceId)
+        profileRepo.getByDeviceId(deviceIdForNotification)
+                .addOnSuccessListener(profile -> {
+                    // Only send notification if user has notifications enabled
+                    if (profile != null && profile.isNotificationsEnabled()) {
+                        // Fetch event details
+                        eventRepository.getEventById(eventId, new EventRepository.OnEventListener() {
+                            @Override
+                            public void onSuccess(Event event) {
+                                String eventName = event != null ? event.getName() : "this event";
+                                sendNotification.accept(eventName);
+                            }
+                            
+                            @Override
+                            public void onFailure(Exception e) {
+                                Log.e(TAG, "Failed to fetch event for notification", e);
+                                sendNotification.accept("this event");
+                            }
+                        });
+                    } else {
+                        Log.d(TAG, "⏭️ Skipping waiting list notification (opted out)");
+                    }
                 })
-                .addOnFailureListener(e -> Log.e(TAG, "❌ Failed to send notification", e));
+                .addOnFailureListener(e -> {
+                    // If we can't fetch profile, still send notification (backward compatibility)
+                    Log.w(TAG, "⚠️ Could not fetch profile for deviceId " + deviceIdForNotification + ", sending notification anyway", e);
+                    eventRepository.getEventById(eventId, new EventRepository.OnEventListener() {
+                        @Override
+                        public void onSuccess(Event event) {
+                            String eventName = event != null ? event.getName() : "this event";
+                            sendNotification.accept(eventName);
+                        }
+                        
+                        @Override
+                        public void onFailure(Exception err) {
+                            Log.e(TAG, "Failed to fetch event for notification", err);
+                            sendNotification.accept("this event");
+                        }
+                    });
+                });
     }
 
     /**
@@ -1219,30 +1342,114 @@ public class EventDetailsFragment extends Fragment {
         
         Log.d(TAG, "Sending invitation accepted notification: eventId=" + eventId + ", recipientUserId=" + recipientUserId);
         
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
-        
-        Map<String, Object> notification = new HashMap<>();
-        notification.put("eventId", eventId);
-        notification.put("recipientUserId", recipientUserId);
-        notification.put("recipientId", recipientUserId); // Legacy field
-        // Also store deviceId for query flexibility
-        if (!recipientUserId.equals(deviceIdForNotification)) {
-            notification.put("deviceId", deviceIdForNotification);
-        }
-        notification.put("senderUserId", "system");
-        notification.put("type", "INVITATION");
-        notification.put("title", "🎉 You're Enrolled!");
-        notification.put("message", "Congratulations! You've successfully enrolled in this event. We look forward to seeing you there!");
-        notification.put("isRead", false);
-        notification.put("sentAt", com.google.firebase.Timestamp.now());
-        
-        db.collection("notifications")
-                .add(notification)
-                .addOnSuccessListener(docRef -> {
-                    Log.d(TAG, "✅ Sent invitation accepted notification to userId: " + recipientUserId);
-                    docRef.update("notificationId", docRef.getId());
+        // First, check if user has notifications enabled
+        profileRepo.get(recipientUserId)
+                .addOnSuccessListener(profile -> {
+                    // Only send notification if user has notifications enabled
+                    if (profile != null && profile.isNotificationsEnabled()) {
+                        // Fetch event details to include event name
+                        eventRepository.getEventById(eventId, new EventRepository.OnEventListener() {
+                            @Override
+                            public void onSuccess(Event event) {
+                                String eventName = event != null ? event.getName() : "this event";
+                                
+                                FirebaseFirestore db = FirebaseFirestore.getInstance();
+                                
+                                Map<String, Object> notification = new HashMap<>();
+                                notification.put("eventId", eventId);
+                                notification.put("recipientUserId", recipientUserId);
+                                notification.put("recipientId", recipientUserId); // Legacy field
+                                // Also store deviceId for query flexibility
+                                if (!recipientUserId.equals(deviceIdForNotification)) {
+                                    notification.put("deviceId", deviceIdForNotification);
+                                }
+                                notification.put("senderUserId", "system");
+                                notification.put("type", "INVITATION");
+                                notification.put("title", "🎉 You're Enrolled!");
+                                notification.put("message", "Congratulations! You've successfully enrolled in \"" + eventName + "\". We look forward to seeing you there!");
+                                notification.put("isRead", false);
+                                notification.put("sentAt", com.google.firebase.Timestamp.now());
+                                
+                                db.collection("notifications")
+                                        .add(notification)
+                                        .addOnSuccessListener(docRef -> {
+                                            Log.d(TAG, "✅ Sent invitation accepted notification to userId: " + recipientUserId);
+                                            docRef.update("notificationId", docRef.getId());
+                                        })
+                                        .addOnFailureListener(e -> Log.e(TAG, "❌ Failed to send notification", e));
+                            }
+                            
+                            @Override
+                            public void onFailure(Exception e) {
+                                Log.e(TAG, "Failed to fetch event for notification", e);
+                                // Fallback message
+                                FirebaseFirestore db = FirebaseFirestore.getInstance();
+                                Map<String, Object> notification = new HashMap<>();
+                                notification.put("eventId", eventId);
+                                notification.put("recipientUserId", recipientUserId);
+                                notification.put("recipientId", recipientUserId);
+                                if (!recipientUserId.equals(deviceIdForNotification)) {
+                                    notification.put("deviceId", deviceIdForNotification);
+                                }
+                                notification.put("senderUserId", "system");
+                                notification.put("type", "INVITATION");
+                                notification.put("title", "🎉 You're Enrolled!");
+                                notification.put("message", "Congratulations! You've successfully enrolled in this event. We look forward to seeing you there!");
+                                notification.put("isRead", false);
+                                notification.put("sentAt", com.google.firebase.Timestamp.now());
+                                
+                                db.collection("notifications")
+                                        .add(notification)
+                                        .addOnSuccessListener(docRef -> {
+                                            Log.d(TAG, "✅ Sent invitation accepted notification (fallback) to userId: " + recipientUserId);
+                                            docRef.update("notificationId", docRef.getId());
+                                        })
+                                        .addOnFailureListener(err -> Log.e(TAG, "❌ Failed to send notification", err));
+                            }
+                        });
+                    } else {
+                        Log.d(TAG, "⏭️ Skipping enrollment notification for " + recipientUserId + " (opted out)");
+                    }
                 })
-                .addOnFailureListener(e -> Log.e(TAG, "❌ Failed to send notification", e));
+                .addOnFailureListener(e -> {
+                    // If we can't fetch profile, default to sending notification (backward compatibility)
+                    Log.w(TAG, "⚠️ Could not fetch profile for " + recipientUserId + ", sending notification anyway", e);
+                    eventRepository.getEventById(eventId, new EventRepository.OnEventListener() {
+                        @Override
+                        public void onSuccess(Event event) {
+                            String eventName = event != null ? event.getName() : "this event";
+                            
+                            FirebaseFirestore db = FirebaseFirestore.getInstance();
+                            
+                            Map<String, Object> notification = new HashMap<>();
+                            notification.put("eventId", eventId);
+                            notification.put("recipientUserId", recipientUserId);
+                            notification.put("recipientId", recipientUserId);
+                            if (!recipientUserId.equals(deviceIdForNotification)) {
+                                notification.put("deviceId", deviceIdForNotification);
+                            }
+                            notification.put("senderUserId", "system");
+                            notification.put("type", "INVITATION");
+                            notification.put("title", "🎉 You're Enrolled!");
+                            notification.put("message", "Congratulations! You've successfully enrolled in \"" + eventName + "\". We look forward to seeing you there!");
+                            notification.put("isRead", false);
+                            notification.put("sentAt", com.google.firebase.Timestamp.now());
+                            
+                            db.collection("notifications")
+                                    .add(notification)
+                                    .addOnSuccessListener(docRef -> {
+                                        Log.d(TAG, "✅ Sent invitation accepted notification to userId: " + recipientUserId + " (profile fetch failed)");
+                                        docRef.update("notificationId", docRef.getId());
+                                    })
+                                    .addOnFailureListener(err -> Log.e(TAG, "❌ Failed to send notification", err));
+                        }
+                        
+                        @Override
+                        public void onFailure(Exception err) {
+                            Log.e(TAG, "Failed to fetch event for notification", err);
+                        }
+                    });
+                });
     }
 
     private void toast(String msg) {

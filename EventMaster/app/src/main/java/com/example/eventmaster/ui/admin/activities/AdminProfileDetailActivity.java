@@ -2,7 +2,6 @@ package com.example.eventmaster.ui.admin.activities;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
@@ -17,15 +16,18 @@ import com.example.eventmaster.data.firestore.EventReadServiceFs;
 import com.example.eventmaster.data.firestore.ProfileRepositoryFs;
 import com.example.eventmaster.model.Profile;
 import com.example.eventmaster.ui.admin.adapters.OrganizerEventsAdapter;
+import com.google.android.material.appbar.MaterialToolbar;
+import com.google.android.material.button.MaterialButton;
+
+import java.util.ArrayList;
 
 /**
- * Admin screen listing organizers (live Firestore stream).
- * Taps open AdminProfileDetailActivity.
- *
+ * Admin screen showing organizer profile details and events.
+ * 
  * Responsibilities:
  * Loads organizer profile (name/email/phone/banned state)
+ * Displays events created by the organizer
  * Allows admin to ban/unban the organizer with confirmation.
- * Lists events owned by the organizer via {@link EventReadService}.
  */
 public class AdminProfileDetailActivity extends AppCompatActivity {
 
@@ -34,13 +36,14 @@ public class AdminProfileDetailActivity extends AppCompatActivity {
 
     private String profileId;
 
-    // header fields
-    private TextView tvName, tvEmail, tvPhone, tvState;
-    private Button btnBan, btnViewNotificationLogs;
+    // Profile views
+    private TextView tvName, tvEmail, tvPhone, tvStatusBadge;
+    private MaterialButton btnBan, btnViewNotificationLogs;
 
-    // events section
+    // Events section
     private RecyclerView rvEvents;
     private OrganizerEventsAdapter eventsAdapter;
+    private TextView tvEventsCount;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -49,15 +52,16 @@ public class AdminProfileDetailActivity extends AppCompatActivity {
 
         profileId = getIntent().getStringExtra("profileId");
 
-        // Back
-        findViewById(R.id.btnBack).setOnClickListener(v -> finish());
+        // Toolbar
+        MaterialToolbar toolbar = findViewById(R.id.toolbar);
+        toolbar.setNavigationOnClickListener(v -> finish());
 
-        // Header views
-        tvName  = findViewById(R.id.tvName);
+        // Profile views
+        tvName = findViewById(R.id.tvName);
         tvEmail = findViewById(R.id.tvEmail);
         tvPhone = findViewById(R.id.tvPhone);
-        tvState = findViewById(R.id.tvState);
-        btnBan  = findViewById(R.id.btnBan);
+        tvStatusBadge = findViewById(R.id.tvStatusBadge);
+        btnBan = findViewById(R.id.btnBan);
         btnViewNotificationLogs = findViewById(R.id.btnViewNotificationLogs);
 
         btnBan.setOnClickListener(v -> toggleBan());
@@ -67,7 +71,14 @@ public class AdminProfileDetailActivity extends AppCompatActivity {
         rvEvents = findViewById(R.id.rvEvents);
         rvEvents.setLayoutManager(new LinearLayoutManager(this));
         eventsAdapter = new OrganizerEventsAdapter();
+        eventsAdapter.setOnEventClickListener(eventId -> {
+            Intent intent = new Intent(this, AdminEventDetailsActivity.class);
+            intent.putExtra(AdminEventDetailsActivity.EXTRA_EVENT_ID, eventId);
+            startActivity(intent);
+        });
         rvEvents.setAdapter(eventsAdapter);
+        
+        tvEventsCount = findViewById(R.id.tvEventsCount);
     }
 
     @Override
@@ -85,9 +96,17 @@ public class AdminProfileDetailActivity extends AppCompatActivity {
         tvName.setText(ns(p.getName()));
         tvEmail.setText(ns(p.getEmail()));
         tvPhone.setText(ns(p.getPhone()));
+        
         boolean banned = p.getBanned();
-        tvState.setText(banned ? "BANNED" : "Active");
-        btnBan.setText(banned ? "Unban organizer" : "Ban organizer");
+        if (banned) {
+            tvStatusBadge.setText("BANNED");
+            tvStatusBadge.setBackgroundResource(R.drawable.bg_status_banned);
+            btnBan.setText("Unban Organizer");
+        } else {
+            tvStatusBadge.setText("Active");
+            tvStatusBadge.setBackgroundResource(R.drawable.bg_status_active);
+            btnBan.setText("Ban Organizer");
+        }
     }
 
     private void toggleBan() {
@@ -105,11 +124,24 @@ public class AdminProfileDetailActivity extends AppCompatActivity {
 
     private void loadEvents() {
         eventRead.listByOrganizer(profileId)
-                .addOnSuccessListener(events -> eventsAdapter.replace(events))
-                .addOnFailureListener(e -> eventsAdapter.replace(new java.util.ArrayList<>()));
+                .addOnSuccessListener(events -> {
+                    if (events != null) {
+                        eventsAdapter.replace(events);
+                        // Update events count
+                        tvEventsCount.setText(String.valueOf(events.size()));
+                    } else {
+                        eventsAdapter.replace(new ArrayList<>());
+                        tvEventsCount.setText("0");
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    eventsAdapter.replace(new ArrayList<>());
+                    tvEventsCount.setText("0");
+                });
     }
 
     private void openNotificationLogs() {
+        // Navigate to notification log activity filtered by this organizer
         Intent intent = new Intent(this, AdminNotificationLogActivity.class);
         intent.putExtra("organizerId", profileId);
         startActivity(intent);
@@ -119,4 +151,3 @@ public class AdminProfileDetailActivity extends AppCompatActivity {
         return (s == null || s.trim().isEmpty()) ? "—" : s;
     }
 }
-

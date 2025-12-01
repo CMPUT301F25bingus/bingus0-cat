@@ -6,17 +6,21 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.example.eventmaster.R;
+import com.example.eventmaster.data.api.WaitingListRepository;
+import com.example.eventmaster.data.firestore.WaitingListRepositoryFs;
 import com.example.eventmaster.ui.organizer.activities.CancelledEntrantsActivity;
 import com.example.eventmaster.ui.organizer.activities.SelectedEntrantsActivity;
 import com.example.eventmaster.ui.organizer.activities.WaitingListActivity;
 import com.example.eventmaster.ui.organizer.activities.ChosenListActivity;
 import com.google.android.material.appbar.MaterialToolbar;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 /**
  * Fragment that serves as the hub for viewing entrants of a specific event.
@@ -47,6 +51,15 @@ public class OrganizerEntrantsHubFragment extends Fragment {
     }
 
     private String eventId;
+    private WaitingListRepository waitingListRepository;
+    private FirebaseFirestore db;
+    
+    // UI elements for counts
+    private TextView totalParticipantsCount;
+    private TextView waitingListCount;
+    private TextView chosenListCount;
+    private TextView enrolledCount;
+    private TextView cancelledCount;
 
 
     /**
@@ -62,6 +75,17 @@ public class OrganizerEntrantsHubFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.organizer_fragment_entrants_hub, container, false);
         eventId = requireArguments().getString(ARG_EVENT_ID);
+        
+        // Initialize repositories
+        waitingListRepository = new WaitingListRepositoryFs();
+        db = FirebaseFirestore.getInstance();
+        
+        // Initialize count views
+        totalParticipantsCount = v.findViewById(R.id.totalParticipantsCount);
+        waitingListCount = v.findViewById(R.id.waitingListCount);
+        chosenListCount = v.findViewById(R.id.chosenListCount);
+        enrolledCount = v.findViewById(R.id.enrolledCount);
+        cancelledCount = v.findViewById(R.id.cancelledCount);
 
         View btnWaitingList = v.findViewById(R.id.btnWaitingList);
         View btnChosenList  = v.findViewById(R.id.btnChosenList);
@@ -96,6 +120,8 @@ public class OrganizerEntrantsHubFragment extends Fragment {
                 startActivity(intent);
         });
 
+        // Load all counts
+        loadParticipantCounts();
 
         return v;
     }
@@ -121,6 +147,68 @@ public class OrganizerEntrantsHubFragment extends Fragment {
                     }
                 }
         );
+    }
+
+    /**
+     * Loads and displays counts for all participant categories.
+     */
+    private void loadParticipantCounts() {
+        final int[] counts = new int[5]; // waiting, chosen, enrolled, cancelled, total
+        
+        // Load waiting list count
+        waitingListRepository.getWaitingListCount(eventId, new WaitingListRepository.OnCountListener() {
+            @Override
+            public void onSuccess(int count) {
+                counts[0] = count;
+                waitingListCount.setText(String.valueOf(count));
+                updateTotalCount(counts);
+            }
+            
+            @Override
+            public void onFailure(Exception e) {
+                waitingListCount.setText("0");
+            }
+        });
+        
+        // Load chosen list count
+        db.collection("events").document(eventId).collection("chosen_list")
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    counts[1] = querySnapshot.size();
+                    chosenListCount.setText(String.valueOf(counts[1]));
+                    updateTotalCount(counts);
+                })
+                .addOnFailureListener(e -> chosenListCount.setText("0"));
+        
+        // Load enrolled count (ACTIVE registrations)
+        db.collection("events").document(eventId).collection("registrations")
+                .whereEqualTo("status", "ACTIVE")
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    counts[2] = querySnapshot.size();
+                    enrolledCount.setText(String.valueOf(counts[2]));
+                    updateTotalCount(counts);
+                })
+                .addOnFailureListener(e -> enrolledCount.setText("0"));
+        
+        // Load cancelled count (check for all cancellation types)
+        db.collection("events").document(eventId).collection("registrations")
+                .whereIn("status", java.util.Arrays.asList("CANCELLED_BY_ENTRANT", "CANCELLED_BY_ORGANIZER"))
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    counts[3] = querySnapshot.size();
+                    cancelledCount.setText(String.valueOf(counts[3]));
+                    updateTotalCount(counts);
+                })
+                .addOnFailureListener(e -> cancelledCount.setText("0"));
+    }
+    
+    /**
+     * Updates the total participants count by summing all individual counts.
+     */
+    private void updateTotalCount(int[] counts) {
+        int total = counts[0] + counts[1] + counts[2] + counts[3];
+        totalParticipantsCount.setText(String.valueOf(total));
     }
 
     /**

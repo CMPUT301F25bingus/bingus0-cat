@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#5EC1B6">
+    android:background="#CDE7E4">
 
-    <!-- MAIN CONTENT -->
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -16,135 +15,457 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- TOP BAR -->
-            <androidx.constraintlayout.widget.ConstraintLayout
+            <!-- Teal Header Section -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="#B8D9D8"
-                android:padding="16dp"
-                android:elevation="4dp">
+                android:orientation="vertical"
+                android:background="#15837C"
+                android:padding="20dp"
+                android:paddingTop="40dp">
 
-                <ImageView
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="20dp">
+
+                    <ImageButton
                     android:id="@+id/back_button"
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:background="@android:color/transparent"
                     android:src="@android:drawable/ic_menu_revert"
                     android:contentDescription="Back"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintBottom_toBottomOf="parent" />
+                        android:padding="12dp"
+                        app:tint="@android:color/white" />
 
                 <TextView
                     android:id="@+id/header_title"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text="Back to Manage Event"
+                        android:layout_weight="1"
+                        android:text="Manage Entrants"
+                        android:textColor="@android:color/white"
                     android:textSize="20sp"
                     android:textStyle="bold"
-                    android:textColor="#000"
-                    android:layout_marginStart="16dp"
-                    app:layout_constraintStart_toEndOf="@id/back_button"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintBottom_toBottomOf="parent" />
-            </androidx.constraintlayout.widget.ConstraintLayout>
+                        android:gravity="center" />
 
+                    <View
+                        android:layout_width="48dp"
+                        android:layout_height="48dp" />
+                </LinearLayout>
+            </LinearLayout>
 
-            <!-- MAIN CONTENT -->
-            <androidx.constraintlayout.widget.ConstraintLayout
-                android:id="@+id/mainContent"
+            <!-- Main Content Card -->
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:padding="20dp">
+                android:layout_margin="16dp"
+                android:layout_marginTop="32dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp"
+                app:cardBackgroundColor="@android:color/white"
+                app:cardUseCompatPadding="true">
 
-                <!-- PAGE TITLE -->
-                <TextView
-                    android:id="@+id/titleViewEntrants"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:text="View Entrants"
-                    android:textSize="26sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/black"
-                    android:gravity="center"
-                    android:padding="12dp"
-                    android:background="#B8D9D8"
-                    android:layout_marginBottom="20dp"
-                    app:layout_constraintWidth_default="spread"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
-
-                <!-- BUTTON COLUMN -->
                 <LinearLayout
-                    android:id="@+id/button_container"
-                    android:layout_width="0dp"
+                    android:id="@+id/mainContent"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:layout_marginTop="20dp"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/titleViewEntrants">
+                    android:padding="20dp">
 
-                    <com.google.android.material.button.MaterialButton
+                    <!-- Subtitle -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="View and manage all participant groups."
+                        android:textSize="14sp"
+                        android:textColor="#666666"
+                        android:layout_marginBottom="20dp" />
+
+                    <!-- Total Participants Card -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/totalParticipantsCard"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="20dp"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="2dp"
+                        app:cardBackgroundColor="#0F8A86">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="20dp"
+                            android:gravity="center">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Total Participants"
+                                android:textSize="16sp"
+                                android:textColor="@android:color/white"
+                                android:layout_marginBottom="8dp" />
+
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:gravity="center_vertical">
+
+                                <TextView
+                                    android:id="@+id/totalParticipantsCount"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="0"
+                                    android:textSize="32sp"
+                                    android:textStyle="bold"
+                                    android:textColor="@android:color/white" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text=" people"
+                                    android:textSize="16sp"
+                                    android:textColor="@android:color/white"
+                                    android:layout_marginStart="4dp" />
+                            </LinearLayout>
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- Waiting List Card -->
+                    <com.google.android.material.card.MaterialCardView
                         android:id="@+id/btnWaitingList"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="📋 Waiting List"
-                        android:textAllCaps="false"
-                        android:textColor="#000"
-                        app:cornerRadius="16dp"
-                        app:strokeWidth="1dp"
-                        android:layout_marginBottom="16dp"
-                        app:strokeColor="#AA000000"
-                        app:backgroundTint="#E8F0FF"/>
+                        android:layout_marginBottom="12dp"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="2dp"
+                        app:cardBackgroundColor="#F5F5F5"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:foreground="?attr/selectableItemBackground">
 
-                    <com.google.android.material.button.MaterialButton
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:padding="16dp"
+                            android:gravity="center_vertical">
+
+                            <ImageView
+                                android:layout_width="48dp"
+                                android:layout_height="48dp"
+                                android:src="@android:drawable/ic_menu_recent_history"
+                                android:contentDescription="Waiting List"
+                                android:background="@drawable/circle_shape"
+                                android:backgroundTint="#E3F2F1"
+                                android:padding="10dp"
+                                app:tint="#0F8A86" />
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:orientation="vertical"
+                                android:layout_marginStart="16dp">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Waiting List"
+                                    android:textSize="16sp"
+                                    android:textStyle="bold"
+                        android:textColor="#000"
+                                    android:layout_marginBottom="4dp" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="People waiting to be selected for the event."
+                                    android:textSize="13sp"
+                                    android:textColor="#666666" />
+                            </LinearLayout>
+
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:gravity="center_vertical"
+                                android:layout_marginEnd="8dp">
+
+                                <TextView
+                                    android:id="@+id/waitingListCount"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="0"
+                                    android:textSize="18sp"
+                                    android:textStyle="bold"
+                                    android:textColor="#000" />
+
+                                <ImageView
+                                    android:layout_width="24dp"
+                                    android:layout_height="24dp"
+                                    android:src="@drawable/ic_arrow_right"
+                                    android:contentDescription="Arrow"
+                                    android:layout_marginStart="8dp"
+                                    app:tint="#666666" />
+                            </LinearLayout>
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- Chosen Entrants Card -->
+                    <com.google.android.material.card.MaterialCardView
                         android:id="@+id/btnChosenList"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="🎯 Chosen List"
-                        android:textAllCaps="false"
-                        android:textColor="#000"
-                        app:cornerRadius="16dp"
-                        app:strokeWidth="1dp"
-                        app:strokeColor="#AA000000"
-                        app:backgroundTint="#FFF3D4"
-                        android:layout_marginBottom="16dp" />
+                        android:layout_marginBottom="12dp"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="2dp"
+                        app:cardBackgroundColor="#F5F5F5"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:foreground="?attr/selectableItemBackground">
 
-                    <com.google.android.material.button.MaterialButton
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:padding="16dp"
+                            android:gravity="center_vertical">
+
+                            <ImageView
+                                android:layout_width="48dp"
+                                android:layout_height="48dp"
+                                android:src="@android:drawable/ic_menu_compass"
+                                android:contentDescription="Chosen Entrants"
+                                android:background="@drawable/circle_shape"
+                                android:backgroundTint="#E3F2F1"
+                                android:padding="10dp"
+                                app:tint="#0F8A86" />
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:orientation="vertical"
+                                android:layout_marginStart="16dp">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Chosen Entrants"
+                                    android:textSize="16sp"
+                                    android:textStyle="bold"
+                        android:textColor="#000"
+                                    android:layout_marginBottom="4dp" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Selected participants pending confirmation."
+                                    android:textSize="13sp"
+                                    android:textColor="#666666" />
+                            </LinearLayout>
+
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:gravity="center_vertical"
+                                android:layout_marginEnd="8dp">
+
+                                <TextView
+                                    android:id="@+id/chosenListCount"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="0"
+                                    android:textSize="18sp"
+                                    android:textStyle="bold"
+                                    android:textColor="#000" />
+
+                                <ImageView
+                                    android:layout_width="24dp"
+                                    android:layout_height="24dp"
+                                    android:src="@drawable/ic_arrow_right"
+                                    android:contentDescription="Arrow"
+                                    android:layout_marginStart="8dp"
+                                    app:tint="#666666" />
+                            </LinearLayout>
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- Enrolled Entrants Card -->
+                    <com.google.android.material.card.MaterialCardView
                         android:id="@+id/btnFinal"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="✅ Enrolled Entrants"
-                        android:textAllCaps="false"
-                        android:textColor="#000"
-                        app:cornerRadius="16dp"
-                        app:strokeWidth="1dp"
-                        app:strokeColor="#AA000000"
-                        app:backgroundTint="#D0EDD7"
-                        android:layout_marginBottom="16dp" />
+                        android:layout_marginBottom="12dp"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="2dp"
+                        app:cardBackgroundColor="#F5F5F5"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:foreground="?attr/selectableItemBackground">
 
-                    <com.google.android.material.button.MaterialButton
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:padding="16dp"
+                            android:gravity="center_vertical">
+
+                            <ImageView
+                                android:layout_width="48dp"
+                                android:layout_height="48dp"
+                                android:src="@drawable/ic_people"
+                                android:contentDescription="Enrolled Entrants"
+                                android:background="@drawable/circle_shape"
+                                android:backgroundTint="#E3F2F1"
+                                android:padding="10dp"
+                                app:tint="#0F8A86" />
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:orientation="vertical"
+                                android:layout_marginStart="16dp">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Enrolled Entrants"
+                                    android:textSize="16sp"
+                                    android:textStyle="bold"
+                        android:textColor="#000"
+                                    android:layout_marginBottom="4dp" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Confirmed participants attending the event."
+                                    android:textSize="13sp"
+                                    android:textColor="#666666" />
+                            </LinearLayout>
+
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:gravity="center_vertical"
+                                android:layout_marginEnd="8dp">
+
+                                <TextView
+                                    android:id="@+id/enrolledCount"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="0"
+                                    android:textSize="18sp"
+                                    android:textStyle="bold"
+                                    android:textColor="#000" />
+
+                                <ImageView
+                                    android:layout_width="24dp"
+                                    android:layout_height="24dp"
+                                    android:src="@drawable/ic_arrow_right"
+                                    android:contentDescription="Arrow"
+                                    android:layout_marginStart="8dp"
+                                    app:tint="#666666" />
+                            </LinearLayout>
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- Cancelled Entrants Card -->
+                    <com.google.android.material.card.MaterialCardView
                         android:id="@+id/btnCancelled"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="❌ Cancelled Entrants"
-                        android:textAllCaps="false"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="2dp"
+                        app:cardBackgroundColor="#F5F5F5"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:foreground="?attr/selectableItemBackground">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:padding="16dp"
+                            android:gravity="center_vertical">
+
+                            <ImageView
+                                android:layout_width="48dp"
+                                android:layout_height="48dp"
+                                android:src="@android:drawable/ic_menu_close_clear_cancel"
+                                android:contentDescription="Cancelled Entrants"
+                                android:background="@drawable/circle_shape"
+                                android:backgroundTint="#E3F2F1"
+                                android:padding="10dp"
+                                app:tint="#0F8A86" />
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:orientation="vertical"
+                                android:layout_marginStart="16dp">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Cancelled Entrants"
+                                    android:textSize="16sp"
+                                    android:textStyle="bold"
                         android:textColor="#000"
-                        app:cornerRadius="16dp"
-                        app:strokeWidth="1dp"
-                        app:strokeColor="#AA000000"
-                        app:backgroundTint="#F2DFD8" />
+                                    android:layout_marginBottom="4dp" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Participants who cancelled their registration."
+                                    android:textSize="13sp"
+                                    android:textColor="#666666" />
+                            </LinearLayout>
+
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:gravity="center_vertical"
+                                android:layout_marginEnd="8dp">
+
+                                <TextView
+                                    android:id="@+id/cancelledCount"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="0"
+                                    android:textSize="18sp"
+                                    android:textStyle="bold"
+                                    android:textColor="#000" />
+
+                                <ImageView
+                                    android:layout_width="24dp"
+                                    android:layout_height="24dp"
+                                    android:src="@drawable/ic_arrow_right"
+                                    android:contentDescription="Arrow"
+                                    android:layout_marginStart="8dp"
+                                    app:tint="#666666" />
+                            </LinearLayout>
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
 
                 </LinearLayout>
-
-            </androidx.constraintlayout.widget.ConstraintLayout>
+            </com.google.android.material.card.MaterialCardView>
 
         </LinearLayout>
     </ScrollView>
 
-    <!-- OVERLAY -->
+    <!-- Fragment Container Overlay -->
     <FrameLayout
         android:id="@+id/fragment_container"
         android:layout_width="match_parent"
@@ -152,4 +473,4 @@
         android:visibility="gone"
         android:background="@android:color/transparent" />
 
-</FrameLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

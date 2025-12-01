@@ -21,100 +21,259 @@ public class AuthHelper {
 
     /**
      * Performs anonymous authentication for entrants.
+     * Checks for existing profile by deviceId first to prevent duplicates.
      */
     public static void signInAnonymously(@NonNull Context context,
                                          @NonNull OnAuthCompleteListener listener) {
-        auth.signInAnonymously()
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        FirebaseUser user = auth.getCurrentUser();
-                        if (user != null) {
-                            String uid = user.getUid();
-                            String deviceId = DeviceUtils.getDeviceId(context);
-
-                            profileRepo.get(uid).addOnCompleteListener(profileTask -> {
-                                if (profileTask.isSuccessful() && profileTask.getResult() != null) {
-
-                                    Profile existingProfile = profileTask.getResult();
-                                    if (existingProfile.getDeviceId() == null ||
-                                            existingProfile.getDeviceId().isEmpty()) {
-
-                                        existingProfile.setDeviceId(deviceId);
-                                        profileRepo.upsert(existingProfile)
-                                                .addOnCompleteListener(updateTask ->
-                                                        listener.onSuccess(user, existingProfile));
+        String deviceId = DeviceUtils.getDeviceId(context);
+        
+        // First, check if profile exists by deviceId to prevent duplicates
+        profileRepo.getByDeviceId(deviceId)
+                .addOnCompleteListener(deviceProfileTask -> {
+                    if (deviceProfileTask.isSuccessful() && deviceProfileTask.getResult() != null) {
+                        // Found existing profile by deviceId - use it
+                        Profile existingProfile = deviceProfileTask.getResult();
+                        
+                        // Sign in anonymously
+                        auth.signInAnonymously()
+                                .addOnCompleteListener(task -> {
+                                    if (task.isSuccessful()) {
+                                        FirebaseUser user = auth.getCurrentUser();
+                                        if (user != null) {
+                                            String uid = user.getUid();
+                                            
+                                            // Update profile with new userId if different
+                                            if (!uid.equals(existingProfile.getUserId())) {
+                                                existingProfile.setUserId(uid);
+                                                profileRepo.upsert(existingProfile)
+                                                        .addOnCompleteListener(updateTask -> {
+                                                            if (updateTask.isSuccessful()) {
+                                                                listener.onSuccess(user, existingProfile);
+                                                            } else {
+                                                                // Even if update fails, return existing profile
+                                                                listener.onSuccess(user, existingProfile);
+                                                            }
+                                                        });
+                                            } else {
+                                                // UserId already matches
+                                                listener.onSuccess(user, existingProfile);
+                                            }
+                                        } else {
+                                            listener.onError(new IllegalStateException("User is null after anonymous sign-in"));
+                                        }
                                     } else {
-                                        listener.onSuccess(user, existingProfile);
+                                        listener.onError(task.getException());
                                     }
-
+                                });
+                    } else {
+                        // No existing profile by deviceId, proceed with normal flow
+                        auth.signInAnonymously()
+                                .addOnCompleteListener(task -> {
+                                    if (task.isSuccessful()) {
+                                        FirebaseUser user = auth.getCurrentUser();
+                                        if (user != null) {
+                                            String uid = user.getUid();
+                                            
+                                            // Check if profile exists by userId (shouldn't, but double-check)
+                                            profileRepo.get(uid)
+                                                    .addOnCompleteListener(profileTask -> {
+                                                        try {
+                                                            if (profileTask.isSuccessful() && profileTask.getResult() != null) {
+                                                                Profile existingProfile = profileTask.getResult();
+                                                                // Update deviceId if missing
+                                                                if (existingProfile.getDeviceId() == null || existingProfile.getDeviceId().isEmpty()) {
+                                                                    existingProfile.setDeviceId(deviceId);
+                                                                    profileRepo.upsert(existingProfile)
+                                                                            .addOnCompleteListener(updateTask -> {
+                                                                                if (updateTask.isSuccessful()) {
+                                                                                    listener.onSuccess(user, existingProfile);
+                                                                                } else {
+                                                                                    listener.onError(updateTask.getException());
+                                                                                }
+                                                                            });
+                                                                } else {
+                                                                    listener.onSuccess(user, existingProfile);
+                                                                }
+                                                            } else {
+                                                                // Profile doesn't exist, create new one
+                                                                Profile profile = new Profile();
+                                                                profile.setUserId(uid);
+                                                                profile.setDeviceId(deviceId);
+                                                                profile.setRole("entrant");
+                                                                profile.setActive(true);
+                                                                profile.setBanned(false);
+                                                                
+                                                                profileRepo.upsert(profile)
+                                                                        .addOnCompleteListener(createTask -> {
+                                                                            if (createTask.isSuccessful()) {
+                                                                                listener.onSuccess(user, profile);
+                                                                            } else {
+                                                                                listener.onError(createTask.getException());
+                                                                            }
+                                                                        });
+                                                            }
+                                                        } catch (Exception e) {
+                                                            listener.onError(e);
+                                                        }
+                                                    });
+                                        } else {
+                                            listener.onError(new IllegalStateException("User is null after anonymous sign-in"));
+                                        }
+                                    } else {
+                                        listener.onError(task.getException());
+                                    }
+                                });
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    // Error checking by deviceId, fall back to normal flow
+                    android.util.Log.w("AuthHelper", "Error checking by deviceId, falling back: " + e.getMessage());
+                    auth.signInAnonymously()
+                            .addOnCompleteListener(task -> {
+                                if (task.isSuccessful()) {
+                                    FirebaseUser user = auth.getCurrentUser();
+                                    if (user != null) {
+                                        String uid = user.getUid();
+                                        
+                                        profileRepo.get(uid)
+                                                .addOnCompleteListener(profileTask -> {
+                                                    try {
+                                                        if (profileTask.isSuccessful() && profileTask.getResult() != null) {
+                                                            Profile existingProfile = profileTask.getResult();
+                                                            if (existingProfile.getDeviceId() == null || existingProfile.getDeviceId().isEmpty()) {
+                                                                existingProfile.setDeviceId(deviceId);
+                                                                profileRepo.upsert(existingProfile)
+                                                                        .addOnCompleteListener(updateTask -> {
+                                                                            if (updateTask.isSuccessful()) {
+                                                                                listener.onSuccess(user, existingProfile);
+                                                                            } else {
+                                                                                listener.onError(updateTask.getException());
+                                                                            }
+                                                                        });
+                                                            } else {
+                                                                listener.onSuccess(user, existingProfile);
+                                                            }
+                                                        } else {
+                                                            Profile profile = new Profile();
+                                                            profile.setUserId(uid);
+                                                            profile.setDeviceId(deviceId);
+                                                            profile.setRole("entrant");
+                                                            profile.setActive(true);
+                                                            profile.setBanned(false);
+                                                            
+                                                            profileRepo.upsert(profile)
+                                                                    .addOnCompleteListener(createTask -> {
+                                                                        if (createTask.isSuccessful()) {
+                                                                            listener.onSuccess(user, profile);
+                                                                        } else {
+                                                                            listener.onError(createTask.getException());
+                                                                        }
+                                                                    });
+                                                        }
+                                                    } catch (Exception ex) {
+                                                        listener.onError(ex);
+                                                    }
+                                                });
+                                    } else {
+                                        listener.onError(new IllegalStateException("User is null after anonymous sign-in"));
+                                    }
                                 } else {
-                                    Profile profile = new Profile();
-                                    profile.setUserId(uid);
-                                    profile.setDeviceId(deviceId);
-                                    profile.setRole("entrant");
-                                    profile.setActive(true);
-                                    profile.setBanned(false);
-
-                                    profileRepo.upsert(profile)
-                                            .addOnCompleteListener(createTask -> {
-                                                if (createTask.isSuccessful()) {
-                                                    listener.onSuccess(user, profile);
-                                                } else {
-                                                    listener.onError(createTask.getException());
-                                                }
-                                            });
+                                    listener.onError(task.getException());
                                 }
                             });
-                        } else {
-                            listener.onError(new IllegalStateException("User is null after anonymous sign-in"));
-                        }
-                    } else {
-                        listener.onError(task.getException());
-                    }
                 });
     }
 
 
     /**
      * Signs up a new organizer with name, email, and password.
+     * Checks for existing profile by email first to prevent duplicates.
      */
     public static void signUpOrganizer(@NonNull String email,
                                        @NonNull String password,
                                        @NonNull String organizerName,
                                        @NonNull OnAuthCompleteListener listener) {
-
-        auth.createUserWithEmailAndPassword(email, password)
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-
-                        FirebaseUser user = auth.getCurrentUser();
-                        if (user != null) {
-                            String uid = user.getUid();
-
-                            Profile profile = new Profile();
-                            profile.setUserId(uid);
-                            profile.setEmail(email);
-                            profile.setName(organizerName);   // ⭐ Name saved here
-                            profile.setRole("organizer");
-                            profile.setActive(true);
-                            profile.setBanned(false);
-
-                            profileRepo.upsert(profile)
-                                    .addOnCompleteListener(createTask -> {
-                                        if (createTask.isSuccessful()) {
-                                            listener.onSuccess(user, profile);
-                                        } else {
-                                            listener.onError(createTask.getException());
-                                        }
-                                    });
-
-                        } else {
-                            listener.onError(new IllegalStateException("User is null after organizer sign-up"));
-                        }
-
-                    } else {
-                        listener.onError(task.getException());
+        
+        // First, check if profile already exists by email
+        profileRepo.getByEmail(email)
+                .addOnCompleteListener(emailCheckTask -> {
+                    if (emailCheckTask.isSuccessful() && emailCheckTask.getResult() != null) {
+                        // Profile already exists with this email
+                        Profile existingProfile = emailCheckTask.getResult();
+                        listener.onError(new IllegalStateException("An account with this email already exists"));
+                        return;
                     }
+                    
+                    // No existing profile, proceed with account creation
+                    auth.createUserWithEmailAndPassword(email, password)
+                            .addOnCompleteListener(task -> {
+                                if (task.isSuccessful()) {
+
+                                    FirebaseUser user = auth.getCurrentUser();
+                                    if (user != null) {
+                                        String uid = user.getUid();
+
+                                        Profile profile = new Profile();
+                                        profile.setUserId(uid);
+                                        profile.setEmail(email);
+                                        profile.setName(organizerName);   // ⭐ Name saved here
+                                        profile.setRole("organizer");
+                                        profile.setActive(true);
+                                        profile.setBanned(false);
+
+                                        profileRepo.upsert(profile)
+                                                .addOnCompleteListener(createTask -> {
+                                                    if (createTask.isSuccessful()) {
+                                                        listener.onSuccess(user, profile);
+                                                    } else {
+                                                        listener.onError(createTask.getException());
+                                                    }
+                                                });
+
+                                    } else {
+                                        listener.onError(new IllegalStateException("User is null after organizer sign-up"));
+                                    }
+
+                                } else {
+                                    listener.onError(task.getException());
+                                }
+                            });
+                })
+                .addOnFailureListener(e -> {
+                    // Error checking by email, proceed anyway (Firebase will catch duplicate emails)
+                    auth.createUserWithEmailAndPassword(email, password)
+                            .addOnCompleteListener(task -> {
+                                if (task.isSuccessful()) {
+
+                                    FirebaseUser user = auth.getCurrentUser();
+                                    if (user != null) {
+                                        String uid = user.getUid();
+
+                                        Profile profile = new Profile();
+                                        profile.setUserId(uid);
+                                        profile.setEmail(email);
+                                        profile.setName(organizerName);
+                                        profile.setRole("organizer");
+                                        profile.setActive(true);
+                                        profile.setBanned(false);
+
+                                        profileRepo.upsert(profile)
+                                                .addOnCompleteListener(createTask -> {
+                                                    if (createTask.isSuccessful()) {
+                                                        listener.onSuccess(user, profile);
+                                                    } else {
+                                                        listener.onError(createTask.getException());
+                                                    }
+                                                });
+
+                                    } else {
+                                        listener.onError(new IllegalStateException("User is null after organizer sign-up"));
+                                    }
+
+                                } else {
+                                    listener.onError(task.getException());
+                                }
+                            });
                 });
     }
 
@@ -135,22 +294,79 @@ public class AuthHelper {
                         if (user != null) {
                             String uid = user.getUid();
 
-                            profileRepo.get(uid).addOnCompleteListener(profileTask -> {
-                                if (profileTask.isSuccessful() && profileTask.getResult() != null) {
+                            profileRepo.get(uid)
+                                    .addOnCompleteListener(profileTask -> {
+                                        try {
+                                            if (profileTask.isSuccessful() && profileTask.getResult() != null) {
+                                                Profile profile = profileTask.getResult();
+                                                if (expectedRole.equals(profile.getRole())) {
+                                                    listener.onSuccess(user, profile);
+                                                } else {
+                                                    auth.signOut();
+                                                    listener.onError(new IllegalStateException("role mismatch"));
+                                                }
+                                            } else {
+                                                Exception e = profileTask.getException();
+                                                String errorMsg = e != null ? e.getMessage() : "Profile not found";
+                                                listener.onError(new IllegalStateException("Profile not found: " + errorMsg));
+                                            }
+                                        } catch (Exception e) {
+                                            listener.onError(e);
+                                        }
+                                    })
+                                    .addOnFailureListener(e -> {
+                                        listener.onError(new IllegalStateException("Failed to get profile: " + e.getMessage(), e));
+                                    });
 
-                                    Profile profile = profileTask.getResult();
+                        } else {
+                            listener.onError(new IllegalStateException("User is null after sign-in"));
+                        }
 
-                                    if (expectedRole.equals(profile.getRole())) {
-                                        listener.onSuccess(user, profile);
-                                    } else {
-                                        auth.signOut();
-                                        listener.onError(new IllegalStateException("role mismatch"));
-                                    }
+                    } else {
+                        listener.onError(task.getException());
+                    }
+                });
+    }
 
-                                } else {
-                                    listener.onError(new IllegalStateException("Profile not found"));
-                                }
-                            });
+
+    /**
+     * Signs in with email/password and returns the user's profile with role.
+     * Unlike signInWithEmail(), this method does NOT validate the role - it just returns
+     * whatever role is in the profile, allowing the caller to check and route accordingly.
+     * 
+     * This is used by the shared login page where we don't know if the user is admin or organizer.
+     */
+    public static void signInWithEmailAndGetRole(@NonNull String email,
+                                                 @NonNull String password,
+                                                 @NonNull OnAuthCompleteListener listener) {
+
+        auth.signInWithEmailAndPassword(email, password)
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+
+                        FirebaseUser user = auth.getCurrentUser();
+                        if (user != null) {
+                            String uid = user.getUid();
+
+                            profileRepo.get(uid)
+                                    .addOnCompleteListener(profileTask -> {
+                                        try {
+                                            if (profileTask.isSuccessful() && profileTask.getResult() != null) {
+                                                Profile profile = profileTask.getResult();
+                                                // Return profile with role - caller will check the role
+                                                listener.onSuccess(user, profile);
+                                            } else {
+                                                Exception e = profileTask.getException();
+                                                String errorMsg = e != null ? e.getMessage() : "Profile not found";
+                                                listener.onError(new IllegalStateException("Profile not found: " + errorMsg));
+                                            }
+                                        } catch (Exception e) {
+                                            listener.onError(e);
+                                        }
+                                    })
+                                    .addOnFailureListener(e -> {
+                                        listener.onError(new IllegalStateException("Failed to get profile: " + e.getMessage(), e));
+                                    });
 
                         } else {
                             listener.onError(new IllegalStateException("User is null after sign-in"));

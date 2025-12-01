@@ -1,51 +1,264 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/surface_white"
-    android:orientation="vertical"
-    android:gravity="center"
-    android:padding="32dp">
+    android:background="#CDE7E4">
 
-    <com.google.android.material.textview.MaterialTextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="EventMaster Roles"
-        android:textSize="22sp"
-        android:textStyle="bold"
-        android:textColor="@color/text_primary_dark"
-        android:layout_marginBottom="24dp" />
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnAdmin"
-        android:layout_width="220dp"
-        android:layout_height="wrap_content"
-        android:text="Admin Portal"
-        android:textAllCaps="false"
-        android:textColor="@android:color/white"
-        app:cornerRadius="12dp"
-        app:backgroundTint="@color/teal_dark"
-        android:layout_marginBottom="16dp" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnOrganizer"
-        android:layout_width="220dp"
-        android:layout_height="wrap_content"
-        android:text="Organizer Portal"
-        android:textAllCaps="false"
-        android:textColor="@android:color/white"
-        app:cornerRadius="12dp"
-        app:backgroundTint="@color/teal_dark"
-        android:layout_marginBottom="16dp" />
+            <!-- Teal Header Section -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="#15837C"
+                android:padding="32dp"
+                android:paddingTop="60dp"
+                android:paddingBottom="100dp">
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnEntrant"
-        android:layout_width="220dp"
-        android:layout_height="wrap_content"
-        android:text="Entrant Portal"
-        android:textAllCaps="false"
-        android:textColor="@android:color/white"
-        app:cornerRadius="12dp"
-        app:backgroundTint="@color/teal_dark" />
-</LinearLayout>
+                <!-- Logo Floating Card (overlaps both sections) -->
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    android:layout_marginBottom="32dp">
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="200dp"
+                        android:layout_height="200dp"
+                        android:layout_gravity="center_horizontal"
+                        app:cardCornerRadius="100dp"
+                        app:cardElevation="0dp"
+                        app:cardBackgroundColor="@android:color/white"
+                        app:strokeWidth="0dp">
+
+                        <ImageView
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:src="@drawable/eventmasterlogo"
+                            android:contentDescription="EventMaster logo"
+                            android:scaleType="fitCenter"
+                            android:padding="24dp" />
+                    </com.google.android.material.card.MaterialCardView>
+                </FrameLayout>
+
+                <!-- Title Section -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Welcome to"
+                    android:textSize="24sp"
+                    android:textColor="@android:color/white"
+                    android:alpha="0.95"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginBottom="8dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="EventMaster"
+                    android:textSize="38sp"
+                    android:textStyle="bold"
+                    android:textColor="@android:color/white"
+                    android:letterSpacing="0.02"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginBottom="16dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Continue as entrant or log in to your account"
+                    android:textSize="15sp"
+                    android:textColor="@android:color/white"
+                    android:alpha="0.9"
+                    android:layout_gravity="center_horizontal" />
+            </LinearLayout>
+
+            <!-- Content Cards Section -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="24dp"
+                android:paddingTop="40dp">
+
+                <!-- Continue as Entrant Card -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/btnEntrant"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="140dp"
+                    app:cardCornerRadius="24dp"
+                    app:cardElevation="0dp"
+                    app:cardBackgroundColor="@android:color/white"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?android:attr/selectableItemBackground"
+                    android:layout_marginBottom="24dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:padding="28dp"
+                        android:gravity="center_vertical">
+
+                        <!-- Person Icon Container -->
+                        <FrameLayout
+                            android:layout_width="80dp"
+                            android:layout_height="80dp"
+                            android:layout_marginEnd="28dp">
+
+                            <com.google.android.material.card.MaterialCardView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                app:cardCornerRadius="20dp"
+                                app:cardElevation="0dp"
+                                app:cardBackgroundColor="#15837C">
+
+                                <ImageView
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    android:src="@drawable/baseline_person_24"
+                                    android:contentDescription="Entrant person icon"
+                                    app:tint="@android:color/white"
+                                    android:padding="18dp" />
+                            </com.google.android.material.card.MaterialCardView>
+                        </FrameLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Continue as"
+                                android:textSize="17sp"
+                                android:textColor="#6B7280"
+                                android:layout_marginBottom="6dp" />
+                            
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Entrant"
+                                android:textSize="26sp"
+                                android:textStyle="bold"
+                                android:textColor="#111827"
+                                android:layout_marginBottom="10dp" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Discover and join events through fair lotteries."
+                                android:textSize="15sp"
+                                android:textColor="#6B7280"
+                                android:lineSpacingMultiplier="1.3" />
+                        </LinearLayout>
+
+                        <!-- Arrow indicator -->
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/ic_arrow_right"
+                            android:contentDescription="Arrow"
+                            app:tint="#15837C"
+                            android:layout_marginStart="16dp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Log in Card -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/btnLogin"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="140dp"
+                    app:cardCornerRadius="24dp"
+                    app:cardElevation="0dp"
+                    app:cardBackgroundColor="@android:color/white"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?android:attr/selectableItemBackground">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:padding="28dp"
+                        android:gravity="center_vertical">
+
+                        <!-- Shield Icon Container -->
+                        <FrameLayout
+                            android:layout_width="80dp"
+                            android:layout_height="80dp"
+                            android:layout_marginEnd="28dp">
+
+                            <com.google.android.material.card.MaterialCardView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                app:cardCornerRadius="20dp"
+                                app:cardElevation="0dp"
+                                app:cardBackgroundColor="#15837C">
+
+                                <ImageView
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    android:src="@drawable/ic_shield_outline"
+                                    android:contentDescription="Login icon"
+                                    app:tint="@android:color/white"
+                                    android:padding="18dp" />
+                            </com.google.android.material.card.MaterialCardView>
+                        </FrameLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Log in"
+                                android:textSize="26sp"
+                                android:textStyle="bold"
+                                android:textColor="#111827"
+                                android:layout_marginBottom="10dp" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Sign in as organizer and create events!"
+                                android:textSize="15sp"
+                                android:textColor="#6B7280"
+                                android:lineSpacingMultiplier="1.3" />
+                        </LinearLayout>
+
+                        <!-- Arrow indicator -->
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/ic_arrow_right"
+                            android:contentDescription="Arrow"
+                            app:tint="#15837C"
+                            android:layout_marginStart="16dp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

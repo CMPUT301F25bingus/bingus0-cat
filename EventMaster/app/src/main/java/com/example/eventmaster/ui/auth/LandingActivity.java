@@ -2,6 +2,7 @@ package com.example.eventmaster.ui.auth;
 
 import android.content.Intent;
 import android.os.Bundle;
+
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.eventmaster.MainActivity;

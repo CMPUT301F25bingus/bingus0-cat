@@ -5,6 +5,8 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import android.view.View;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -42,8 +44,9 @@ public class WaitingListActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
     private WaitingListAdapter adapter;
     private TextView totalCountText;
-    private MaterialToolbar btnBack;
+    private ImageButton btnBack;
     private TextView textSendNotification;
+    private TextView emptyStateText;
 
     private final WaitingListRepositoryFs waitingRepo = new WaitingListRepositoryFs();
     private final LotteryServiceFs lotteryService = new LotteryServiceFs();
@@ -70,6 +73,7 @@ public class WaitingListActivity extends AppCompatActivity {
         totalCountText = findViewById(R.id.textTotalCount);
         btnBack = findViewById(R.id.btnBack);
         textSendNotification = findViewById(R.id.textSendNotification);
+        emptyStateText = findViewById(R.id.empty_state_text);
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         adapter = new WaitingListAdapter(new ArrayList<>());
@@ -105,6 +109,15 @@ public class WaitingListActivity extends AppCompatActivity {
                 adapter.updateList(entries);
                 totalCountText.setText("Total waitlisted entrants: " + entries.size());
                 Log.d(TAG, "Loaded " + entries.size() + " waiting entrants");
+                
+                // Show/hide empty state
+                if (entries.isEmpty()) {
+                    if (emptyStateText != null) emptyStateText.setVisibility(View.VISIBLE);
+                    recyclerView.setVisibility(View.GONE);
+                } else {
+                    if (emptyStateText != null) emptyStateText.setVisibility(View.GONE);
+                    recyclerView.setVisibility(View.VISIBLE);
+                }
             }
 
             @Override

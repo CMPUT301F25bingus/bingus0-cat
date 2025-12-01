@@ -6,30 +6,117 @@
     android:layout_height="match_parent"
     android:background="@color/profile_bg">
 
+    <!-- Toolbar -->
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="56dp"
         android:background="@color/profile_nav"
         app:title="Browse profiles"
-        app:titleTextColor="@android:color/black"
+        app:titleTextColor="@color/white"
         app:navigationIcon="@drawable/ic_arrow_back"
-        app:navigationIconTint="@android:color/black"/>
+        app:navigationIconTint="@color/white"/>
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvProfiles"
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:padding="16dp"
-        android:clipToPadding="false"/>
+        android:padding="24dp"
+        android:paddingBottom="80dp">
 
+        <!-- White Card Container -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="top"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="8dp"
+            app:cardBackgroundColor="@color/surface_white">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:padding="24dp">
+
+                    <!-- Header Section -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Browse Profiles"
+                        android:textSize="24sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_primary_dark"
+                        android:layout_gravity="center_horizontal"
+                        android:layout_marginBottom="8dp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="View and manage user profiles"
+                        android:textSize="16sp"
+                        android:textColor="@color/text_secondary_dark"
+                        android:layout_gravity="center_horizontal"
+                        android:layout_marginBottom="24dp" />
+
+                    <!-- Filter/Tab Bar -->
+                    <LinearLayout
+                        android:id="@+id/filterBar"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="24dp"
+                        android:gravity="center">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnUsers"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="8dp"
+                            android:text="Users"
+                            android:textColor="@android:color/white"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            app:cornerRadius="12dp"
+                            app:backgroundTint="@color/color_prof_primary"
+                            android:elevation="4dp"/>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnOrganizers"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginStart="8dp"
+                            android:text="Organizers"
+                            android:textColor="@color/text_primary_dark"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            app:cornerRadius="12dp"
+                            app:backgroundTint="@color/status_badge_bg"
+                            android:elevation="2dp"/>
+                    </LinearLayout>
+
+                    <!-- Profiles RecyclerView -->
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/rvProfiles"
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="1"
+                        android:clipToPadding="false"/>
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+        </FrameLayout>
+
+    <!-- Footer -->
     <TextView
-        android:id="@+id/tvViewMore"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="View more"
-        android:gravity="center"
-        android:padding="16dp"
-        android:textColor="@android:color/white"/>
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="16dp"
+        android:text="Secure admin access • EventMaster"
+        android:textSize="12sp"
+        android:textColor="@color/white"
+        android:alpha="0.9" />
 </LinearLayout>

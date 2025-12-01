@@ -14,6 +14,7 @@ import android.view.animation.DecelerateInterpolator;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.eventmaster.R;
+import com.example.eventmaster.utils.EntrantSessionPrefs;
 
 /**
  * Welcome screen for entrants with animated welcome message.
@@ -27,6 +28,9 @@ public class EntrantWelcomeActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.entrant_activity_welcome);
+
+        // Remember that the last active session on this device is entrant
+        EntrantSessionPrefs.setLastEntrantActive(this, true);
 
         View welcomeContainer = findViewById(R.id.welcomeContainer);
         View textWelcome = findViewById(R.id.textWelcome);

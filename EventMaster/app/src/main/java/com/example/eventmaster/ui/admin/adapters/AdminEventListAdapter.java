@@ -9,12 +9,14 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.example.eventmaster.R;
 import com.example.eventmaster.model.Event;
 import com.google.android.material.button.MaterialButton;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
@@ -99,7 +101,8 @@ public class AdminEventListAdapter extends RecyclerView.Adapter<AdminEventListAd
      */
     static class AdminEventViewHolder extends RecyclerView.ViewHolder {
         
-        private final ImageView thumbnail;
+        private final ImageView eventPoster;
+        private final TextView statusBadge;
         private final TextView eventName;
         private final TextView eventDateText;
         private final TextView registrationDeadlineText;
@@ -108,7 +111,8 @@ public class AdminEventListAdapter extends RecyclerView.Adapter<AdminEventListAd
 
         public AdminEventViewHolder(@NonNull View itemView) {
             super(itemView);
-            thumbnail = itemView.findViewById(R.id.event_thumbnail);
+            eventPoster = itemView.findViewById(R.id.event_poster);
+            statusBadge = itemView.findViewById(R.id.status_badge);
             eventName = itemView.findViewById(R.id.event_name);
             eventDateText = itemView.findViewById(R.id.event_date_text);
             registrationDeadlineText = itemView.findViewById(R.id.registration_deadline_text);
@@ -120,32 +124,91 @@ public class AdminEventListAdapter extends RecyclerView.Adapter<AdminEventListAd
             // Set event name
             eventName.setText(event.getName() != null ? event.getName() : "Unnamed Event");
 
-            // Format event date range
-            if (event.getEventDate() != null) {
-                SimpleDateFormat dateFormat = new SimpleDateFormat("MMM dd - MMM dd, yyyy", Locale.getDefault());
-                String dateRange = "Date → " + dateFormat.format(event.getEventDate());
-                eventDateText.setText(dateRange);
+            // Load poster image
+            if (event.getPosterUrl() != null && !event.getPosterUrl().isEmpty()) {
+                Glide.with(itemView.getContext())
+                        .load(event.getPosterUrl())
+                        .centerCrop()
+                        .placeholder(R.drawable.ic_calendar_outline)
+                        .into(eventPoster);
             } else {
-                eventDateText.setText("Date → TBA");
+                eventPoster.setImageResource(R.drawable.ic_calendar_outline);
+                eventPoster.setBackgroundColor(0xFFE3E8E8);
+            }
+
+            // Determine and set status badge
+            String status = getEventStatus(event);
+            statusBadge.setText(status);
+            
+            switch (status) {
+                case "Active":
+                    statusBadge.setBackgroundResource(R.drawable.bg_status_active);
+                    break;
+                case "Upcoming":
+                    statusBadge.setBackgroundResource(R.drawable.bg_status_upcoming);
+                    break;
+                case "Completed":
+                    statusBadge.setBackgroundResource(R.drawable.bg_status_completed);
+                    break;
+                default:
+                    statusBadge.setBackgroundResource(R.drawable.bg_status_active);
+            }
+
+            // Format event date
+            if (event.getEventDate() != null) {
+                SimpleDateFormat dateFormat = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault());
+                String dateStr = "Event Date: " + dateFormat.format(event.getEventDate());
+                eventDateText.setText(dateStr);
+            } else {
+                eventDateText.setText("Event Date: TBA");
             }
 
             // Format registration deadline
             if (event.getRegistrationEndDate() != null) {
                 SimpleDateFormat dateFormat = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault());
-                String deadline = "Registration deadline → " + dateFormat.format(event.getRegistrationEndDate());
+                String deadline = "Registration: " + dateFormat.format(event.getRegistrationEndDate());
                 registrationDeadlineText.setText(deadline);
             } else {
-                registrationDeadlineText.setText("Registration deadline → TBA");
+                registrationDeadlineText.setText("Registration: TBA");
             }
 
-            // Set joined count (placeholder - will be updated with actual count)
-            joinedCountText.setText("Joined → 0");
-
-            // TODO: Load thumbnail image if posterUrl is available
+            // Set participant count (placeholder - will be updated with actual count if needed)
+            joinedCountText.setText("Participants: 0");
 
             // Set click listeners
             itemView.setOnClickListener(v -> listener.onEventClick(event));
             deleteEventButton.setOnClickListener(v -> listener.onDeleteEventClick(event));
+        }
+
+        /**
+         * Determines event status based on dates.
+         * Returns "Active", "Upcoming", or "Completed"
+         */
+        private String getEventStatus(Event event) {
+            Date now = new Date();
+            Date eventDate = event.getEventDate();
+            Date regEndDate = event.getRegistrationEndDate();
+
+            // If event date exists, use it to determine status
+            if (eventDate != null) {
+                if (eventDate.before(now)) {
+                    return "Completed";
+                } else {
+                    return "Upcoming";
+                }
+            }
+            
+            // Otherwise, check registration end date
+            if (regEndDate != null) {
+                if (regEndDate.before(now)) {
+                    return "Completed";
+                } else {
+                    return "Active";
+                }
+            }
+            
+            // Default to Active if no dates available
+            return "Active";
         }
     }
 }

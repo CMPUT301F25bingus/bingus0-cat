@@ -33,6 +33,9 @@ public final class FirestorePaths {
     /** Notifications collection */
     public static final String NOTIFICATIONS = "notifications";
     
+    /** Organizer applications collection */
+    public static final String ORGANIZER_APPLICATIONS = "organizerApplications";
+    
     // ==================== Event Sub-Collections ====================
     
     /** Waiting list sub-collection under events */

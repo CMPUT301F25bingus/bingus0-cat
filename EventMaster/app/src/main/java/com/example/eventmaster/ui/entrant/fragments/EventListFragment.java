@@ -10,8 +10,6 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
-import android.widget.AutoCompleteTextView;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
@@ -98,7 +96,7 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
     private String sortOrder = "newest"; // "newest" or "oldest"
     private Double maxPrice = null; // null means no price limit
     private String locationFilter = null;
-    private boolean onlyAvailableSpots = false;
+    private List<String> selectedEventTypes = new ArrayList<>(); // List of selected event types for filtering
     private StatusFilter currentStatusFilter = StatusFilter.ALL;
 
     private static final String TAG = "EventListFragment";
@@ -176,26 +174,33 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
 
     private void updateStatusCounts() {
         if (statusFilterAdapter == null) return;
-        int total = allEvents != null ? allEvents.size() : 0;
+        
+        // Count from filteredEvents instead of allEvents to reflect active filters
+        // Use filteredEvents if it exists (even if empty - that means filters resulted in 0 matches)
+        // Only fall back to allEvents if filteredEvents hasn't been initialized yet
+        List<Event> eventsToCount = (filteredEvents != null) 
+            ? filteredEvents 
+            : (allEvents != null ? allEvents : new ArrayList<>());
+        
+        int total = eventsToCount.size();
         int open = 0;
         int closed = 0;
         int done = 0;
         Date now = new Date();
-        if (allEvents != null) {
-            for (Event event : allEvents) {
-                EventLifecycleState state = resolveLifecycleState(event, now);
-                switch (state) {
-                    case DONE:
-                        done++;
-                        break;
-                    case CLOSED:
-                        closed++;
-                        break;
-                    case OPEN:
-                    default:
-                        open++;
-                        break;
-                }
+        
+        for (Event event : eventsToCount) {
+            EventLifecycleState state = resolveLifecycleState(event, now);
+            switch (state) {
+                case DONE:
+                    done++;
+                    break;
+                case CLOSED:
+                    closed++;
+                    break;
+                case OPEN:
+                default:
+                    open++;
+                    break;
             }
         }
 
@@ -233,22 +238,63 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        
         // Initialize repositories
         eventRepository = new EventRepositoryFs();
         waitingListRepository = new WaitingListRepositoryFs();
-
+        
         // Get device-based user ID
         userId = DeviceUtils.getDeviceId(requireContext());
 
         // --- Load profile for attaching to waiting list entries ---
         profileRepo.getByDeviceId(userId)
                 .addOnSuccessListener(profile -> {
-                    if (profile != null) currentProfile = profile;
-                    else {
-                        Profile newP = new Profile(userId, "Guest User", "", null);
-                        profileRepo.upsert(newP);
-                        currentProfile = newP;
+                    if (profile != null) {
+                        currentProfile = profile;
+                    } else {
+                        // No profile found by deviceId
+                        // Check if user is signed in with Firebase
+                        com.google.firebase.auth.FirebaseUser firebaseUser = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser();
+                        if (firebaseUser != null && firebaseUser.getUid() != null) {
+                            // User is signed in, check profile by Firebase UID
+                            profileRepo.get(firebaseUser.getUid())
+                                    .addOnSuccessListener(existingProfile -> {
+                                        if (existingProfile != null) {
+                                            // Profile exists by UID, update deviceId if needed
+                                            if (existingProfile.getDeviceId() == null || existingProfile.getDeviceId().isEmpty()) {
+                                                existingProfile.setDeviceId(userId);
+                                                profileRepo.upsert(existingProfile);
+                                            }
+                                            currentProfile = existingProfile;
+                                        } else {
+                                            // No profile by UID either, create new one with Firebase UID
+                                            Profile newP = new Profile();
+                                            newP.setUserId(firebaseUser.getUid());
+                                            newP.setDeviceId(userId);
+                                            newP.setName("Guest User");
+                                            newP.setEmail("");
+                                            newP.setRole("entrant");
+                                            newP.setActive(true);
+                                            newP.setBanned(false);
+                                            profileRepo.upsert(newP);
+                                            currentProfile = newP;
+                                        }
+                                    })
+                                    .addOnFailureListener(e -> {
+                                        // Error getting by UID, create new profile with Firebase UID
+                                        Profile newP = new Profile();
+                                        newP.setUserId(firebaseUser.getUid());
+                                        newP.setDeviceId(userId);
+                                        newP.setName("Guest User");
+                                        newP.setEmail("");
+                                        newP.setRole("entrant");
+                                        newP.setActive(true);
+                                        newP.setBanned(false);
+                                        profileRepo.upsert(newP);
+                                        currentProfile = newP;
+                                    });
+                        }
+                        // If not signed in, don't create profile - wait for proper sign-in
                     }
                 });
     }
@@ -377,8 +423,8 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
 
             @Override
             public void onFailure(Exception e) {
-                Toast.makeText(requireContext(),
-                        "Failed to load events: " + e.getMessage(),
+                Toast.makeText(requireContext(), 
+                        "Failed to load events: " + e.getMessage(), 
                         Toast.LENGTH_SHORT).show();
                 updateEmptyState();
             }
@@ -440,11 +486,11 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
      * Updates the empty state visibility based on event count.
      */
     private void updateEmptyState() {
+        // Always keep RecyclerView visible so status filter bar stays visible
+        // Only show/hide the empty state text overlay
         if (adapter.getItemCount() == 0) {
-            recyclerView.setVisibility(View.GONE);
             emptyStateText.setVisibility(View.VISIBLE);
         } else {
-            recyclerView.setVisibility(View.VISIBLE);
             emptyStateText.setVisibility(View.GONE);
         }
     }
@@ -464,25 +510,26 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
         SeekBar seekBarPrice = dialogView.findViewById(R.id.seekBarPrice);
         TextView textPriceValue = dialogView.findViewById(R.id.textPriceValue);
         TextInputEditText editLocation = dialogView.findViewById(R.id.editLocation);
-        AutoCompleteTextView autoCompleteEventType = dialogView.findViewById(R.id.autoCompleteEventType);
-        LinearLayout layoutEventTypes = dialogView.findViewById(R.id.layoutEventTypes);
-        MaterialCheckBox checkAvailableSpots = dialogView.findViewById(R.id.checkAvailableSpots);
+        com.google.android.material.textfield.TextInputEditText autoCompleteEventType = dialogView.findViewById(R.id.autoCompleteEventType);
+        androidx.cardview.widget.CardView layoutEventTypes = dialogView.findViewById(R.id.layoutEventTypes);
         MaterialButton btnClearFilters = dialogView.findViewById(R.id.btnClearFilters);
         MaterialButton btnApplyFilters = dialogView.findViewById(R.id.btnApplyFilters);
+        
+        // Get all event type checkboxes
+        MaterialCheckBox checkTypeSports = dialogView.findViewById(R.id.checkTypeSports);
+        MaterialCheckBox checkTypeFood = dialogView.findViewById(R.id.checkTypeFood);
+        MaterialCheckBox checkTypeMusic = dialogView.findViewById(R.id.checkTypeMusic);
+        MaterialCheckBox checkTypeEducation = dialogView.findViewById(R.id.checkTypeEducation);
+        MaterialCheckBox checkTypeWorkshop = dialogView.findViewById(R.id.checkTypeWorkshop);
+        MaterialCheckBox checkTypeVolunteer = dialogView.findViewById(R.id.checkTypeVolunteer);
+        MaterialCheckBox checkTypeSocial = dialogView.findViewById(R.id.checkTypeSocial);
+        MaterialCheckBox checkTypeFitness = dialogView.findViewById(R.id.checkTypeFitness);
+        MaterialCheckBox checkTypeFamily = dialogView.findViewById(R.id.checkTypeFamily);
+        MaterialCheckBox checkTypeArtsCulture = dialogView.findViewById(R.id.checkTypeArtsCulture);
+        MaterialCheckBox checkTypeOther = dialogView.findViewById(R.id.checkTypeOther);
 
         // Price ranges: 0=$0, 1=$50, 2=$100, 3=$150, 4=$200+
         final double[] priceRanges = {0, 50, 100, 150, 200};
-
-        // Set up Event Type dropdown
-        String[] eventTypes = {"All types", "Recreational", "Athletic", "Educational", "Social", "Cultural"};
-        ArrayAdapter<String> eventTypeAdapter = new ArrayAdapter<>(
-            requireContext(),
-            android.R.layout.simple_dropdown_item_1line,
-            eventTypes
-        );
-        autoCompleteEventType.setAdapter(eventTypeAdapter);
-        autoCompleteEventType.setFocusable(true);
-        autoCompleteEventType.setFocusableInTouchMode(true);
 
         // Set current filter values
         if (sortOrder.equals("newest")) {
@@ -510,7 +557,6 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
             editLocation.setText(locationFilter);
         }
 
-        checkAvailableSpots.setChecked(onlyAvailableSpots);
 
         // SeekBar listener to update price text
         seekBarPrice.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
@@ -526,18 +572,73 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
             public void onStopTrackingTouch(SeekBar seekBar) {}
         });
 
-        // Event type dropdown handler
-        autoCompleteEventType.setOnItemClickListener((parent, view, position, id) -> {
-            String selected = eventTypes[position];
-            autoCompleteEventType.setText(selected, false);
-            if (position == 0) {
+        // Helper method to update field text based on selected checkboxes
+        Runnable updateFieldText = () -> {
+            List<String> selected = new ArrayList<>();
+            if (checkTypeSports.isChecked()) selected.add("Sports");
+            if (checkTypeFood.isChecked()) selected.add("Food");
+            if (checkTypeMusic.isChecked()) selected.add("Music");
+            if (checkTypeEducation.isChecked()) selected.add("Education");
+            if (checkTypeWorkshop.isChecked()) selected.add("Workshop");
+            if (checkTypeVolunteer.isChecked()) selected.add("Volunteer");
+            if (checkTypeSocial.isChecked()) selected.add("Social");
+            if (checkTypeFitness.isChecked()) selected.add("Fitness");
+            if (checkTypeFamily.isChecked()) selected.add("Family");
+            if (checkTypeArtsCulture.isChecked()) selected.add("Arts & Culture");
+            if (checkTypeOther.isChecked()) selected.add("Other");
+            
+            if (selected.isEmpty()) {
+                autoCompleteEventType.setText("All types");
+            } else if (selected.size() == 1) {
+                autoCompleteEventType.setText(selected.get(0));
+            } else {
+                autoCompleteEventType.setText(selected.size() + " types selected");
+            }
+        };
+
+        // Restore selected event types to checkboxes
+        if (!selectedEventTypes.isEmpty()) {
+            layoutEventTypes.setVisibility(View.VISIBLE);
+            
+            checkTypeSports.setChecked(selectedEventTypes.contains("Sports"));
+            checkTypeFood.setChecked(selectedEventTypes.contains("Food"));
+            checkTypeMusic.setChecked(selectedEventTypes.contains("Music"));
+            checkTypeEducation.setChecked(selectedEventTypes.contains("Education"));
+            checkTypeWorkshop.setChecked(selectedEventTypes.contains("Workshop"));
+            checkTypeVolunteer.setChecked(selectedEventTypes.contains("Volunteer"));
+            checkTypeSocial.setChecked(selectedEventTypes.contains("Social"));
+            checkTypeFitness.setChecked(selectedEventTypes.contains("Fitness"));
+            checkTypeFamily.setChecked(selectedEventTypes.contains("Family"));
+            checkTypeArtsCulture.setChecked(selectedEventTypes.contains("Arts & Culture"));
+            checkTypeOther.setChecked(selectedEventTypes.contains("Other"));
+        }
+        
+        // Initialize field text
+        updateFieldText.run();
+
+        // Toggle checkbox visibility when clicking the event type field
+        autoCompleteEventType.setOnClickListener(v -> {
+            if (layoutEventTypes.getVisibility() == View.VISIBLE) {
                 layoutEventTypes.setVisibility(View.GONE);
             } else {
                 layoutEventTypes.setVisibility(View.VISIBLE);
             }
         });
 
-        autoCompleteEventType.setOnClickListener(v -> autoCompleteEventType.showDropDown());
+        // Update field text when checkboxes change
+        View.OnClickListener checkboxListener = v -> updateFieldText.run();
+
+        checkTypeSports.setOnClickListener(checkboxListener);
+        checkTypeFood.setOnClickListener(checkboxListener);
+        checkTypeMusic.setOnClickListener(checkboxListener);
+        checkTypeEducation.setOnClickListener(checkboxListener);
+        checkTypeWorkshop.setOnClickListener(checkboxListener);
+        checkTypeVolunteer.setOnClickListener(checkboxListener);
+        checkTypeSocial.setOnClickListener(checkboxListener);
+        checkTypeFitness.setOnClickListener(checkboxListener);
+        checkTypeFamily.setOnClickListener(checkboxListener);
+        checkTypeArtsCulture.setOnClickListener(checkboxListener);
+        checkTypeOther.setOnClickListener(checkboxListener);
 
         // Create dialog
         AlertDialog dialog = new AlertDialog.Builder(requireContext())
@@ -568,8 +669,19 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
                 : "";
             locationFilter = locationText.isEmpty() ? null : locationText;
 
-            // Get availability filter
-            onlyAvailableSpots = checkAvailableSpots.isChecked();
+            // Get selected event types from checkboxes
+            selectedEventTypes.clear();
+            if (checkTypeSports.isChecked()) selectedEventTypes.add("Sports");
+            if (checkTypeFood.isChecked()) selectedEventTypes.add("Food");
+            if (checkTypeMusic.isChecked()) selectedEventTypes.add("Music");
+            if (checkTypeEducation.isChecked()) selectedEventTypes.add("Education");
+            if (checkTypeWorkshop.isChecked()) selectedEventTypes.add("Workshop");
+            if (checkTypeVolunteer.isChecked()) selectedEventTypes.add("Volunteer");
+            if (checkTypeSocial.isChecked()) selectedEventTypes.add("Social");
+            if (checkTypeFitness.isChecked()) selectedEventTypes.add("Fitness");
+            if (checkTypeFamily.isChecked()) selectedEventTypes.add("Family");
+            if (checkTypeArtsCulture.isChecked()) selectedEventTypes.add("Arts & Culture");
+            if (checkTypeOther.isChecked()) selectedEventTypes.add("Other");
 
             // Apply filters
             applyFilters();
@@ -585,16 +697,28 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
             sortOrder = "newest";
             maxPrice = null;
             locationFilter = null;
-            onlyAvailableSpots = false;
+            selectedEventTypes.clear();
 
             // Reset dialog UI
             radioSortNewest.setChecked(true);
             seekBarPrice.setProgress(4);
             updatePriceText(textPriceValue, 4, priceRanges);
             editLocation.setText("");
-            checkAvailableSpots.setChecked(false);
-            autoCompleteEventType.setText("All types", false);
+            autoCompleteEventType.setText("All types");
             layoutEventTypes.setVisibility(View.GONE);
+            
+            // Clear all event type checkboxes
+            checkTypeSports.setChecked(false);
+            checkTypeFood.setChecked(false);
+            checkTypeMusic.setChecked(false);
+            checkTypeEducation.setChecked(false);
+            checkTypeWorkshop.setChecked(false);
+            checkTypeVolunteer.setChecked(false);
+            checkTypeSocial.setChecked(false);
+            checkTypeFitness.setChecked(false);
+            checkTypeFamily.setChecked(false);
+            checkTypeArtsCulture.setChecked(false);
+            checkTypeOther.setChecked(false);
 
             // Apply cleared filters
             applyFilters();
@@ -641,9 +765,15 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
             );
         }
 
-        // Filter by available spots
-        if (onlyAvailableSpots) {
-            filteredEvents.removeIf(event -> event.getCapacity() <= 0);
+        // Filter by event types
+        if (selectedEventTypes != null && !selectedEventTypes.isEmpty()) {
+            filteredEvents.removeIf(event -> {
+                String eventType = event.getEventType();
+                if (eventType == null || eventType.isEmpty()) {
+                    return true; // Remove events with no type if filtering by type
+                }
+                return !selectedEventTypes.contains(eventType);
+            });
         }
 
         // Sort by date
@@ -685,23 +815,23 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
 
         // Check if registration dates are available
         if (event.getRegistrationStartDate() == null || event.getRegistrationEndDate() == null) {
-            Toast.makeText(requireContext(),
-                    "Registration dates not available yet",
+            Toast.makeText(requireContext(), 
+                    "Registration dates not available yet", 
                     Toast.LENGTH_SHORT).show();
             return;
         }
-
+        
         // Check if registration is open
         Date now = new Date();
         if (now.before(event.getRegistrationStartDate())) {
-            Toast.makeText(requireContext(),
-                    "Registration hasn't opened yet",
+            Toast.makeText(requireContext(), 
+                    "Registration hasn't opened yet", 
                     Toast.LENGTH_SHORT).show();
             return;
         }
         if (now.after(event.getRegistrationEndDate())) {
-            Toast.makeText(requireContext(),
-                    "Registration has closed",
+            Toast.makeText(requireContext(), 
+                    "Registration has closed", 
                     Toast.LENGTH_SHORT).show();
             return;
         }
@@ -712,8 +842,8 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
                     @Override
                     public void onSuccess(boolean exists) {
                         if (exists) {
-                            Toast.makeText(requireContext(),
-                                    "You're already in the waiting list",
+                            Toast.makeText(requireContext(), 
+                                    "You're already in the waiting list", 
                                     Toast.LENGTH_SHORT).show();
                         } else {
                             joinWaitingList(event);
@@ -804,9 +934,9 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
     private void joinWaitingList(Event event) {
         String entryId = UUID.randomUUID().toString();
         WaitingListEntry entry = new WaitingListEntry(
-                entryId,
-                event.getEventId(),
-                userId,
+                entryId, 
+                event.getEventId(), 
+                userId, 
                 new Date()
         );
 
@@ -857,37 +987,78 @@ public class EventListFragment extends Fragment implements EventListAdapter.OnEv
             return;
         }
         
-        // Get the Firebase Auth UID if available, otherwise use the provided userId (deviceId)
-        final String recipientUserId = getCurrentFirebaseUserId() != null ? getCurrentFirebaseUserId() : userId;
+        // For entrants: ALWAYS use deviceId as recipientUserId (userId parameter IS the deviceId)
+        // Don't use Firebase UID even if available - entrants are identified by deviceId
+        final String recipientUserId = userId; // deviceId for entrants
         final String deviceIdForNotification = userId;
         
-        Log.d("EventListFragment", "Sending notification: eventId=" + eventId + ", recipientUserId=" + recipientUserId + ", deviceId=" + deviceIdForNotification);
+        Log.d("EventListFragment", "Sending notification: eventId=" + eventId + ", recipientUserId=" + recipientUserId + " (deviceId), deviceId=" + deviceIdForNotification);
         
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        // Helper method to create and send notification
+        java.util.function.Consumer<String> sendNotification = (eventName) -> {
+            FirebaseFirestore db = FirebaseFirestore.getInstance();
+            
+            Map<String, Object> notification = new HashMap<>();
+            notification.put("eventId", eventId);
+            notification.put("recipientUserId", recipientUserId); // deviceId
+            notification.put("recipientId", recipientUserId); // deviceId (legacy)
+            notification.put("deviceId", deviceIdForNotification); // deviceId
+            notification.put("senderUserId", "system");
+            notification.put("type", "GENERAL");
+            notification.put("title", "Joined Waiting List");
+            notification.put("message", "You've successfully joined the waiting list for \"" + eventName + "\". Good luck!");
+            notification.put("isRead", false);
+            notification.put("sentAt", Timestamp.now());
+            
+            db.collection("notifications")
+                    .add(notification)
+                    .addOnSuccessListener(docRef -> {
+                        Log.d("EventListFragment", "✅ Sent waiting list notification to deviceId: " + deviceIdForNotification);
+                        docRef.update("notificationId", docRef.getId());
+                    })
+                    .addOnFailureListener(e -> Log.e("EventListFragment", "❌ Failed to send notification", e));
+        };
         
-        Map<String, Object> notification = new HashMap<>();
-        notification.put("eventId", eventId);
-        notification.put("recipientUserId", recipientUserId); // Use Firebase Auth UID (primary field)
-        notification.put("recipientId", recipientUserId); // Also add legacy field for backward compatibility
-        // Also store deviceId for query flexibility
-        if (!recipientUserId.equals(deviceIdForNotification)) {
-            notification.put("deviceId", deviceIdForNotification);
-        }
-        notification.put("senderUserId", "system");
-        notification.put("type", "GENERAL"); // Use valid NotificationType
-        notification.put("title", "Joined Waiting List");
-        notification.put("message", "You've successfully joined the waiting list for this event. Good luck!");
-        notification.put("isRead", false);
-        notification.put("sentAt", Timestamp.now()); // Use sentAt (matches Notification model)
-        
-        db.collection("notifications")
-                .add(notification)
-                .addOnSuccessListener(docRef -> {
-                    Log.d("EventListFragment", "✅ Sent waiting list notification to userId: " + recipientUserId);
-                    // Update with notificationId
-                    docRef.update("notificationId", docRef.getId());
+        // Try to get profile by deviceId (for entrants, profile doc ID = deviceId)
+        profileRepo.getByDeviceId(deviceIdForNotification)
+                .addOnSuccessListener(profile -> {
+                    // Only send notification if user has notifications enabled
+                    if (profile != null && profile.isNotificationsEnabled()) {
+                        // Fetch event details
+                        eventRepository.getEventById(eventId, new EventRepository.OnEventListener() {
+                            @Override
+                            public void onSuccess(Event event) {
+                                String eventName = event != null ? event.getName() : "this event";
+                                sendNotification.accept(eventName);
+                            }
+                            
+                            @Override
+                            public void onFailure(Exception e) {
+                                Log.e("EventListFragment", "Failed to fetch event for notification", e);
+                                sendNotification.accept("this event");
+                            }
+                        });
+                    } else {
+                        Log.d("EventListFragment", "⏭️ Skipping waiting list notification (opted out)");
+                    }
                 })
-                .addOnFailureListener(e -> Log.e("EventListFragment", "❌ Failed to send notification", e));
+                .addOnFailureListener(e -> {
+                    // If we can't fetch profile, still send notification (backward compatibility)
+                    Log.w("EventListFragment", "⚠️ Could not fetch profile for deviceId " + deviceIdForNotification + ", sending notification anyway", e);
+                    eventRepository.getEventById(eventId, new EventRepository.OnEventListener() {
+                        @Override
+                        public void onSuccess(Event event) {
+                            String eventName = event != null ? event.getName() : "this event";
+                            sendNotification.accept(eventName);
+                        }
+                        
+                        @Override
+                        public void onFailure(Exception err) {
+                            Log.e("EventListFragment", "Failed to fetch event for notification", err);
+                            sendNotification.accept("this event");
+                        }
+                    });
+                });
     }
 
     /**

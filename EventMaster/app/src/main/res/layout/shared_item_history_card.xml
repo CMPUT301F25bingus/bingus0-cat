@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="8dp"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="2dp"
+    app:cardUseCompatPadding="false"
+    app:cardBackgroundColor="@android:color/white"
+    app:strokeWidth="0dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="10dp">
+
+        <!-- Larger, more prominent poster image -->
+        <ImageView
+            android:id="@+id/history_poster"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:scaleType="centerCrop"
+            android:background="#E0F2F1"
+            android:contentDescription="@string/app_name"
+            android:layout_marginEnd="12dp" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="80dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <!-- Title with better spacing -->
+            <TextView
+                android:id="@+id/history_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Event Title"
+                android:textColor="@android:color/black"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:maxLines="2"
+                android:ellipsize="end"
+                android:lineSpacingMultiplier="1.1" />
+
+            <!-- Event date with icon-like styling -->
+            <TextView
+                android:id="@+id/history_event_date"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:text="2025-07-15"
+                android:textColor="#546E7A"
+                android:textSize="12sp" />
+
+            <!-- Spacer to push status row to bottom -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <!-- Compact status and date row at bottom -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:id="@+id/history_status_chip"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="On Waitlist"
+                    android:textColor="#2E2E2E"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp"
+                    android:paddingTop="4dp"
+                    android:paddingBottom="4dp"
+                    android:background="@drawable/history_chip_waiting"
+                    android:minHeight="24dp" />
+
+                <TextView
+                    android:id="@+id/history_joined_date"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="Joined 2025-11-27"
+                    android:textColor="#78909C"
+                    android:textSize="11sp" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView>

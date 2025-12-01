@@ -60,71 +60,50 @@ public class CreateProfileActivity extends AppCompatActivity {
             return;
         }
 
-        FirebaseAuth auth = FirebaseAuth.getInstance();
-        if (auth.getCurrentUser() == null) {
-            Toast.makeText(this, "Not authenticated. Please try again.", Toast.LENGTH_LONG).show();
-            finish();
-            return;
-        }
-
-        String uid = auth.getCurrentUser().getUid();
         String deviceId = DeviceUtils.getDeviceId(this);
 
         saveButton.setEnabled(false);
         saveButton.setText("Saving...");
 
-        // Get existing profile and update it
-        profileRepo.get(uid).addOnCompleteListener(task -> {
-            if (task.isSuccessful() && task.getResult() != null) {
-                Profile profile = task.getResult();
-                profile.setName(name);
-                profile.setEmail(email);
-                profile.setDeviceId(deviceId); // Ensure device ID is set
-                if (!TextUtils.isEmpty(phone)) {
-                    profile.setPhoneNumber(phone);
-                }
+        // Get existing entrant profile by deviceId and update it.
+        // For entrants, deviceId is the stable identity.
+        profileRepo.getEntrantByDeviceIdDoc(deviceId).addOnCompleteListener(task -> {
+            if (!task.isSuccessful()) {
+                saveButton.setEnabled(true);
+                saveButton.setText("Save");
+                Toast.makeText(this, "Failed to load profile", Toast.LENGTH_LONG).show();
+                return;
+            }
 
-                profileRepo.upsert(profile).addOnCompleteListener(updateTask -> {
-                    saveButton.setEnabled(true);
-                    saveButton.setText("Save");
-                    if (updateTask.isSuccessful()) {
-                        Toast.makeText(CreateProfileActivity.this, "Profile saved!", Toast.LENGTH_SHORT).show();
-                        navigateToEntrantHome();
-                    } else {
-                        Toast.makeText(CreateProfileActivity.this, 
-                                "Failed to save profile: " + (updateTask.getException() != null 
-                                        ? updateTask.getException().getMessage() : "Unknown error"), 
-                                Toast.LENGTH_LONG).show();
-                    }
-                });
-            } else {
-                // Profile doesn't exist, create new one
-                Profile profile = new Profile();
-                profile.setUserId(uid);
+            Profile profile = task.getResult();
+            if (profile == null) {
+                // First time profile save for this device
+                profile = new Profile();
                 profile.setDeviceId(deviceId);
-                profile.setName(name);
-                profile.setEmail(email);
-                if (!TextUtils.isEmpty(phone)) {
-                    profile.setPhoneNumber(phone);
-                }
                 profile.setRole("entrant");
                 profile.setActive(true);
                 profile.setBanned(false);
-
-                profileRepo.upsert(profile).addOnCompleteListener(createTask -> {
-                    saveButton.setEnabled(true);
-                    saveButton.setText("Save");
-                    if (createTask.isSuccessful()) {
-                        Toast.makeText(CreateProfileActivity.this, "Profile created!", Toast.LENGTH_SHORT).show();
-                        navigateToEntrantHome();
-                    } else {
-                        Toast.makeText(CreateProfileActivity.this, 
-                                "Failed to create profile: " + (createTask.getException() != null 
-                                        ? createTask.getException().getMessage() : "Unknown error"), 
-                                Toast.LENGTH_LONG).show();
-                    }
-                });
             }
+
+            profile.setName(name);
+            profile.setEmail(email);
+            if (!TextUtils.isEmpty(phone)) {
+                profile.setPhoneNumber(phone);
+            }
+
+            profileRepo.upsertEntrantByDeviceId(profile).addOnCompleteListener(updateTask -> {
+                saveButton.setEnabled(true);
+                saveButton.setText("Save");
+                if (updateTask.isSuccessful()) {
+                    Toast.makeText(CreateProfileActivity.this, "Profile saved!", Toast.LENGTH_SHORT).show();
+                    navigateToEntrantHome();
+                } else {
+                    Toast.makeText(CreateProfileActivity.this,
+                            "Failed to save profile: " + (updateTask.getException() != null
+                                    ? updateTask.getException().getMessage() : "Unknown error"),
+                            Toast.LENGTH_LONG).show();
+                }
+            });
         });
     }
 

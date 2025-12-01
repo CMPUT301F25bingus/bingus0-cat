@@ -98,6 +98,12 @@ public class ProfileRepositoryFs {
             }
         }
 
+        // Ensure profileImageUrl is loaded (Firestore toObject should handle it, but be explicit for safety)
+        String imageUrl = doc.getString("profileImageUrl");
+        if (imageUrl != null && !imageUrl.isEmpty()) {
+            p.setProfileImageUrl(imageUrl);
+        }
+
         return p;
     }
 
@@ -132,6 +138,38 @@ public class ProfileRepositoryFs {
             if (v != null) fields.put("phoneNumber", v);
         }
         return db.collection(COLL).document(userId).set(fields);
+    }
+
+    // ---------- Entrant helpers (deviceId-based profiles) ----------
+
+    /**
+     * For entrants: profile doc ID = deviceId.
+     * Creates or overwrites the entrant profile for this device.
+     */
+    public Task<Void> upsertEntrantByDeviceId(@NonNull Profile p) {
+        String deviceId = p.getDeviceId();
+        if (deviceId == null || deviceId.isEmpty()) {
+            return Tasks.forException(new IllegalArgumentException("deviceId is required for entrants"));
+        }
+        Map<String, Object> data = toMap(p, /*includeId*/ false);
+        return db.collection(COLL).document(deviceId).set(data);
+    }
+
+    /**
+     * Get entrant profile by deviceId, using deviceId as the document ID.
+     * Returns null if the profile does not exist yet.
+     */
+    public Task<Profile> getEntrantByDeviceIdDoc(@NonNull String deviceId) {
+        return db.collection(COLL).document(deviceId)
+                .get()
+                .continueWith(task -> {
+                    if (!task.isSuccessful()) throw task.getException();
+                    DocumentSnapshot doc = task.getResult();
+                    if (doc == null || !doc.exists()) {
+                        return null;
+                    }
+                    return fromDoc(doc);
+                });
     }
 
     /** Partial update (merge). */
@@ -229,6 +267,28 @@ public class ProfileRepositoryFs {
 
     public Task<List<Profile>> getEntrants() { return getByRole("entrant"); }
     public Task<List<Profile>> getOrganizers() { return getByRole("organizer"); }
+    
+    /** Get profile by email (for checking duplicates). 
+     * Returns null if not found. */
+    public Task<Profile> getByEmail(@NonNull String email) {
+        return db.collection(COLL)
+                .whereEqualTo("email", email)
+                .limit(1)
+                .get()
+                .continueWith(task -> {
+                    if (!task.isSuccessful()) throw task.getException();
+                    QuerySnapshot snap = task.getResult();
+                    if (snap != null && !snap.isEmpty()) {
+                        for (DocumentSnapshot doc : snap.getDocuments()) {
+                            Profile p = fromDoc(doc);
+                            if (p.getActive() && !p.getBanned()) {
+                                return p;
+                            }
+                        }
+                    }
+                    return null;
+                });
+    }
 
     // ---------- Reads (callback overloads) ----------
 

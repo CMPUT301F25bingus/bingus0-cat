@@ -11,13 +11,32 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
+
+import android.content.DialogInterface;
+import android.content.Intent;
+
+import androidx.core.content.ContextCompat;
 
 import com.bumptech.glide.Glide;
 import com.example.eventmaster.R;
 import com.example.eventmaster.data.api.EventRepository;
+import com.example.eventmaster.data.api.PosterRepository;
 import com.example.eventmaster.data.firestore.EventRepositoryFs;
+import com.example.eventmaster.data.firestore.PosterRepositoryFs;
+import com.example.eventmaster.data.firestore.ProfileRepositoryFs;
 import com.example.eventmaster.model.Event;
+import com.example.eventmaster.model.Profile;
+
+import com.example.eventmaster.ui.admin.activities.AdminNotificationLogActivity;
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.firebase.firestore.FieldValue;
+
+import java.util.HashMap;
+import java.util.Map;
+import android.widget.ImageButton;
 
 import java.text.SimpleDateFormat;
 import java.util.Locale;
@@ -32,20 +51,33 @@ public class AdminEventDetailsFragment extends Fragment {
     private static final String ARG_EVENT_ID = "event_id";
 
     private EventRepository eventRepository;
+    private ProfileRepositoryFs profileRepository;
+    private PosterRepository posterRepository;
     private String eventId;
     private Event currentEvent;
 
     // UI Elements
     private ImageView posterImage;
+    private ImageButton btnDeletePoster;
     private ImageView backButton;
     private TextView eventNameText;
     private TextView organizerText;
     private TextView eventDateText;
+    private TextView eventTimeText;
     private TextView locationText;
     private TextView priceText;
     private TextView capacityText;
-    private TextView registrationDateText;
     private TextView descriptionText;
+    private MaterialButton btnViewNotificationLogs;
+    
+        // Additional Details UI Elements
+        private TextView waitingListSizeText;
+        private TextView eventTypeText;
+        private TextView registrationStartText;
+        private TextView registrationEndText;
+    private ImageView geolocationIcon;
+    private TextView geolocationText;
+    private com.google.android.material.card.MaterialCardView qrCodeButtonCard;
 
     public static AdminEventDetailsFragment newInstance(String eventId) {
         AdminEventDetailsFragment fragment = new AdminEventDetailsFragment();
@@ -65,6 +97,8 @@ public class AdminEventDetailsFragment extends Fragment {
         }
 
         eventRepository = new EventRepositoryFs();
+        profileRepository = new ProfileRepositoryFs();
+        posterRepository = new PosterRepositoryFs();
         Log.d(TAG, "onCreate: eventId=" + eventId);
     }
 
@@ -76,17 +110,35 @@ public class AdminEventDetailsFragment extends Fragment {
 
         // Initialize UI
         posterImage = view.findViewById(R.id.event_poster_image);
+        btnDeletePoster = view.findViewById(R.id.btn_delete_poster);
         backButton = view.findViewById(R.id.back_button);
         eventNameText = view.findViewById(R.id.event_name_text);
         organizerText = view.findViewById(R.id.event_organizer_text);
         eventDateText = view.findViewById(R.id.event_date_text);
+        eventTimeText = view.findViewById(R.id.event_time_text);
         locationText = view.findViewById(R.id.event_location_text);
         priceText = view.findViewById(R.id.event_price_text);
         capacityText = view.findViewById(R.id.event_capacity_text);
-        registrationDateText = view.findViewById(R.id.registration_date_text);
         descriptionText = view.findViewById(R.id.event_description_text);
+        btnViewNotificationLogs = view.findViewById(R.id.btn_view_notification_logs);
+        
+        // Additional Details UI
+        waitingListSizeText = view.findViewById(R.id.waiting_list_size_text);
+        eventTypeText = view.findViewById(R.id.event_type_text);
+        registrationStartText = view.findViewById(R.id.registration_start_text);
+        registrationEndText = view.findViewById(R.id.registration_end_text);
+        geolocationIcon = view.findViewById(R.id.geolocation_icon);
+        geolocationText = view.findViewById(R.id.geolocation_text);
+        qrCodeButtonCard = view.findViewById(R.id.qr_code_button_card);
+        
+        // Setup QR code button
+        if (qrCodeButtonCard != null) {
+            qrCodeButtonCard.setOnClickListener(v -> showQrDialog());
+        }
 
         backButton.setOnClickListener(v -> requireActivity().onBackPressed());
+        btnViewNotificationLogs.setOnClickListener(v -> openNotificationLogs());
+        btnDeletePoster.setOnClickListener(v -> showDeletePosterConfirmation());
 
         // Load event details
         loadEventDetails();
@@ -127,41 +179,50 @@ public class AdminEventDetailsFragment extends Fragment {
         // Event name
         eventNameText.setText(event.getName() != null ? event.getName() : "Unnamed Event");
 
-        // Organizer
-        organizerText.setText("Organizer: " + (event.getOrganizerId() != null ? event.getOrganizerId() : "Unknown"));
+        // Organizer - format as "by [name]"
+        String organizerName = event.getOrganizerName();
+        if (organizerName != null && !organizerName.isEmpty()) {
+            organizerText.setText("by " + organizerName);
+        } else if (event.getOrganizerId() != null) {
+            // Fetch organizer name from profile
+            loadOrganizerName(event.getOrganizerId());
+        } else {
+            organizerText.setText("by Unknown");
+        }
 
         // Event date
         if (event.getEventDate() != null) {
-            SimpleDateFormat dateFormat = new SimpleDateFormat("MMM dd, yyyy 'at' hh:mm a", Locale.getDefault());
-            eventDateText.setText("Date: " + dateFormat.format(event.getEventDate()));
+            SimpleDateFormat dateFormat = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault());
+            eventDateText.setText(dateFormat.format(event.getEventDate()));
         } else {
-            eventDateText.setText("Date: TBA");
+            eventDateText.setText("TBA");
+        }
+
+        // Event time
+        if (event.getEventDate() != null) {
+            SimpleDateFormat timeFormat = new SimpleDateFormat("h:mm a", Locale.getDefault());
+            eventTimeText.setText(timeFormat.format(event.getEventDate()));
+        } else {
+            eventTimeText.setText("TBA");
         }
 
         // Location
-        locationText.setText("Location: " + (event.getLocation() != null ? event.getLocation() : "TBA"));
+        locationText.setText(event.getLocation() != null ? event.getLocation() : "TBA");
 
         // Price
         if (event.getPrice() > 0.0) {
-            priceText.setText("Price: $" + String.format(Locale.getDefault(), "%.2f", event.getPrice()));
+            priceText.setText("$" + String.format(Locale.getDefault(), "%.2f", event.getPrice()));
         } else {
-            priceText.setText("Price: Free");
+            priceText.setText("Free");
         }
 
         // Capacity
         if (event.getCapacity() > 0) {
-            capacityText.setText("Capacity: " + event.getCapacity() + " attendees");
+            capacityText.setText(String.valueOf(event.getCapacity()));
         } else {
-            capacityText.setText("Capacity: Unlimited");
+            capacityText.setText("Unlimited");
         }
 
-        // Registration deadline
-        if (event.getRegistrationEndDate() != null) {
-            SimpleDateFormat dateFormat = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault());
-            registrationDateText.setText("Registration Deadline: " + dateFormat.format(event.getRegistrationEndDate()));
-        } else {
-            registrationDateText.setText("Registration Deadline: TBA");
-        }
 
         // Description
         descriptionText.setText(event.getDescription() != null ? event.getDescription() : "No description available.");
@@ -170,8 +231,229 @@ public class AdminEventDetailsFragment extends Fragment {
         if (event.getPosterUrl() != null && !event.getPosterUrl().isEmpty()) {
             Glide.with(requireContext())
                     .load(event.getPosterUrl())
+                    .placeholder(R.drawable.ic_avatar_placeholder)
                     .into(posterImage);
+            // Show delete button when image exists
+            if (btnDeletePoster != null) {
+                btnDeletePoster.setVisibility(View.VISIBLE);
+            }
+        } else {
+            // Hide delete button when no image
+            if (btnDeletePoster != null) {
+                btnDeletePoster.setVisibility(View.GONE);
+            }
         }
+
+        // Additional Details
+        displayAdditionalDetails(event);
+    }
+
+    /**
+     * Displays additional event details.
+     */
+    private void displayAdditionalDetails(Event event) {
+        // Waiting List Size
+        if (event.getWaitingListLimit() != null && event.getWaitingListLimit() > 0) {
+            waitingListSizeText.setText(String.valueOf(event.getWaitingListLimit()));
+        } else {
+            waitingListSizeText.setText("Unlimited");
+        }
+
+        // Event Type
+        if (event.getEventType() != null && !event.getEventType().isEmpty()) {
+            eventTypeText.setText(event.getEventType());
+        } else {
+            eventTypeText.setText("Not specified");
+        }
+
+        // Registration Start Date
+        if (event.getRegistrationStartDate() != null) {
+            SimpleDateFormat dateFormat = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault());
+            String dateStr = dateFormat.format(event.getRegistrationStartDate());
+            registrationStartText.setText(dateStr);
+        } else {
+            registrationStartText.setText("TBA");
+        }
+
+        // Registration End Date (already shown as Deadline in first grid, but show here for consistency)
+        if (event.getRegistrationEndDate() != null) {
+            SimpleDateFormat dateFormat = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault());
+            String dateStr = dateFormat.format(event.getRegistrationEndDate());
+            registrationEndText.setText(dateStr);
+        } else {
+            registrationEndText.setText("TBA");
+        }
+
+
+        // QR Code button - enable if QR code exists
+        boolean hasQrCode = event.getQrUrl() != null && !event.getQrUrl().isEmpty();
+        if (qrCodeButtonCard != null) {
+            if (hasQrCode) {
+                qrCodeButtonCard.setEnabled(true);
+                qrCodeButtonCard.setAlpha(1.0f);
+            } else {
+                qrCodeButtonCard.setEnabled(false);
+                qrCodeButtonCard.setAlpha(0.5f);
+            }
+        }
+
+        // Geolocation requirement
+        if (event.isGeolocationRequired()) {
+            geolocationText.setText("Requires geolocation on join");
+            geolocationIcon.setVisibility(View.VISIBLE);
+            geolocationIcon.setColorFilter(requireContext().getResources().getColor(R.color.teal_dark, null));
+        } else {
+            geolocationText.setText("Does not require geolocation on join");
+            geolocationIcon.setVisibility(View.VISIBLE);
+            geolocationIcon.setColorFilter(requireContext().getResources().getColor(android.R.color.darker_gray, null));
+        }
+    }
+
+    /**
+     * Loads organizer name from profile if not already stored in event.
+     */
+    private void loadOrganizerName(String organizerId) {
+        if (organizerId == null || organizerId.isEmpty()) {
+            organizerText.setText("by Unknown");
+            return;
+        }
+
+        // Set a temporary text while loading
+        organizerText.setText("by " + organizerId);
+
+        profileRepository.get(organizerId,
+            profile -> {
+                if (profile != null && profile.getName() != null && !profile.getName().isEmpty()) {
+                    organizerText.setText("by " + profile.getName());
+                } else {
+                    organizerText.setText("by Unknown");
+                }
+            },
+            error -> {
+                Log.e(TAG, "Failed to load organizer profile", error);
+                organizerText.setText("by Unknown");
+            }
+        );
+    }
+
+    /**
+     * Opens notification logs filtered by this event.
+     */
+    private void openNotificationLogs() {
+        if (eventId != null) {
+            Intent intent = new Intent(requireContext(), AdminNotificationLogActivity.class);
+            intent.putExtra("eventId", eventId);
+            startActivity(intent);
+        }
+    }
+
+    /**
+     * Shows QR code dialog similar to entrant view.
+     */
+    private void showQrDialog() {
+        if (currentEvent == null || currentEvent.getQrUrl() == null || currentEvent.getQrUrl().isEmpty()) {
+            Toast.makeText(requireContext(), "QR code not available yet.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        View dialogView = LayoutInflater.from(requireContext())
+                .inflate(R.layout.dialog_event_qr, null, false);
+        ImageView qrImage = dialogView.findViewById(R.id.dialog_qr_image);
+        Glide.with(requireContext())
+                .load(currentEvent.getQrUrl())
+                .placeholder(R.drawable.ic_avatar_placeholder)
+                .into(qrImage);
+
+        AlertDialog dialog = new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Event QR Code")
+                .setView(dialogView)
+                .setPositiveButton("Close", null)
+                .create();
+        
+        // Change dialog background from purple to white and make it smaller
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.white);
+            android.view.WindowManager.LayoutParams params = dialog.getWindow().getAttributes();
+            int screenWidth = getResources().getDisplayMetrics().widthPixels;
+            int maxWidth = (int) (screenWidth * 0.85); // 85% of screen width
+            params.width = maxWidth;
+            dialog.getWindow().setAttributes(params);
+        }
+        
+        // Change Close button color from purple to teal
+        dialog.setOnShowListener(new DialogInterface.OnShowListener() {
+            @Override
+            public void onShow(DialogInterface d) {
+                dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(
+                    ContextCompat.getColor(requireContext(), R.color.teal_dark)
+                );
+            }
+        });
+        
+        dialog.show();
+    }
+
+    /**
+     * Shows a confirmation dialog before deleting the poster image.
+     */
+    private void showDeletePosterConfirmation() {
+        if (eventId == null || currentEvent == null) {
+            Toast.makeText(requireContext(), "Error: Cannot delete poster", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Delete Poster")
+                .setMessage("Are you sure you want to delete this event's poster image? This action cannot be undone.")
+                .setPositiveButton("Delete", (dialog, which) -> deletePoster())
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    /**
+     * Deletes the poster image from Firebase Storage and updates the event document.
+     */
+    private void deletePoster() {
+        if (eventId == null) {
+            Toast.makeText(requireContext(), "Error: Invalid event ID", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Show loading state
+        btnDeletePoster.setEnabled(false);
+        Toast.makeText(requireContext(), "Deleting poster...", Toast.LENGTH_SHORT).show();
+
+        // Delete from Firebase Storage
+        posterRepository.delete(eventId)
+                .addOnSuccessListener(aVoid -> {
+                    Log.d(TAG, "Poster deleted from Storage successfully");
+                    // Update Firestore to remove posterUrl
+                    Map<String, Object> updates = new HashMap<>();
+                    updates.put("posterUrl", FieldValue.delete());
+                    
+                    eventRepository.update(eventId, updates)
+                            .addOnSuccessListener(v -> {
+                                Log.d(TAG, "Event updated: posterUrl removed");
+                                // Update UI
+                                posterImage.setImageResource(R.drawable.ic_avatar_placeholder);
+                                btnDeletePoster.setVisibility(View.GONE);
+                                if (currentEvent != null) {
+                                    currentEvent.setPosterUrl(null);
+                                }
+                                Toast.makeText(requireContext(), "Poster deleted successfully", Toast.LENGTH_SHORT).show();
+                                btnDeletePoster.setEnabled(true);
+                            })
+                            .addOnFailureListener(e -> {
+                                Log.e(TAG, "Failed to update event after deleting poster", e);
+                                Toast.makeText(requireContext(), "Poster deleted but failed to update event", Toast.LENGTH_SHORT).show();
+                                btnDeletePoster.setEnabled(true);
+                            });
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Failed to delete poster from Storage", e);
+                    Toast.makeText(requireContext(), "Failed to delete poster: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    btnDeletePoster.setEnabled(true);
+                });
     }
 }
 

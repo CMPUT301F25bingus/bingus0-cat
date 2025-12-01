@@ -89,5 +89,8 @@ dependencies {
     testImplementation("androidx.fragment:fragment-testing:1.8.3")
     testImplementation("com.google.android.material:material:1.12.0")
     implementation("org.osmdroid:osmdroid-android:6.1.10")
+    
+    // Encrypted SharedPreferences for "Remember Me" functionality
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
 
 }

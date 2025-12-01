@@ -10,7 +10,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.eventmaster.R;
 import com.example.eventmaster.model.Profile;
-import com.example.eventmaster.ui.organizer.activities.OrganizerHomeActivity;
+import com.example.eventmaster.ui.organizer.activities.OrganizerManageEventsActivity;
 import com.example.eventmaster.utils.AuthHelper;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.FirebaseUser;
@@ -114,22 +114,24 @@ public class OrganizerLoginActivity extends AppCompatActivity {
                 new AuthHelper.OnAuthCompleteListener() {
                     @Override
                     public void onSuccess(FirebaseUser user, Profile profile) {
-
-                        primaryButton.setEnabled(true);
-                        primaryButton.setText("Sign Up");
-
-                        Toast.makeText(OrganizerLoginActivity.this,
-                                "Account created successfully!",
-                                Toast.LENGTH_SHORT).show();
-
-                        navigateToOrganizerHome();
+                        runOnUiThread(() -> {
+                            primaryButton.setEnabled(true);
+                            primaryButton.setText("Sign Up");
+                            Toast.makeText(OrganizerLoginActivity.this,
+                                    "Account created successfully!",
+                                    Toast.LENGTH_SHORT).show();
+                            navigateToOrganizerHome();
+                        });
                     }
 
                     @Override
                     public void onError(Exception error) {
-                        primaryButton.setEnabled(true);
-                        primaryButton.setText("Sign Up");
-                        handleSignUpError(error);
+                        runOnUiThread(() -> {
+                            primaryButton.setEnabled(true);
+                            primaryButton.setText("Sign Up");
+                            handleSignUpError(error);
+                            android.util.Log.e("OrganizerLogin", "Sign-up error: " + (error != null ? error.getMessage() : "Unknown"), error);
+                        });
                     }
                 });
     }
@@ -153,19 +155,24 @@ public class OrganizerLoginActivity extends AppCompatActivity {
                 new AuthHelper.OnAuthCompleteListener() {
                     @Override
                     public void onSuccess(FirebaseUser user, Profile profile) {
-                        primaryButton.setEnabled(true);
-                        primaryButton.setText("Sign In");
-                        Toast.makeText(OrganizerLoginActivity.this,
-                                "Signed in successfully!",
-                                Toast.LENGTH_SHORT).show();
-                        navigateToOrganizerHome();
+                        runOnUiThread(() -> {
+                            primaryButton.setEnabled(true);
+                            primaryButton.setText("Sign In");
+                            Toast.makeText(OrganizerLoginActivity.this,
+                                    "Signed in successfully!",
+                                    Toast.LENGTH_SHORT).show();
+                            navigateToOrganizerHome();
+                        });
                     }
 
                     @Override
                     public void onError(Exception error) {
-                        primaryButton.setEnabled(true);
-                        primaryButton.setText("Sign In");
-                        handleSignInError(error);
+                        runOnUiThread(() -> {
+                            primaryButton.setEnabled(true);
+                            primaryButton.setText("Sign In");
+                            handleSignInError(error);
+                            android.util.Log.e("OrganizerLogin", "Sign-in error: " + (error != null ? error.getMessage() : "Unknown"), error);
+                        });
                     }
                 });
     }
@@ -244,7 +251,7 @@ public class OrganizerLoginActivity extends AppCompatActivity {
     // NAVIGATION
     // ---------------------------------------------------------------------
     private void navigateToOrganizerHome() {
-        Intent intent = new Intent(OrganizerLoginActivity.this, OrganizerHomeActivity.class);
+        Intent intent = new Intent(OrganizerLoginActivity.this, OrganizerManageEventsActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();

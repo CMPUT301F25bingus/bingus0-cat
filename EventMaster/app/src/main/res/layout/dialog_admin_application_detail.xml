@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:maxHeight="500dp"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <!-- Name -->
+        <com.google.android.material.textview.MaterialTextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Name"
+            android:textSize="12sp"
+            android:textColor="@color/text_secondary_dark"
+            android:layout_marginBottom="4dp" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/textName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="John Doe"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary_dark"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Email -->
+        <com.google.android.material.textview.MaterialTextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Email"
+            android:textSize="12sp"
+            android:textColor="@color/text_secondary_dark"
+            android:layout_marginBottom="4dp" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/textEmail"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="john@example.com"
+            android:textSize="16sp"
+            android:textColor="@color/text_primary_dark"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Submitted Date -->
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/textSubmittedDate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Submitted: Jan 1, 2024"
+            android:textSize="14sp"
+            android:textColor="@color/text_secondary_dark"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Reason -->
+        <com.google.android.material.textview.MaterialTextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Reason"
+            android:textSize="12sp"
+            android:textColor="@color/text_secondary_dark"
+            android:layout_marginBottom="4dp" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/textReason"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Reason text here..."
+            android:textSize="16sp"
+            android:textColor="@color/text_primary_dark"
+            android:layout_marginBottom="24dp" />
+
+        <!-- Buttons -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="end">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnReject"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Reject"
+                android:textAllCaps="false"
+                android:textColor="@android:color/holo_red_dark"
+                app:cornerRadius="8dp"
+                app:strokeColor="@android:color/holo_red_dark"
+                app:strokeWidth="2dp"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_marginEnd="12dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnApprove"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Approve"
+                android:textAllCaps="false"
+                android:textColor="@android:color/white"
+                app:cornerRadius="8dp"
+                app:backgroundTint="#4CAF50" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>
+

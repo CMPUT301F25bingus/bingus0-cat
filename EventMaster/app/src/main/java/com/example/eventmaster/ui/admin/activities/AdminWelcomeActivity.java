@@ -8,7 +8,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.eventmaster.MainActivity;
 import com.example.eventmaster.R;
 import com.example.eventmaster.utils.AuthHelper;
+import com.example.eventmaster.utils.CredentialStorageHelper;
 import com.google.android.material.button.MaterialButton;
+import android.view.View;
 
 /**
  * Simple welcome screen for Admin flow.
@@ -19,7 +21,7 @@ public class AdminWelcomeActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.admin_activity_welcome);
 
-        MaterialButton btnContinue = findViewById(R.id.btnContinue);
+        View btnContinue = findViewById(R.id.btnContinue);
         MaterialButton btnLogout = findViewById(R.id.btnLogout);
         
         btnContinue.setOnClickListener(v ->
@@ -27,6 +29,7 @@ public class AdminWelcomeActivity extends AppCompatActivity {
         
         btnLogout.setOnClickListener(v -> {
             AuthHelper.signOut();
+            CredentialStorageHelper.clearCredentials(this);
             Intent i = new Intent(this, MainActivity.class);
             i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(i);
