@@ -3,40 +3,45 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#CDE7E4">
+    android:background="@drawable/organizer_bg_gradient">
 
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:fillViewport="true">
+        android:fillViewport="true"
+        android:paddingHorizontal="8dp"
+        android:paddingBottom="12dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:paddingVertical="20dp">
 
-            <!-- Profile Header Section with Teal Background -->
+            <!-- Profile Header Section -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:background="#15837C"
-                android:padding="20dp"
-                android:paddingTop="40dp">
+                android:background="@drawable/organizer_header_glow"
+                android:paddingHorizontal="16dp"
+                android:paddingTop="32dp"
+                android:paddingBottom="20dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:gravity="center_vertical">
+                    android:gravity="center_vertical"
+                    android:paddingHorizontal="4dp">
 
                     <!-- Profile Icon -->
                     <ImageView
                         android:id="@+id/imgProfileIcon"
-                        android:layout_width="64dp"
-                        android:layout_height="64dp"
+                        android:layout_width="56dp"
+                        android:layout_height="56dp"
                         android:background="@drawable/circle_shape"
-                        android:backgroundTint="@android:color/white"
+                        android:backgroundTint="@color/org_card"
                         android:scaleType="centerCrop"
                         android:contentDescription="Profile icon"
                         android:clipToOutline="true" />
@@ -47,38 +52,38 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:orientation="vertical"
-                        android:layout_marginStart="16dp">
+                        android:layout_marginStart="14dp">
 
                         <TextView
                             android:id="@+id/tvOrganizerName"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Organizer Name"
-                            android:textSize="24sp"
+                            android:textSize="22sp"
                             android:textStyle="bold"
-                            android:textColor="@android:color/white" />
+                            android:textColor="@color/org_card" />
 
                         <TextView
                             android:id="@+id/tvOrganizerEmail"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="organizer@email.com"
-                            android:textSize="16sp"
-                            android:textColor="@android:color/white"
-                            android:alpha="0.9"
+                            android:textSize="14sp"
+                            android:textColor="@color/org_card"
+                            android:alpha="0.86"
                             android:layout_marginTop="4dp" />
                     </LinearLayout>
 
                     <!-- Settings Button -->
                     <ImageButton
                         android:id="@+id/btnSettings"
-                        android:layout_width="48dp"
-                        android:layout_height="48dp"
-                    android:background="@android:color/transparent"
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:background="@android:color/transparent"
                         android:src="@drawable/ic_settings"
                         android:contentDescription="Settings"
-                        android:padding="12dp"
-                        app:tint="@android:color/white" />
+                        android:padding="10dp"
+                        app:tint="@color/org_card" />
                 </LinearLayout>
 
                 <!-- Statistics Cards -->
@@ -86,8 +91,9 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:layout_marginTop="20dp"
-                    android:weightSum="2">
+                    android:layout_marginTop="18dp"
+                    android:weightSum="2"
+                    android:paddingHorizontal="4dp">
 
                     <!-- Total Events Card -->
                     <com.google.android.material.card.MaterialCardView
@@ -95,9 +101,9 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:layout_marginEnd="8dp"
-                        app:cardCornerRadius="12dp"
-                        app:cardElevation="4dp"
-                        app:cardBackgroundColor="@android:color/white"
+                        app:cardCornerRadius="16dp"
+                        app:cardElevation="10dp"
+                        app:cardBackgroundColor="@color/org_card"
                         app:cardUseCompatPadding="true">
 
                         <LinearLayout
@@ -112,17 +118,17 @@
                                 android:layout_height="wrap_content"
                                 android:text="Total Events"
                                 android:textSize="14sp"
-                                android:textColor="#666666" />
+                                android:textColor="@color/org_text_secondary" />
 
                             <TextView
                                 android:id="@+id/tvTotalEvents"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="0"
-                                android:textSize="32sp"
+                                android:textSize="30sp"
                                 android:textStyle="bold"
-                                android:textColor="#15837C"
-                                android:layout_marginTop="4dp" />
+                                android:textColor="@color/org_text_primary"
+                                android:layout_marginTop="6dp" />
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
 
@@ -132,9 +138,9 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:layout_marginStart="8dp"
-                        app:cardCornerRadius="12dp"
-                        app:cardElevation="4dp"
-                        app:cardBackgroundColor="@android:color/white"
+                        app:cardCornerRadius="16dp"
+                        app:cardElevation="10dp"
+                        app:cardBackgroundColor="@color/org_card"
                         app:cardUseCompatPadding="true">
 
                         <LinearLayout
@@ -149,17 +155,17 @@
                                 android:layout_height="wrap_content"
                                 android:text="Active Now"
                                 android:textSize="14sp"
-                                android:textColor="#666666" />
+                                android:textColor="@color/org_text_secondary" />
 
                             <TextView
                                 android:id="@+id/tvActiveEvents"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="0"
-                                android:textSize="32sp"
+                                android:textSize="30sp"
                                 android:textStyle="bold"
-                                android:textColor="#15837C"
-                                android:layout_marginTop="4dp" />
+                                android:textColor="@color/org_text_primary"
+                                android:layout_marginTop="6dp" />
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
                 </LinearLayout>
@@ -173,26 +179,27 @@
                 android:layout_height="wrap_content"
                 android:text="Create New Event"
                 android:textAllCaps="false"
-                android:textColor="#15837C"
-                android:layout_marginStart="16dp"
-                android:layout_marginEnd="16dp"
-                android:layout_marginTop="16dp"
-                android:layout_marginBottom="12dp"
-                android:padding="16dp"
-                android:textSize="16sp"
+                android:textColor="@color/org_text_primary"
+                android:layout_marginStart="12dp"
+                android:layout_marginEnd="12dp"
+                android:layout_marginTop="14dp"
+                android:layout_marginBottom="8dp"
+                android:padding="18dp"
+                android:textSize="17sp"
                 android:gravity="center"
-                app:cornerRadius="12dp"
-                app:backgroundTint="@android:color/white"
+                app:cornerRadius="18dp"
+                app:backgroundTint="@color/org_card"
                 app:icon="@android:drawable/ic_input_add"
                 app:iconGravity="start"
-                app:iconTint="#15837C"
-                app:elevation="2dp" />
+                app:iconTint="@color/org_text_primary"
+                app:elevation="8dp" />
 
             <!-- Filter bar tabs -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp">
+                android:layout_marginTop="6dp"
+                android:paddingHorizontal="4dp">
                 <include
                     android:id="@+id/events_filter_bar"
                     layout="@layout/organizer_item_events_filter" />
@@ -203,8 +210,8 @@
                 android:id="@+id/recyclerEvents"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:paddingStart="12dp"
-                android:paddingEnd="12dp"
+                android:paddingStart="0dp"
+                android:paddingEnd="0dp"
                 android:paddingTop="4dp"
                 android:paddingBottom="88dp"
                 android:clipToPadding="false"
@@ -226,7 +233,7 @@
                 android:layout_height="wrap_content"
                 android:text="No events yet. Create your first event!"
                 android:textSize="16sp"
-                android:textColor="@android:color/black"
+                android:textColor="@color/org_card"
                 android:layout_gravity="center"
                 android:layout_marginTop="32dp"
                 android:visibility="gone"/>

@@ -3,19 +3,19 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginStart="16dp"
-    android:layout_marginEnd="16dp"
-    android:layout_marginBottom="12dp"
-    app:cardCornerRadius="16dp"
-    app:cardElevation="2dp"
+    android:layout_marginStart="12dp"
+    android:layout_marginEnd="12dp"
+    android:layout_marginBottom="6dp"
+    app:cardCornerRadius="18dp"
+    app:cardElevation="6dp"
     app:cardUseCompatPadding="false"
-    app:cardBackgroundColor="@android:color/white">
+    app:cardBackgroundColor="@color/org_card">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:padding="12dp">
+        android:padding="14dp">
 
         <!-- Large Event Poster Image -->
         <FrameLayout
@@ -28,7 +28,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:scaleType="centerCrop"
-                android:background="#E0F2F1"
+                android:background="@drawable/organizer_poster_placeholder"
                 android:contentDescription="Event poster" />
 
             <!-- Status Badge Overlay -->
@@ -42,10 +42,10 @@
                 android:paddingEnd="8dp"
                 android:paddingTop="4dp"
                 android:paddingBottom="4dp"
-                android:background="@drawable/badge_live"
+                android:background="@drawable/organizer_badge_live"
                 android:text="Live"
                 android:textColor="@android:color/white"
-                android:textSize="10sp"
+                android:textSize="11sp"
                 android:textStyle="bold"
                 android:visibility="gone" />
         </FrameLayout>
@@ -64,8 +64,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Event Title"
-                android:textColor="@android:color/black"
-                android:textSize="18sp"
+                android:textColor="@color/org_text_primary"
+                android:textSize="19sp"
                 android:textStyle="bold"
                 android:maxLines="2"
                 android:ellipsize="end"
@@ -77,9 +77,9 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Dec 15, 2025"
-                android:textColor="#666666"
+                android:textColor="@color/org_text_secondary"
                 android:textSize="14sp"
-                android:layout_marginTop="4dp" />
+                android:layout_marginTop="6dp" />
 
             <!-- Spacer -->
             <View
@@ -93,13 +93,13 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:layout_marginTop="8dp">
+                android:layout_marginTop="10dp">
 
                 <ImageView
                     android:layout_width="16dp"
                     android:layout_height="16dp"
                     android:src="@drawable/baseline_person_24"
-                    android:tint="#78909C"
+                    android:tint="@color/org_text_secondary"
                     android:contentDescription="Waitlist icon" />
 
                 <TextView
@@ -107,7 +107,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="0 waitlisted"
-                    android:textColor="#78909C"
+                    android:textColor="@color/org_text_secondary"
                     android:textSize="12sp"
                     android:layout_marginStart="4dp" />
             </LinearLayout>

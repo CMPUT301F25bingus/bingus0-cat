@@ -4,9 +4,9 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="12dp"
-    app:cardCornerRadius="16dp"
-    app:cardElevation="2dp"
-    app:cardBackgroundColor="@color/status_badge_bg">
+    app:cardCornerRadius="18dp"
+    app:cardElevation="8dp"
+    app:cardBackgroundColor="@color/org_card">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -26,20 +26,20 @@
             <TextView
                 android:id="@+id/tvTitle"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Tech Conference 2025"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:textColor="@color/text_primary_dark"
-                android:layout_marginBottom="4dp" />
+            android:layout_height="wrap_content"
+            android:text="Tech Conference 2025"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="@color/org_text_primary"
+            android:layout_marginBottom="4dp" />
 
             <TextView
                 android:id="@+id/tvDateLocation"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="April 15, 2025 • San Francisco, CA"
-                android:textSize="14sp"
-                android:textColor="@color/text_secondary_dark" />
+            android:layout_height="wrap_content"
+            android:text="April 15, 2025 • San Francisco, CA"
+            android:textSize="14sp"
+            android:textColor="@color/org_text_secondary" />
         </LinearLayout>
 
         <!-- Status Badge -->

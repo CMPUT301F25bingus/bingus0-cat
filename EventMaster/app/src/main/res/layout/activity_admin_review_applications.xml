@@ -4,18 +4,19 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@color/surface_white">
+    android:background="@color/admin_bg"
+    android:fontFamily="@font/manrope">
 
     <!-- Toolbar -->
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:background="@color/teal_dark"
+        android:background="@color/admin_surface"
         app:title="Review Organizer Applications"
-        app:titleTextColor="@android:color/white"
+        app:titleTextColor="@color/admin_text_primary"
         app:navigationIcon="@drawable/ic_arrow_back"
-        app:navigationIconTint="@android:color/white" />
+        app:navigationIconTint="@color/admin_text_primary" />
 
     <!-- Empty State -->
     <LinearLayout
@@ -31,9 +32,9 @@
             android:layout_width="120dp"
             android:layout_height="120dp"
             android:src="@drawable/ic_briefcase_outline"
-            android:contentDescription="No applications"
-            app:tint="@color/text_secondary_dark"
-            android:layout_marginBottom="24dp" />
+        android:contentDescription="No applications"
+        app:tint="@color/admin_text_secondary"
+        android:layout_marginBottom="24dp" />
 
         <com.google.android.material.textview.MaterialTextView
             android:layout_width="wrap_content"
@@ -41,7 +42,7 @@
             android:text="No Pending Applications"
             android:textSize="20sp"
             android:textStyle="bold"
-            android:textColor="@color/text_primary_dark"
+            android:textColor="@color/admin_text_primary"
             android:layout_marginBottom="8dp" />
 
         <com.google.android.material.textview.MaterialTextView
@@ -49,7 +50,7 @@
             android:layout_height="wrap_content"
             android:text="All applications have been reviewed."
             android:textSize="14sp"
-            android:textColor="@color/text_secondary_dark"
+            android:textColor="@color/admin_text_secondary"
             android:gravity="center" />
     </LinearLayout>
 
@@ -62,4 +63,3 @@
         android:clipToPadding="false" />
 
 </LinearLayout>
-

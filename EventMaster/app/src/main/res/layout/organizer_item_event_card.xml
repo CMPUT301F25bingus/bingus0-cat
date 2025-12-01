@@ -4,11 +4,11 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="12dp"
-    app:cardCornerRadius="16dp"
+    app:cardCornerRadius="18dp"
     app:cardUseCompatPadding="true"
-    app:cardElevation="4dp"
-    android:backgroundTint="@android:color/white"
-    android:padding="10dp">
+    app:cardElevation="10dp"
+    android:backgroundTint="@color/org_card"
+    android:padding="12dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -24,7 +24,7 @@
             android:layout_marginEnd="12dp"
             android:scaleType="centerCrop"
             android:adjustViewBounds="true"
-            android:background="@drawable/rounded_image_mask"
+            android:background="@drawable/organizer_poster_placeholder"
             android:contentDescription="Event poster" />
 
         <!-- RIGHT SIDE CONTENT -->
@@ -36,55 +36,55 @@
 
             <!-- TITLE -->
             <TextView
-                android:id="@+id/txtEventTitle"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textStyle="bold"
-                android:textColor="#000000"
-                android:textSize="16sp"
-                android:maxLines="1"
-                android:ellipsize="end" />
+            android:id="@+id/txtEventTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textStyle="bold"
+            android:textColor="@color/org_text_primary"
+            android:textSize="17sp"
+            android:maxLines="1"
+            android:ellipsize="end" />
 
             <!-- LOCATION -->
             <TextView
-                android:id="@+id/txtEventLocation"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textColor="#555555"
-                android:textSize="13sp"
-                android:layout_marginTop="2dp"
-                android:maxLines="1"
-                android:ellipsize="end" />
+            android:id="@+id/txtEventLocation"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/org_text_secondary"
+            android:textSize="13sp"
+            android:layout_marginTop="2dp"
+            android:maxLines="1"
+            android:ellipsize="end" />
 
             <!-- DATE RANGE -->
             <TextView
-                android:id="@+id/txtEventDates"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textColor="#666666"
-                android:textSize="12sp"
-                android:layout_marginTop="4dp" />
+            android:id="@+id/txtEventDates"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/org_text_secondary"
+            android:textSize="12sp"
+            android:layout_marginTop="4dp" />
 
             <!-- CAPACITY -->
             <TextView
-                android:id="@+id/txtEventCapacity"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textColor="#444444"
-                android:textSize="12sp"
-                android:layout_marginTop="4dp" />
+            android:id="@+id/txtEventCapacity"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/org_text_secondary"
+            android:textSize="12sp"
+            android:layout_marginTop="4dp" />
 
             <!-- GEOLOCATION REQUIRED -->
             <TextView
                 android:id="@+id/txtGeoRequired"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Geolocation Required"
-                android:textColor="#6C5CE7"
-                android:textSize="12sp"
-                android:layout_marginTop="4dp"
-                android:layout_marginBottom="4dp"
-                android:visibility="gone" />
+            android:text="Geolocation Required"
+            android:textColor="@color/org_accent"
+            android:textSize="12sp"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="4dp"
+            android:visibility="gone" />
 
         </LinearLayout>
     </LinearLayout>

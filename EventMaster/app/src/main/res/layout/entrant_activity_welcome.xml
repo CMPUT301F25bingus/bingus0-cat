@@ -1,54 +1,76 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:gravity="center"
-    android:background="#CDE7E4">
+    android:background="@color/entrant_bg"
+    android:animateLayoutChanges="true">
 
-    <!-- Circular welcome panel with animation -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="320dp"
+        android:background="@drawable/entrant_header_glow" />
+
     <LinearLayout
-        android:id="@+id/welcomeContainer"
-        android:layout_width="260dp"
-        android:layout_height="260dp"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         android:orientation="vertical"
         android:gravity="center"
-        android:background="@drawable/circle_shape">
+        android:padding="24dp">
 
-        <TextView
-            android:id="@+id/textWelcome"
-            android:layout_width="wrap_content"
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/welcomeContainer"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="WELCOME"
-            android:textColor="@android:color/black"
-            android:textStyle="bold"
-            android:textSize="32sp"
-            android:alpha="0" />
+            app:cardElevation="12dp"
+            app:cardUseCompatPadding="true"
+            android:background="@android:color/transparent"
+            app:cardBackgroundColor="@android:color/transparent">
 
-        <TextView
-            android:id="@+id/textEntrant"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Entrant!"
-            android:textColor="@android:color/black"
-            android:textStyle="bold"
-            android:textSize="28sp"
-            android:layout_marginTop="8dp"
-            android:alpha="0" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/entrant_card_bg"
+                android:orientation="vertical"
+                android:padding="28dp"
+                android:gravity="center_horizontal">
 
-        <ImageView
-            android:id="@+id/iconPerson"
-            android:layout_width="80dp"
-            android:layout_height="80dp"
-            android:layout_marginTop="16dp"
-            android:src="@drawable/baseline_person_24"
-            android:contentDescription="Entrant icon"
-            app:tint="@android:color/black"
-            android:alpha="0"
-            android:scaleX="0.5"
-            android:scaleY="0.5" />
+                <TextView
+                    android:id="@+id/textWelcome"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Welcome"
+                    android:textColor="@color/entrant_text_primary"
+                    android:textSize="30sp"
+                    android:fontFamily="@font/space_grotesk_semibold"
+                    android:alpha="0" />
 
+                <TextView
+                    android:id="@+id/textEntrant"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="Entrant Portal"
+                    android:textColor="@color/entrant_text_secondary"
+                    android:textSize="16sp"
+                    android:fontFamily="@font/space_grotesk"
+                    android:alpha="0" />
+
+                <ImageView
+                    android:id="@+id/iconPerson"
+                    android:layout_width="96dp"
+                    android:layout_height="96dp"
+                    android:layout_marginTop="18dp"
+                    android:background="@drawable/entrant_pill_bg"
+                    android:padding="18dp"
+                    android:src="@drawable/baseline_person_24"
+                    android:contentDescription="Entrant icon"
+                    app:tint="@color/entrant_text_primary"
+                    android:alpha="0"
+                    android:scaleX="0.6"
+                    android:scaleY="0.6" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
     </LinearLayout>
 
-</LinearLayout>
+</FrameLayout>

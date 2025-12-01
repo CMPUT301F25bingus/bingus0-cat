@@ -20,4 +20,24 @@
         <item name="android:paddingBottom">2dp</item>
         <item name="itemHorizontalTranslationEnabled">false</item>
     </style>
+
+    <!-- Entrant typography helpers -->
+    <style name="EntrantHeading">
+        <item name="android:fontFamily">@font/space_grotesk_semibold</item>
+        <item name="android:textColor">@color/entrant_text_primary</item>
+        <item name="android:textSize">22sp</item>
+    </style>
+
+    <style name="EntrantSubtitle">
+        <item name="android:fontFamily">@font/space_grotesk</item>
+        <item name="android:textColor">@color/entrant_text_secondary</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+
+    <style name="EntrantLabelCaps">
+        <item name="android:fontFamily">@font/space_grotesk_semibold</item>
+        <item name="android:textColor">@color/entrant_text_secondary</item>
+        <item name="android:textSize">11sp</item>
+        <item name="android:textAllCaps">true</item>
+    </style>
 </resources>

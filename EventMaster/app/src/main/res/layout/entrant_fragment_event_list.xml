@@ -4,31 +4,68 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true"
-    android:background="#5FB3AD">
+    android:background="@color/entrant_bg">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:paddingTop="12dp">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="120dp">
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="140dp"
+                android:background="@drawable/entrant_header_glow" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:paddingHorizontal="20dp"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Events for you"
+                    android:textColor="@color/entrant_surface"
+                    android:textSize="20sp"
+                    android:fontFamily="@font/space_grotesk_semibold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Search, filter, and join. Stay updated with quick tabs below."
+                    android:textColor="#C4D1E0"
+                    android:textSize="13sp"
+                    android:fontFamily="@font/space_grotesk" />
+            </LinearLayout>
+        </FrameLayout>
 
         <!-- Search Bar -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="20dp"
-            android:layout_marginEnd="20dp"
-            android:layout_marginTop="20dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
             android:layout_marginBottom="12dp"
-            app:cardCornerRadius="25dp"
-            app:cardElevation="4dp"
-            app:cardBackgroundColor="#D9E3E3">
+            app:cardCornerRadius="22dp"
+            app:cardElevation="6dp"
+            app:cardUseCompatPadding="true"
+            app:cardBackgroundColor="@android:color/transparent">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:padding="8dp"
-                android:gravity="center_vertical">
+                android:padding="10dp"
+                android:gravity="center_vertical"
+                android:background="@drawable/entrant_card_bg">
 
                 <!-- Search Icon -->
                 <ImageView
@@ -36,8 +73,9 @@
                     android:layout_height="24dp"
                     android:src="@android:drawable/ic_menu_search"
                     android:contentDescription="Search"
-                    android:layout_marginStart="8dp"
-                    android:layout_marginEnd="8dp" />
+                    android:tint="@color/entrant_text_secondary"
+                    android:layout_marginStart="4dp"
+                    android:layout_marginEnd="10dp" />
 
                 <!-- Search EditText -->
                 <EditText
@@ -45,38 +83,46 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:hint="Search events.."
-                    android:textSize="16sp"
-                    android:textColorHint="#888888"
+                    android:hint="Search events, venues, hosts"
+                    android:textSize="15sp"
+                    android:textColor="@color/entrant_text_primary"
+                    android:textColorHint="@color/entrant_text_secondary"
                     android:background="@android:color/transparent"
-                    android:padding="8dp"
+                    android:paddingVertical="6dp"
                     android:inputType="text"
-                    android:maxLines="1" />
+                    android:maxLines="1"
+                    android:fontFamily="@font/space_grotesk" />
 
                 <!-- QR Scanner Button -->
                 <ImageButton
                     android:id="@+id/qr_scanner_button"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
                     android:src="@drawable/ic_qr_scanner"
-                    android:background="@drawable/qr_scanner_button_background"
+                    android:background="@drawable/entrant_pill_bg"
                     android:padding="10dp"
                     android:scaleType="fitCenter"
-                    android:contentDescription="Scan QR Code"
-                    android:layout_marginEnd="4dp" />
+                    android:contentDescription="Scan QR Code" />
 
                 <!-- Filter Button -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/filter_button"
                     android:layout_width="wrap_content"
-                    android:layout_height="40dp"
+                    android:layout_height="44dp"
+                    android:layout_marginStart="8dp"
                     android:text="Filter"
                     android:textSize="14sp"
-                    android:textColor="#000000"
-                    android:backgroundTint="#FFFFFF"
-                    app:cornerRadius="20dp"
-                    android:layout_marginEnd="4dp"
-                    style="@style/Widget.Material3.Button.OutlinedButton" />
+                    android:textColor="@color/entrant_text_primary"
+                    android:background="@drawable/entrant_card_bg"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:paddingHorizontal="14dp"
+                    android:fontFamily="@font/space_grotesk_semibold"
+                    app:cornerRadius="16dp"
+                    app:icon="@drawable/ic_settings"
+                    app:iconTint="@color/entrant_accent"
+                    app:iconPadding="6dp"
+                    style="@style/Widget.Material3.Button" />
 
             </LinearLayout>
 
@@ -89,10 +135,11 @@
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            android:paddingBottom="80dp"
-            android:clipToPadding="false" />
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:paddingBottom="92dp"
+            android:clipToPadding="false"
+            android:layoutAnimation="@android:anim/fade_in" />
 
         <!-- Empty State -->
         <TextView
@@ -102,7 +149,8 @@
             android:layout_weight="1"
             android:text="No events available"
             android:textSize="16sp"
-            android:textColor="#666666"
+            android:textColor="@color/entrant_text_secondary"
+            android:fontFamily="@font/space_grotesk"
             android:gravity="center"
             android:visibility="gone" />
 
@@ -118,8 +166,8 @@
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp"
         android:layout_marginBottom="12dp"
-        android:background="@drawable/bottom_nav_background"
-        app:elevation="4dp"
+        android:background="@drawable/entrant_bottom_nav_background"
+        app:elevation="6dp"
         app:itemIconTint="@color/bottom_nav_item_colors"
         app:itemTextColor="@color/bottom_nav_item_colors"
         app:labelVisibilityMode="labeled"
@@ -130,6 +178,4 @@
         app:menu="@menu/bottom_nav_menu" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
-
-
 

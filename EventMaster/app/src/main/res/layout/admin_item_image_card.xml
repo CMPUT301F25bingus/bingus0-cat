@@ -5,13 +5,14 @@
     android:layout_height="wrap_content"
     android:layout_marginBottom="16dp"
     app:cardCornerRadius="16dp"
-    app:cardElevation="4dp"
-    app:cardBackgroundColor="#FFFFFF">
+    app:cardElevation="10dp"
+    app:cardBackgroundColor="@color/admin_surface">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="16dp">
+        android:padding="16dp"
+        android:fontFamily="@font/manrope">
 
         <!-- Image Thumbnail -->
         <androidx.cardview.widget.CardView
@@ -40,7 +41,7 @@
             android:layout_height="wrap_content"
             android:text="events/event123/poster.jpg"
             android:textSize="14sp"
-            android:textColor="#666666"
+            android:textColor="@color/admin_text_secondary"
             android:layout_marginStart="16dp"
             android:layout_marginTop="8dp"
             android:maxLines="2"
@@ -58,7 +59,7 @@
             android:textSize="14sp"
             android:textColor="#FFFFFF"
             app:cornerRadius="8dp"
-            android:backgroundTint="#D32F2F"
+            android:backgroundTint="@color/admin_danger"
             android:layout_marginTop="12dp"
             app:layout_constraintTop_toBottomOf="@id/thumbnail_card"
             app:layout_constraintStart_toStartOf="parent"
@@ -67,4 +68,3 @@
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 </androidx.cardview.widget.CardView>
-

@@ -4,18 +4,19 @@
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/profile_bg">
+    android:background="@color/admin_bg"
+    android:fontFamily="@font/manrope">
 
     <!-- Toolbar -->
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="56dp"
-        android:background="@color/profile_nav"
+        android:background="@color/admin_surface"
         app:title="Browse profiles"
-        app:titleTextColor="@color/white"
+        app:titleTextColor="@color/admin_text_primary"
         app:navigationIcon="@drawable/ic_arrow_back"
-        app:navigationIconTint="@color/white"/>
+        app:navigationIconTint="@color/admin_text_primary"/>
 
     <FrameLayout
         android:layout_width="match_parent"
@@ -30,8 +31,9 @@
             android:layout_height="match_parent"
             android:layout_gravity="top"
             app:cardCornerRadius="24dp"
-            app:cardElevation="8dp"
-            app:cardBackgroundColor="@color/surface_white">
+            app:cardElevation="10dp"
+            app:cardUseCompatPadding="true"
+            app:cardBackgroundColor="@color/admin_surface">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -46,7 +48,7 @@
                         android:text="Browse Profiles"
                         android:textSize="24sp"
                         android:textStyle="bold"
-                        android:textColor="@color/text_primary_dark"
+                        android:textColor="@color/admin_text_primary"
                         android:layout_gravity="center_horizontal"
                         android:layout_marginBottom="8dp" />
 
@@ -55,7 +57,7 @@
                         android:layout_height="wrap_content"
                         android:text="View and manage user profiles"
                         android:textSize="16sp"
-                        android:textColor="@color/text_secondary_dark"
+                        android:textColor="@color/admin_text_secondary"
                         android:layout_gravity="center_horizontal"
                         android:layout_marginBottom="24dp" />
 
@@ -89,7 +91,7 @@
                             android:layout_weight="1"
                             android:layout_marginStart="8dp"
                             android:text="Organizers"
-                            android:textColor="@color/text_primary_dark"
+                            android:textColor="@color/admin_text_primary"
                             android:textSize="16sp"
                             android:textStyle="bold"
                             app:cornerRadius="12dp"

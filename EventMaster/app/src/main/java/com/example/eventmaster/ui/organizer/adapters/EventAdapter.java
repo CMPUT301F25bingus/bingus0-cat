@@ -8,6 +8,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
@@ -117,15 +118,16 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.ViewHolder> 
         h.waitingList.setText(count + " waitlisted");
 
         // Load poster
+        int placeholderColor = ContextCompat.getColor(h.itemView.getContext(), R.color.org_card_tint);
         Object posterUrl = e.get("posterUrl");
         if (posterUrl != null && !posterUrl.toString().isEmpty()) {
             Glide.with(h.itemView.getContext())
                     .load(posterUrl.toString())
-                    .placeholder(new ColorDrawable(0xFFE0F2F1))
+                    .placeholder(new ColorDrawable(placeholderColor))
                     .centerCrop()
                     .into(h.poster);
         } else {
-            h.poster.setImageDrawable(new ColorDrawable(0xFFE0F2F1));
+            h.poster.setImageDrawable(new ColorDrawable(placeholderColor));
         }
 
         // Click handler

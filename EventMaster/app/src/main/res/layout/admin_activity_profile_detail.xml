@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/profile_bg">
+    android:background="@color/admin_bg">
 
     <ScrollView
         android:layout_width="match_parent"
@@ -15,18 +15,19 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:padding="16dp"
+            android:fontFamily="@font/manrope">
 
             <!-- Top Navigation Bar -->
             <com.google.android.material.appbar.MaterialToolbar
                 android:id="@+id/toolbar"
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
-                android:background="@color/profile_nav"
+                android:background="@color/admin_surface"
                 app:title="Organizer Details"
-                app:titleTextColor="@color/white"
+                app:titleTextColor="@color/admin_text_primary"
                 app:navigationIcon="@drawable/ic_arrow_back"
-                app:navigationIconTint="@color/white"
+                app:navigationIconTint="@color/admin_text_primary"
                 android:layout_marginBottom="16dp"/>
 
             <!-- Profile Card -->
@@ -35,8 +36,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
                 app:cardCornerRadius="24dp"
-                app:cardElevation="4dp"
-                app:cardBackgroundColor="@color/surface_white">
+                app:cardElevation="10dp"
+                app:cardBackgroundColor="@color/admin_surface">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -60,7 +61,7 @@
                             android:layout_height="match_parent"
                             android:src="@drawable/ic_person_outline"
                             android:contentDescription="Profile avatar"
-                            app:tint="#9CA3AF"
+                            app:tint="@color/admin_accent"
                             android:padding="20dp"
                             android:scaleType="fitCenter" />
                     </com.google.android.material.card.MaterialCardView>
@@ -90,7 +91,8 @@
                             android:layout_height="20dp"
                             android:src="@drawable/ic_envelope"
                             android:contentDescription="Email icon"
-                            android:layout_marginEnd="8dp" />
+                            android:layout_marginEnd="8dp"
+                            app:tint="@color/admin_text_secondary" />
 
                         <TextView
                             android:id="@+id/tvEmail"
@@ -115,7 +117,8 @@
                             android:layout_height="20dp"
                             android:src="@drawable/ic_phone"
                             android:contentDescription="Phone icon"
-                            android:layout_marginEnd="8dp" />
+                            android:layout_marginEnd="8dp"
+                            app:tint="@color/admin_text_secondary" />
 
                         <TextView
                             android:id="@+id/tvPhone"
@@ -151,8 +154,8 @@
                 android:layout_height="0dp"
                 android:layout_weight="1"
                 app:cardCornerRadius="24dp"
-                app:cardElevation="4dp"
-                app:cardBackgroundColor="@color/surface_white"
+                app:cardElevation="10dp"
+                app:cardBackgroundColor="@color/admin_surface"
                 android:layout_marginBottom="16dp">
 
                 <LinearLayout
@@ -223,7 +226,7 @@
             app:icon="@drawable/ic_bell_outline"
             app:iconGravity="start"
             app:iconTint="@color/white"
-            app:backgroundTint="#0F8A86"
+            app:backgroundTint="@color/admin_accent"
             app:cornerRadius="12dp"
             android:elevation="4dp"
             android:layout_marginBottom="12dp" />

@@ -3,87 +3,315 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#CDE7E4"
+    android:background="@color/entrant_bg"
     android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:gravity="center_horizontal"
-        android:padding="24dp">
+        android:padding="20dp"
+        android:animateLayoutChanges="true">
 
-        <!-- Circular welcome panel -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="200dp">
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="200dp"
+                android:background="@drawable/entrant_header_glow" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="8dp"
+                app:cardElevation="8dp"
+                app:cardUseCompatPadding="true"
+                app:cardBackgroundColor="@android:color/transparent"
+                app:strokeWidth="0dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/entrant_card_bg"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="ENTRANT"
+                        android:fontFamily="@font/space_grotesk_semibold"
+                        android:textColor="@color/entrant_text_secondary"
+                        android:textSize="12sp"
+                        android:letterSpacing="0.08"
+                        android:textAllCaps="true" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:text="Welcome back"
+                        android:textColor="@color/entrant_text_primary"
+                        android:textSize="26sp"
+                        android:fontFamily="@font/space_grotesk_semibold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="Discover events, track invites, and check your status at a glance."
+                        android:textColor="@color/entrant_text_secondary"
+                        android:textSize="14sp"
+                        android:fontFamily="@font/space_grotesk" />
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginTop="14dp"
+                        android:background="@drawable/entrant_pill_bg">
+
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:layout_marginEnd="6dp"
+                            android:src="@drawable/ic_star_check"
+                            android:contentDescription="Profile ready"
+                            android:tint="@color/entrant_text_primary" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Profile ready"
+                            android:textColor="@color/entrant_text_primary"
+                            android:textSize="13sp"
+                            android:fontFamily="@font/space_grotesk_semibold" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+        </FrameLayout>
+
         <LinearLayout
-            android:layout_width="260dp"
-            android:layout_height="260dp"
-            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="horizontal"
             android:gravity="center"
-            android:background="@drawable/circle_shape">
+            android:weightSum="2">
 
-            <TextView
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:text="WELCOME"
-                android:textColor="@android:color/black"
-                android:textStyle="bold"
-                android:textSize="20sp" />
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/entrant_card_bg"
+                android:padding="14dp"
+                android:orientation="vertical">
 
-            <TextView
-                android:layout_width="wrap_content"
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Active"
+                    android:fontFamily="@font/space_grotesk_semibold"
+                    android:textColor="@color/entrant_text_secondary"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/statActive"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="3 spots"
+                    android:fontFamily="@font/space_grotesk_semibold"
+                    android:textColor="@color/entrant_text_primary"
+                    android:textSize="20sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:text="Entrant!"
-                android:textColor="@android:color/black"
-                android:textStyle="bold"
-                android:textSize="18sp"
-                android:layout_marginBottom="10dp" />
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/entrant_card_bg"
+                android:padding="14dp"
+                android:orientation="vertical">
 
-            <ImageView
-                android:layout_width="64dp"
-                android:layout_height="64dp"
-                android:src="@drawable/baseline_person_24"
-                android:contentDescription="Entrant icon"
-                app:tint="@android:color/black" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Notifications"
+                    android:fontFamily="@font/space_grotesk_semibold"
+                    android:textColor="@color/entrant_text_secondary"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/statNotifications"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="Stay tuned"
+                    android:fontFamily="@font/space_grotesk_semibold"
+                    android:textColor="@color/entrant_text_primary"
+                    android:textSize="20sp" />
+            </LinearLayout>
         </LinearLayout>
 
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="28dp" />
-
-        <!-- View Events button -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnViewEvents"
-            android:layout_width="200dp"
-            android:layout_height="wrap_content"
-            android:text="Browse Events"
+            android:layout_width="match_parent"
+            android:layout_height="58dp"
+            android:layout_marginTop="18dp"
+            android:text="Browse events"
             android:textAllCaps="false"
-            android:textColor="@android:color/white"
-            app:cornerRadius="10dp"
-            app:backgroundTint="#15837C" />
+            android:textColor="@color/entrant_text_primary"
+            android:textSize="16sp"
+            android:fontFamily="@font/space_grotesk_semibold"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            app:backgroundTint="@android:color/transparent"
+            app:icon="@drawable/ic_grid_2x2_white"
+            app:iconTint="@color/entrant_text_primary"
+            app:iconPadding="12dp"
+            app:iconGravity="textStart"
+            app:cornerRadius="16dp"
+            android:background="@drawable/entrant_button_primary" />
 
-        <!-- Scan QR button -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnScanQr"
-            android:layout_width="200dp"
-            android:layout_height="wrap_content"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
             android:layout_marginTop="12dp"
-            android:text="Scan Event QR"
+            android:text="Scan event QR"
             android:textAllCaps="false"
-            android:textColor="@android:color/white"
-            app:cornerRadius="10dp"
-            app:backgroundTint="#15837C" />
+            android:textColor="@color/entrant_text_primary"
+            android:textSize="15sp"
+            android:fontFamily="@font/space_grotesk_semibold"
+            android:background="@drawable/entrant_card_bg"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            app:cornerRadius="16dp"
+            app:icon="@drawable/ic_qr_code_24"
+            app:iconTint="@color/entrant_accent"
+            app:iconPadding="10dp"
+            app:iconGravity="textStart" />
 
-        <!-- Logout button -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginTop="14dp"
+            android:layout_marginBottom="8dp"
+            android:weightSum="3">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/entrant_card_bg"
+                android:paddingVertical="12dp"
+                android:paddingHorizontal="14dp">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_bell_outline"
+                    android:tint="@color/entrant_accent"
+                    android:contentDescription="Notifications" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:text="Notifications"
+                    android:textColor="@color/entrant_text_primary"
+                    android:textSize="14sp"
+                    android:fontFamily="@font/space_grotesk_semibold" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginHorizontal="8dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/entrant_card_bg"
+                android:paddingVertical="12dp"
+                android:paddingHorizontal="14dp">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_history_outline"
+                    android:tint="@color/entrant_accent"
+                    android:contentDescription="History" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:text="History"
+                    android:textColor="@color/entrant_text_primary"
+                    android:textSize="14sp"
+                    android:fontFamily="@font/space_grotesk_semibold" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/entrant_card_bg"
+                android:paddingVertical="12dp"
+                android:paddingHorizontal="14dp">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_person_outline"
+                    android:tint="@color/entrant_accent"
+                    android:contentDescription="Profile" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:text="Profile"
+                    android:textColor="@color/entrant_text_primary"
+                    android:textSize="14sp"
+                    android:fontFamily="@font/space_grotesk_semibold" />
+            </LinearLayout>
+        </LinearLayout>
+
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnLogout"
-            android:layout_width="200dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:text="Log Out"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="6dp"
+            android:text="Log out"
             android:textAllCaps="false"
-            android:textColor="@android:color/white"
-            app:cornerRadius="10dp"
-            app:backgroundTint="@color/btn_neutral" />
+            android:textColor="@color/entrant_danger"
+            android:textSize="15sp"
+            android:fontFamily="@font/space_grotesk_semibold"
+            android:background="@drawable/entrant_card_bg"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            app:cornerRadius="16dp"
+            app:icon="@drawable/ic_trash"
+            app:iconTint="@color/entrant_danger"
+            app:iconPadding="10dp"
+            app:iconGravity="textStart" />
 
     </LinearLayout>
 </ScrollView>

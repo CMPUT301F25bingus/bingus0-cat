@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#CDE7E4">
+    android:background="@drawable/organizer_bg_gradient">
 
     <ScrollView
         android:layout_width="match_parent"
@@ -20,7 +20,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:background="#15837C"
+                android:background="@drawable/organizer_header_glow"
                 android:padding="20dp"
                 android:paddingTop="40dp">
 
@@ -72,7 +72,7 @@
                 android:layout_marginBottom="12dp"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="2dp"
-                app:cardBackgroundColor="@android:color/white">
+                app:cardBackgroundColor="@color/org_card">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -86,7 +86,7 @@
                         android:text="Event Name"
                         android:textSize="18sp"
                         android:textStyle="bold"
-                        android:textColor="#15837C"
+                        android:textColor="@color/org_text_primary"
                         android:layout_marginBottom="12dp" />
 
                     <LinearLayout
@@ -102,7 +102,7 @@
                             android:layout_marginEnd="12dp"
                             app:boxBackgroundMode="outline"
                     app:boxBackgroundColor="@android:color/white"
-                            app:boxStrokeColor="#15837C"
+                            app:boxStrokeColor="@color/org_accent"
                             app:boxCornerRadiusTopStart="12dp"
                             app:boxCornerRadiusTopEnd="12dp"
                             app:boxCornerRadiusBottomStart="12dp"
@@ -118,7 +118,7 @@
                         android:maxLines="1"
                                 android:minHeight="56dp"
                                 android:padding="16dp"
-                                android:textColor="#222222"
+                                android:textColor="@color/org_text_primary"
                                 android:textSize="16sp" />
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -156,7 +156,7 @@
                 android:layout_marginBottom="12dp"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="2dp"
-                app:cardBackgroundColor="@android:color/white">
+                app:cardBackgroundColor="@color/org_card">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -170,7 +170,7 @@
                         android:text="Description"
                         android:textSize="18sp"
                         android:textStyle="bold"
-                        android:textColor="#15837C"
+                        android:textColor="@color/org_text_primary"
                         android:layout_marginBottom="12dp" />
 
                     <com.google.android.material.textfield.TextInputLayout
@@ -178,7 +178,7 @@
                         android:layout_height="wrap_content"
                         app:boxBackgroundMode="outline"
                     app:boxBackgroundColor="@android:color/white"
-                        app:boxStrokeColor="#15837C"
+                        app:boxStrokeColor="@color/org_accent"
                         app:boxCornerRadiusTopStart="12dp"
                         app:boxCornerRadiusTopEnd="12dp"
                         app:boxCornerRadiusBottomStart="12dp"
@@ -195,7 +195,7 @@
                             android:maxLines="10"
                             android:scrollbars="vertical"
                         android:gravity="top|start"
-                            android:textColor="#222222"
+                            android:textColor="@color/org_text_primary"
                             android:textSize="16sp"
                             android:padding="16dp"/>
                 </com.google.android.material.textfield.TextInputLayout>
@@ -209,7 +209,7 @@
                 android:layout_marginBottom="12dp"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="2dp"
-                app:cardBackgroundColor="@android:color/white">
+                app:cardBackgroundColor="@color/org_card">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -223,7 +223,7 @@
                         android:text="Location"
                         android:textSize="18sp"
                         android:textStyle="bold"
-                        android:textColor="#15837C"
+                        android:textColor="@color/org_text_primary"
                         android:layout_marginBottom="12dp" />
 
                     <com.google.android.material.textfield.TextInputLayout
@@ -231,7 +231,7 @@
                         android:layout_height="wrap_content"
                         app:boxBackgroundMode="outline"
                     app:boxBackgroundColor="@android:color/white"
-                        app:boxStrokeColor="#15837C"
+                        app:boxStrokeColor="@color/org_accent"
                         app:boxCornerRadiusTopStart="12dp"
                         app:boxCornerRadiusTopEnd="12dp"
                         app:boxCornerRadiusBottomStart="12dp"
@@ -245,7 +245,7 @@
                             android:hint="Enter location"
                         android:inputType="textCapWords"
                         android:maxLines="1"
-                            android:textColor="#222222"
+                            android:textColor="@color/org_text_primary"
                             android:textSize="16sp"
                             android:padding="16dp"/>
                 </com.google.android.material.textfield.TextInputLayout>
@@ -259,7 +259,7 @@
                 android:layout_marginBottom="12dp"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="2dp"
-                app:cardBackgroundColor="@android:color/white">
+                app:cardBackgroundColor="@color/org_card">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -273,7 +273,7 @@
                         android:text="Capacity"
                         android:textSize="18sp"
                         android:textStyle="bold"
-                        android:textColor="#15837C"
+                        android:textColor="@color/org_text_primary"
                         android:layout_marginBottom="12dp" />
 
                     <LinearLayout
@@ -294,7 +294,7 @@
                                 android:layout_height="wrap_content"
                                 android:text="Lottery Size"
                                 android:textSize="14sp"
-                                android:textColor="#666666"
+                                android:textColor="@color/org_text_secondary"
                                 android:layout_marginBottom="8dp" />
 
                             <com.google.android.material.textfield.TextInputLayout
@@ -302,7 +302,7 @@
                                 android:layout_height="wrap_content"
                                 app:boxBackgroundMode="outline"
                     app:boxBackgroundColor="@android:color/white"
-                                app:boxStrokeColor="#15837C"
+                                app:boxStrokeColor="@color/org_accent"
                                 app:boxCornerRadiusTopStart="12dp"
                                 app:boxCornerRadiusTopEnd="12dp"
                                 app:boxCornerRadiusBottomStart="12dp"
@@ -316,7 +316,7 @@
                                     android:hint="0"
                         android:inputType="number"
                         android:maxLines="1"
-                                    android:textColor="#222222"
+                                    android:textColor="@color/org_text_primary"
                                     android:textSize="16sp"
                                     android:padding="16dp"/>
                 </com.google.android.material.textfield.TextInputLayout>
@@ -334,7 +334,7 @@
                                 android:layout_height="wrap_content"
                                 android:text="Optional Waiting List Size"
                                 android:textSize="14sp"
-                                android:textColor="#666666"
+                                android:textColor="@color/org_text_secondary"
                                 android:layout_marginBottom="8dp" />
 
                 <com.google.android.material.textfield.TextInputLayout
@@ -342,7 +342,7 @@
                     android:layout_height="wrap_content"
                                 app:boxBackgroundMode="outline"
                     app:boxBackgroundColor="@android:color/white"
-                                app:boxStrokeColor="#15837C"
+                                app:boxStrokeColor="@color/org_accent"
                                 app:boxCornerRadiusTopStart="12dp"
                                 app:boxCornerRadiusTopEnd="12dp"
                                 app:boxCornerRadiusBottomStart="12dp"
@@ -356,7 +356,7 @@
                                     android:hint="0"
                         android:inputType="number"
                         android:maxLines="1"
-                                    android:textColor="#222222"
+                                    android:textColor="@color/org_text_primary"
                                     android:textSize="16sp"
                                     android:padding="16dp"/>
                 </com.google.android.material.textfield.TextInputLayout>
@@ -372,7 +372,7 @@
                 android:layout_marginBottom="12dp"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="2dp"
-                app:cardBackgroundColor="@android:color/white">
+                app:cardBackgroundColor="@color/org_card">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -386,7 +386,7 @@
                         android:text="Price"
                         android:textSize="18sp"
                         android:textStyle="bold"
-                        android:textColor="#15837C"
+                        android:textColor="@color/org_text_primary"
                         android:layout_marginBottom="12dp" />
 
                     <com.google.android.material.textfield.TextInputLayout
@@ -395,7 +395,7 @@
                         android:layout_marginBottom="16dp"
                         app:boxBackgroundMode="outline"
                     app:boxBackgroundColor="@android:color/white"
-                        app:boxStrokeColor="#15837C"
+                        app:boxStrokeColor="@color/org_accent"
                         app:boxCornerRadiusTopStart="12dp"
                         app:boxCornerRadiusTopEnd="12dp"
                         app:boxCornerRadiusBottomStart="12dp"
@@ -409,7 +409,7 @@
                             android:hint="0.00"
                         android:inputType="numberDecimal"
                         android:maxLines="1"
-                            android:textColor="#222222"
+                            android:textColor="@color/org_text_primary"
                             android:textSize="16sp"
                             android:padding="16dp"/>
                 </com.google.android.material.textfield.TextInputLayout>
@@ -420,7 +420,7 @@
                         android:text="Event Type"
                         android:textSize="18sp"
                         android:textStyle="bold"
-                        android:textColor="#15837C"
+                        android:textColor="@color/org_text_primary"
                         android:layout_marginBottom="12dp" />
 
                 <com.google.android.material.textfield.TextInputLayout
@@ -429,7 +429,7 @@
                     android:layout_height="wrap_content"
                         app:boxBackgroundMode="outline"
                     app:boxBackgroundColor="@android:color/white"
-                        app:boxStrokeColor="#15837C"
+                        app:boxStrokeColor="@color/org_accent"
                         app:boxCornerRadiusTopStart="12dp"
                         app:boxCornerRadiusTopEnd="12dp"
                         app:boxCornerRadiusBottomStart="12dp"
@@ -443,7 +443,7 @@
                             android:hint="Select event type"
                         android:inputType="none"
                         android:focusable="false"
-                        android:textColor="#222222"
+                        android:textColor="@color/org_text_primary"
                             android:textSize="16sp"
                             android:padding="16dp"/>
                 </com.google.android.material.textfield.TextInputLayout>
@@ -457,7 +457,7 @@
                 android:layout_marginBottom="12dp"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="2dp"
-                app:cardBackgroundColor="@android:color/white">
+                app:cardBackgroundColor="@color/org_card">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -471,7 +471,7 @@
                         android:text="Registration Date"
                         android:textSize="18sp"
                         android:textStyle="bold"
-                        android:textColor="#15837C"
+                        android:textColor="@color/org_text_primary"
                         android:layout_marginBottom="12dp" />
 
                     <LinearLayout
@@ -492,7 +492,7 @@
                                 android:layout_height="wrap_content"
                                 android:text="Start"
                                 android:textSize="14sp"
-                                android:textColor="#666666"
+                                android:textColor="@color/org_text_secondary"
                                 android:layout_marginBottom="8dp" />
 
                             <com.google.android.material.button.MaterialButton
@@ -501,16 +501,16 @@
                                 android:layout_height="wrap_content"
                                 android:text="Select Date"
                     android:textAllCaps="false"
-                    android:textColor="#222222"
+                    android:textColor="@color/org_text_primary"
                                 android:minHeight="56dp"
                                 app:backgroundTint="#F5F5F5"
                     app:cornerRadius="12dp"
                     app:icon="@android:drawable/ic_menu_today"
-                                app:iconTint="#15837C"
+                                app:iconTint="@color/org_accent"
                                 app:iconGravity="start"
                                 app:iconPadding="8dp"
                                 app:strokeWidth="1dp"
-                                app:strokeColor="#15837C"
+                                app:strokeColor="@color/org_accent"
                                 style="@style/Widget.Material3.Button.OutlinedButton"/>
                         </LinearLayout>
 
@@ -526,7 +526,7 @@
                                 android:layout_height="wrap_content"
                                 android:text="End"
                                 android:textSize="14sp"
-                                android:textColor="#666666"
+                                android:textColor="@color/org_text_secondary"
                                 android:layout_marginBottom="8dp" />
 
                 <com.google.android.material.button.MaterialButton
@@ -535,16 +535,16 @@
                     android:layout_height="wrap_content"
                                 android:text="Select Date"
                                 android:textAllCaps="false"
-                                android:textColor="#222222"
+                                android:textColor="@color/org_text_primary"
                                 android:minHeight="56dp"
                                 app:backgroundTint="#F5F5F5"
                                 app:cornerRadius="12dp"
                                 app:icon="@android:drawable/ic_menu_today"
-                                app:iconTint="#15837C"
+                                app:iconTint="@color/org_accent"
                                 app:iconGravity="start"
                                 app:iconPadding="8dp"
                                 app:strokeWidth="1dp"
-                                app:strokeColor="#15837C"
+                                app:strokeColor="@color/org_accent"
                                 style="@style/Widget.Material3.Button.OutlinedButton"/>
                         </LinearLayout>
                     </LinearLayout>
@@ -555,7 +555,7 @@
                         android:text="Event Date"
                         android:textSize="18sp"
                         android:textStyle="bold"
-                        android:textColor="#15837C"
+                        android:textColor="@color/org_text_primary"
                         android:layout_marginTop="16dp"
                         android:layout_marginBottom="12dp" />
 
@@ -565,16 +565,16 @@
                         android:layout_height="wrap_content"
                         android:text="Select Date"
                     android:textAllCaps="false"
-                    android:textColor="#222222"
+                    android:textColor="@color/org_text_primary"
                         android:minHeight="56dp"
                         app:backgroundTint="#F5F5F5"
                     app:cornerRadius="12dp"
                     app:icon="@android:drawable/ic_menu_today"
-                        app:iconTint="#15837C"
+                        app:iconTint="@color/org_accent"
                         app:iconGravity="start"
                         app:iconPadding="8dp"
                         app:strokeWidth="1dp"
-                        app:strokeColor="#15837C"
+                        app:strokeColor="@color/org_accent"
                         style="@style/Widget.Material3.Button.OutlinedButton"/>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -586,7 +586,7 @@
                 android:layout_marginBottom="12dp"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="2dp"
-                app:cardBackgroundColor="@android:color/white">
+                app:cardBackgroundColor="@color/org_card">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -606,13 +606,13 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:checked="true"
-                            app:buttonTint="#15837C"/>
+                            app:buttonTint="@color/org_accent"/>
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Generate QR Code"
-                            android:textColor="#222222"
+                            android:textColor="@color/org_text_primary"
                             android:textSize="16sp"
                         android:layout_marginStart="8dp"/>
                 </LinearLayout>
@@ -628,13 +628,13 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:checked="false"
-                            app:buttonTint="#15837C" />
+                            app:buttonTint="@color/org_accent" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Require geolocation on join"
-                            android:textColor="#222222"
+                            android:textColor="@color/org_text_primary"
                             android:textSize="16sp"
                         android:layout_marginStart="8dp"/>
                     </LinearLayout>
@@ -654,7 +654,7 @@
                 android:textSize="18sp"
                 android:padding="16dp"
                 app:cornerRadius="16dp"
-                app:backgroundTint="#15837C"
+                app:backgroundTint="@color/org_accent"
                 app:elevation="4dp" />
 
                 <ProgressBar

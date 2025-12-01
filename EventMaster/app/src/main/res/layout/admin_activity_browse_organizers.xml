@@ -2,19 +2,20 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
-    android:background="@color/profile_bg"
+    android:background="@color/admin_bg"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:fontFamily="@font/manrope">
 
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="56dp"
-        android:background="@color/profile_nav"
+        android:background="@color/admin_surface"
         app:title="Browse organizers"
-        app:titleTextColor="@android:color/black"
+        app:titleTextColor="@color/admin_text_primary"
         app:navigationIcon="@drawable/ic_arrow_back"
-        app:navigationIconTint="@android:color/black"/>
+        app:navigationIconTint="@color/admin_text_primary"/>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycler"

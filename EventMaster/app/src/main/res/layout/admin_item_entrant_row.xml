@@ -5,8 +5,8 @@
     android:layout_height="wrap_content"
     android:layout_marginBottom="12dp"
     app:cardCornerRadius="16dp"
-    app:cardElevation="2dp"
-    app:cardBackgroundColor="@color/status_badge_bg"
+    app:cardElevation="8dp"
+    app:cardBackgroundColor="@color/admin_surface"
     android:clickable="true"
     android:focusable="true"
     android:foreground="?attr/selectableItemBackground">
@@ -16,7 +16,8 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:padding="20dp">
+        android:padding="20dp"
+        android:fontFamily="@font/manrope">
 
         <!-- Avatar Icon -->
         <com.google.android.material.card.MaterialCardView
@@ -33,7 +34,7 @@
                 android:layout_height="match_parent"
                 android:src="@drawable/ic_person_outline"
                 android:contentDescription="Profile avatar"
-                app:tint="#9CA3AF"
+                app:tint="@color/admin_text_secondary"
                 android:padding="14dp"
                 android:scaleType="fitCenter" />
         </com.google.android.material.card.MaterialCardView>
@@ -52,7 +53,7 @@
                 android:text="Name: Bingus"
                 android:textSize="16sp"
                 android:textStyle="bold"
-                android:textColor="@color/text_primary_dark"
+                android:textColor="@color/admin_text_primary"
                 android:layout_marginBottom="4dp"/>
 
             <TextView
@@ -61,7 +62,7 @@
                 android:layout_height="wrap_content"
                 android:text="Email: bingus@example.com"
                 android:textSize="14sp"
-                android:textColor="@color/text_secondary_dark"
+                android:textColor="@color/admin_text_secondary"
                 android:layout_marginBottom="2dp"/>
 
             <TextView
@@ -70,7 +71,7 @@
                 android:layout_height="wrap_content"
                 android:text="Phone: +1 (780) 555-1234"
                 android:textSize="14sp"
-                android:textColor="@color/text_secondary_dark"/>
+                android:textColor="@color/admin_text_secondary"/>
         </LinearLayout>
 
         <!-- Remove Button -->

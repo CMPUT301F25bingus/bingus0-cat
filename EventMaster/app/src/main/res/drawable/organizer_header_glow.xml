@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:type="radial"
+                android:gradientRadius="320dp"
+                android:centerX="0.3"
+                android:centerY="0.2"
+                android:startColor="#331EC8C3"
+                android:centerColor="#1A1EC8C3"
+                android:endColor="@android:color/transparent" />
+        </shape>
+    </item>
+    <item android:drawable="@drawable/organizer_bg_gradient" />
+</layer-list>

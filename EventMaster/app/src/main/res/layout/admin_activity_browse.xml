@@ -3,13 +3,14 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/profile_bg"
+    android:background="@color/admin_bg"
     android:fillViewport="true">
 
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:padding="24dp">
+        android:padding="24dp"
+        android:animateLayoutChanges="true">
 
         <!-- White Card Container -->
         <com.google.android.material.card.MaterialCardView
@@ -17,14 +18,16 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             app:cardCornerRadius="24dp"
-            app:cardElevation="8dp"
-            app:cardBackgroundColor="@color/surface_white">
+            app:cardElevation="12dp"
+            app:cardUseCompatPadding="true"
+            app:cardBackgroundColor="@color/admin_surface">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="32dp">
+                android:padding="32dp"
+                android:fontFamily="@font/manrope">
 
                 <!-- Header Section -->
                 <TextView
@@ -33,7 +36,7 @@
                     android:text="Admin Dashboard"
                     android:textSize="24sp"
                     android:textStyle="bold"
-                    android:textColor="@color/text_primary_dark"
+                    android:textColor="@color/admin_text_primary"
                     android:layout_gravity="center_horizontal"
                     android:layout_marginBottom="8dp" />
 
@@ -42,9 +45,9 @@
                     android:layout_height="wrap_content"
                     android:text="Manage your platform"
                     android:textSize="16sp"
-                    android:textColor="@color/text_secondary_dark"
+                    android:textColor="@color/admin_text_secondary"
                     android:layout_gravity="center_horizontal"
-                    android:layout_marginBottom="32dp" />
+                    android:layout_marginBottom="24dp" />
 
                 <!-- Category Card 1: Manage Events -->
                 <com.google.android.material.card.MaterialCardView
@@ -52,9 +55,9 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="2dp"
-                    app:cardBackgroundColor="@color/status_badge_bg"
+                    app:cardCornerRadius="18dp"
+                    app:cardElevation="8dp"
+                    app:cardBackgroundColor="@color/admin_surface"
                     android:clickable="true"
                     android:focusable="true"
                     android:foreground="?attr/selectableItemBackground">
@@ -72,7 +75,7 @@
                             android:layout_height="40dp"
                             android:src="@drawable/ic_calendar_outline"
                             android:contentDescription="Events icon"
-                            app:tint="@color/text_primary_dark"
+                            app:tint="@color/admin_text_primary"
                             android:layout_marginEnd="16dp" />
 
                         <!-- Text Content -->
@@ -88,7 +91,7 @@
                                 android:text="Manage Events"
                                 android:textSize="18sp"
                                 android:textStyle="bold"
-                                android:textColor="@color/text_primary_dark"
+                                android:textColor="@color/admin_text_primary"
                                 android:layout_marginBottom="4dp" />
 
                             <TextView
@@ -96,7 +99,7 @@
                                 android:layout_height="wrap_content"
                                 android:text="Browse, view, and remove events and their images"
                                 android:textSize="14sp"
-                                android:textColor="@color/text_secondary_dark" />
+                                android:textColor="@color/admin_text_secondary" />
                         </LinearLayout>
 
                         <!-- Count Badge -->
@@ -107,11 +110,14 @@
                             android:text="24"
                             android:textSize="18sp"
                             android:textStyle="bold"
-                            android:textColor="@color/color_prof_primary"
+                            android:textColor="@color/admin_accent"
+                            android:background="@drawable/bg_count_badge"
                             android:layout_marginStart="12dp"
-                            android:minWidth="32dp"
+                            android:minWidth="42dp"
+                            android:paddingHorizontal="10dp"
+                            android:paddingVertical="6dp"
                             android:gravity="center" />
-                    </LinearLayout>
+                </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
                 <!-- Category Card 2: Users & Organizers -->
@@ -120,9 +126,9 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="2dp"
-                    app:cardBackgroundColor="@color/status_badge_bg"
+                    app:cardCornerRadius="18dp"
+                    app:cardElevation="8dp"
+                    app:cardBackgroundColor="@color/admin_surface"
                     android:clickable="true"
                     android:focusable="true"
                     android:foreground="?attr/selectableItemBackground">
@@ -140,7 +146,7 @@
                             android:layout_height="40dp"
                             android:src="@drawable/ic_people_outline"
                             android:contentDescription="Users icon"
-                            app:tint="@color/text_primary_dark"
+                            app:tint="@color/admin_text_primary"
                             android:layout_marginEnd="16dp" />
 
                         <!-- Text Content -->
@@ -156,7 +162,7 @@
                                 android:text="Users &amp; Organizers"
                                 android:textSize="18sp"
                                 android:textStyle="bold"
-                                android:textColor="@color/text_primary_dark"
+                                android:textColor="@color/admin_text_primary"
                                 android:layout_marginBottom="4dp" />
 
                             <TextView
@@ -164,7 +170,7 @@
                                 android:layout_height="wrap_content"
                                 android:text="Browse profiles, filter by role, and remove users"
                                 android:textSize="14sp"
-                                android:textColor="@color/text_secondary_dark" />
+                                android:textColor="@color/admin_text_secondary" />
                         </LinearLayout>
 
                         <!-- Count Badge -->
@@ -175,9 +181,12 @@
                             android:text="1.2K"
                             android:textSize="18sp"
                             android:textStyle="bold"
-                            android:textColor="@color/color_prof_primary"
+                            android:textColor="@color/admin_accent"
+                            android:background="@drawable/bg_count_badge"
                             android:layout_marginStart="12dp"
-                            android:minWidth="40dp"
+                            android:minWidth="42dp"
+                            android:paddingHorizontal="10dp"
+                            android:paddingVertical="6dp"
                             android:gravity="center" />
     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
@@ -187,9 +196,9 @@
                     android:id="@+id/cardReviewApplications"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="2dp"
-                    app:cardBackgroundColor="@color/status_badge_bg"
+                    app:cardCornerRadius="18dp"
+                    app:cardElevation="8dp"
+                    app:cardBackgroundColor="@color/admin_surface"
                     android:clickable="true"
                     android:focusable="true"
                     android:foreground="?attr/selectableItemBackground">
@@ -220,18 +229,18 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Review Applications"
-                                android:textSize="18sp"
-                                android:textStyle="bold"
-                                android:textColor="@color/text_primary_dark"
-                                android:layout_marginBottom="4dp" />
+                            android:text="Review Applications"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/admin_text_primary"
+                            android:layout_marginBottom="4dp" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Review and approve organizer applications"
-                                android:textSize="14sp"
-                                android:textColor="@color/text_secondary_dark" />
+                            android:text="Review and approve organizer applications"
+                            android:textSize="14sp"
+                            android:textColor="@color/admin_text_secondary" />
 </LinearLayout>
 
                         <!-- Count Badge -->
@@ -242,9 +251,12 @@
                             android:text="0"
                             android:textSize="18sp"
                             android:textStyle="bold"
-                            android:textColor="@color/color_prof_primary"
+                            android:textColor="@color/admin_accent"
+                            android:background="@drawable/bg_count_badge"
                             android:layout_marginStart="12dp"
-                            android:minWidth="40dp"
+                            android:minWidth="42dp"
+                            android:paddingHorizontal="10dp"
+                            android:paddingVertical="6dp"
                             android:gravity="center" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>

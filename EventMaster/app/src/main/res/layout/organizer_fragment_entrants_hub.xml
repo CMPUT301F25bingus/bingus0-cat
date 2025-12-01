@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#5FB3AD">
+    android:background="@drawable/organizer_bg_gradient">
 
     <!-- MAIN CONTENT -->
     <ScrollView
@@ -20,7 +20,7 @@
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="#B8D9D8"
+                android:background="@color/org_card"
                 android:padding="16dp"
                 android:elevation="4dp">
 
@@ -41,7 +41,7 @@
                     android:text="Manage Entrants"
                     android:textSize="20sp"
                     android:textStyle="bold"
-                    android:textColor="#000"
+                    android:textColor="@color/org_text_primary"
                     android:layout_marginStart="16dp"
                     app:layout_constraintStart_toEndOf="@id/back_button"
                     app:layout_constraintEnd_toEndOf="parent"
@@ -63,7 +63,7 @@
                     android:layout_height="wrap_content"
                     android:text="View and manage all participant groups."
                     android:textSize="14sp"
-                    android:textColor="@android:color/white"
+                    android:textColor="@color/org_text_secondary"
                     android:layout_marginTop="8dp"
                     android:layout_marginBottom="20dp" />
 
@@ -75,7 +75,7 @@
                     android:layout_marginBottom="16dp"
                     app:cardCornerRadius="16dp"
                     app:cardElevation="2dp"
-                    app:cardBackgroundColor="#0F8A86">
+                    app:cardBackgroundColor="@color/org_card">
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -89,7 +89,7 @@
                             android:layout_height="wrap_content"
                             android:text="Total Participants"
                             android:textSize="16sp"
-                            android:textColor="@android:color/white"
+                            android:textColor="@color/org_text_secondary"
                             android:layout_marginBottom="8dp" />
 
                         <LinearLayout
@@ -105,14 +105,14 @@
                                 android:text="0"
                                 android:textSize="32sp"
                                 android:textStyle="bold"
-                                android:textColor="@android:color/white" />
+                                android:textColor="@color/org_text_primary" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text=" people"
                                 android:textSize="16sp"
-                                android:textColor="@android:color/white"
+                                android:textColor="@color/org_text_secondary"
                                 android:layout_marginStart="4dp" />
                         </LinearLayout>
                     </LinearLayout>
@@ -126,7 +126,7 @@
                     android:layout_marginBottom="12dp"
                     app:cardCornerRadius="16dp"
                     app:cardElevation="2dp"
-                    app:cardBackgroundColor="#D8F2EF"
+                    app:cardBackgroundColor="@color/org_card"
                     android:clickable="true"
                     android:focusable="true">
 
@@ -144,7 +144,7 @@
                             android:contentDescription="Waiting List"
                             android:background="@drawable/circle_shape"
                             android:padding="10dp"
-                            app:tint="#0F8A86" />
+                            app:tint="@color/org_accent" />
 
                         <LinearLayout
                             android:layout_width="0dp"
@@ -159,7 +159,7 @@
                                 android:text="Waiting List"
                                 android:textSize="16sp"
                                 android:textStyle="bold"
-                                android:textColor="#000"
+                                android:textColor="@color/org_text_primary"
                                 android:layout_marginBottom="4dp" />
 
                             <TextView
@@ -167,33 +167,19 @@
                                 android:layout_height="wrap_content"
                                 android:text="People waiting to be selected for the event."
                                 android:textSize="13sp"
-                                android:textColor="#666666" />
+                                android:textColor="@color/org_text_secondary" />
                         </LinearLayout>
 
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:gravity="center_vertical"
-                            android:layout_marginEnd="8dp">
-
-                            <TextView
-                                android:id="@+id/waitingListCount"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="0"
-                                android:textSize="18sp"
-                                android:textStyle="bold"
-                                android:textColor="#000" />
-
-                            <ImageView
-                                android:layout_width="24dp"
-                                android:layout_height="24dp"
-                                android:src="@android:drawable/ic_menu_more"
-                                android:contentDescription="Arrow"
-                                android:layout_marginStart="8dp"
-                                app:tint="#666666" />
-                        </LinearLayout>
+                        <TextView
+                            android:id="@+id/waitingListCount"
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:background="@drawable/organizer_count_badge"
+                            android:gravity="center"
+                            android:text="0"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:textColor="@android:color/white" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
@@ -205,7 +191,7 @@
                     android:layout_marginBottom="12dp"
                     app:cardCornerRadius="16dp"
                     app:cardElevation="2dp"
-                    app:cardBackgroundColor="#D8F2EF"
+                    app:cardBackgroundColor="@color/org_card"
                     android:clickable="true"
                     android:focusable="true">
 
@@ -223,7 +209,7 @@
                             android:contentDescription="Chosen Entrants"
                             android:background="@drawable/circle_shape"
                             android:padding="10dp"
-                            app:tint="#0F8A86" />
+                            app:tint="@color/org_accent" />
 
                         <LinearLayout
                             android:layout_width="0dp"
@@ -238,7 +224,7 @@
                                 android:text="Chosen Entrants"
                                 android:textSize="16sp"
                                 android:textStyle="bold"
-                                android:textColor="#000"
+                                android:textColor="@color/org_text_primary"
                                 android:layout_marginBottom="4dp" />
 
                             <TextView
@@ -246,33 +232,19 @@
                                 android:layout_height="wrap_content"
                                 android:text="Selected participants pending confirmation."
                                 android:textSize="13sp"
-                                android:textColor="#666666" />
+                                android:textColor="@color/org_text_secondary" />
                         </LinearLayout>
 
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:gravity="center_vertical"
-                            android:layout_marginEnd="8dp">
-
-                            <TextView
-                                android:id="@+id/chosenListCount"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="0"
-                                android:textSize="18sp"
-                                android:textStyle="bold"
-                                android:textColor="#000" />
-
-                            <ImageView
-                                android:layout_width="24dp"
-                                android:layout_height="24dp"
-                                android:src="@android:drawable/ic_menu_more"
-                                android:contentDescription="Arrow"
-                                android:layout_marginStart="8dp"
-                                app:tint="#666666" />
-                        </LinearLayout>
+                        <TextView
+                            android:id="@+id/chosenListCount"
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:background="@drawable/organizer_count_badge"
+                            android:gravity="center"
+                            android:text="0"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:textColor="@android:color/white" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
@@ -284,7 +256,7 @@
                     android:layout_marginBottom="12dp"
                     app:cardCornerRadius="16dp"
                     app:cardElevation="2dp"
-                    app:cardBackgroundColor="#D8F2EF"
+                    app:cardBackgroundColor="@color/org_card"
                     android:clickable="true"
                     android:focusable="true">
 
@@ -302,7 +274,7 @@
                             android:contentDescription="Enrolled Entrants"
                             android:background="@drawable/circle_shape"
                             android:padding="10dp"
-                            app:tint="#0F8A86" />
+                            app:tint="@color/org_accent" />
 
                         <LinearLayout
                             android:layout_width="0dp"
@@ -317,7 +289,7 @@
                                 android:text="Enrolled Entrants"
                                 android:textSize="16sp"
                                 android:textStyle="bold"
-                                android:textColor="#000"
+                                android:textColor="@color/org_text_primary"
                                 android:layout_marginBottom="4dp" />
 
                             <TextView
@@ -325,33 +297,19 @@
                                 android:layout_height="wrap_content"
                                 android:text="Confirmed participants attending the event."
                                 android:textSize="13sp"
-                                android:textColor="#666666" />
+                                android:textColor="@color/org_text_secondary" />
                         </LinearLayout>
 
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:gravity="center_vertical"
-                            android:layout_marginEnd="8dp">
-
-                            <TextView
-                                android:id="@+id/enrolledCount"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="0"
-                                android:textSize="18sp"
-                                android:textStyle="bold"
-                                android:textColor="#000" />
-
-                            <ImageView
-                                android:layout_width="24dp"
-                                android:layout_height="24dp"
-                                android:src="@android:drawable/ic_menu_more"
-                                android:contentDescription="Arrow"
-                                android:layout_marginStart="8dp"
-                                app:tint="#666666" />
-                        </LinearLayout>
+                        <TextView
+                            android:id="@+id/enrolledCount"
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:background="@drawable/organizer_count_badge"
+                            android:gravity="center"
+                            android:text="0"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:textColor="@android:color/white" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
@@ -362,7 +320,7 @@
                     android:layout_height="wrap_content"
                     app:cardCornerRadius="16dp"
                     app:cardElevation="2dp"
-                    app:cardBackgroundColor="#D8F2EF"
+                    app:cardBackgroundColor="@color/org_card"
                     android:clickable="true"
                     android:focusable="true">
 
@@ -380,7 +338,7 @@
                             android:contentDescription="Cancelled Entrants"
                             android:background="@drawable/circle_shape"
                             android:padding="10dp"
-                            app:tint="#0F8A86" />
+                            app:tint="@color/org_accent" />
 
                         <LinearLayout
                             android:layout_width="0dp"
@@ -395,7 +353,7 @@
                                 android:text="Cancelled Entrants"
                                 android:textSize="16sp"
                                 android:textStyle="bold"
-                                android:textColor="#000"
+                                android:textColor="@color/org_text_primary"
                                 android:layout_marginBottom="4dp" />
 
                             <TextView
@@ -403,33 +361,19 @@
                                 android:layout_height="wrap_content"
                                 android:text="Participants who cancelled their registration."
                                 android:textSize="13sp"
-                                android:textColor="#666666" />
+                                android:textColor="@color/org_text_secondary" />
                         </LinearLayout>
 
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:gravity="center_vertical"
-                            android:layout_marginEnd="8dp">
-
-                            <TextView
-                                android:id="@+id/cancelledCount"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="0"
-                                android:textSize="18sp"
-                                android:textStyle="bold"
-                                android:textColor="#000" />
-
-                            <ImageView
-                                android:layout_width="24dp"
-                                android:layout_height="24dp"
-                                android:src="@android:drawable/ic_menu_more"
-                                android:contentDescription="Arrow"
-                                android:layout_marginStart="8dp"
-                                app:tint="#666666" />
-                        </LinearLayout>
+                        <TextView
+                            android:id="@+id/cancelledCount"
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:background="@drawable/organizer_count_badge"
+                            android:gravity="center"
+                            android:text="0"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:textColor="@android:color/white" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 

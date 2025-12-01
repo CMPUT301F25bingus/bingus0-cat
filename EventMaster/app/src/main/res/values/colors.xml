@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="profile_bg">#67B7AE</color>
-    <color name="profile_nav">#5AAEA5</color>
+    <color name="profile_bg">#0F1F2F</color>
+    <color name="profile_nav">#132A3D</color>
     <color name="surface_white">#FFFFFF</color>
-    <color name="text_primary_dark">#111827</color>
-    <color name="text_secondary_dark">#6B7280</color>
+    <color name="text_primary_dark">#0E1A28</color>
+    <color name="text_secondary_dark">#4C6175</color>
     <color name="btn_teal">#2F7D75</color>
     <color name="btn_teal_pressed">#296D66</color>
     <color name="btn_danger">#EF6A64</color>
@@ -13,7 +13,7 @@
     <color name="btn_neutral_pressed">#4B5563</color>
     <color name="profile_button">#2F7C7B</color>
     <color name="profile_button_pressed">#256B6A</color>
-    <color name="color_prof_primary">#5AB4AC</color>
+    <color name="color_prof_primary">#1EC8C3</color>
     <color name="color_prof_danger">#E24D4D</color>
     <color name="color_prof_danger_pressed">#C93D3D</color>
     <color name="black">#FF000000</color>
@@ -28,5 +28,34 @@
     <color name="stroke">#1A000000</color>       <!-- subtle strokes -->
     <color name="shadow">#33000000</color>
     <color name="backgroundColor">#64C3BF</color>
-    <color name="status_badge_bg">#F2F6F6</color>
+    <color name="status_badge_bg">#F4EEDD</color>
+    <!-- Entrant refreshed palette -->
+    <color name="entrant_bg">#0F1F2F</color>
+    <color name="entrant_surface">#F4EEDD</color>
+    <color name="entrant_accent">#1EC8C3</color>
+    <color name="entrant_text_primary">#0E1A28</color>
+    <color name="entrant_text_secondary">#4C6175</color>
+    <color name="entrant_glow">#590C1A2C</color>
+    <color name="entrant_outline">#220C1A2C</color>
+    <color name="entrant_danger">#E24D4D</color>
+
+    <!-- Organizer refresh palette -->
+    <color name="org_bg_deep">#0C1928</color>
+    <color name="org_bg">#0F1F2F</color>
+    <color name="org_card">#F4EEDD</color>
+    <color name="org_card_tint">#F8F3E6</color>
+    <color name="org_accent">#1EC8C3</color>
+    <color name="org_text_primary">#0E1A28</color>
+    <color name="org_text_secondary">#4C6175</color>
+    <color name="org_muted">#6E8197</color>
+    <color name="org_shadow">#590C1A2C</color>
+
+    <!-- Admin palette -->
+    <color name="admin_bg">#0F1F2F</color>
+    <color name="admin_surface">#F4EEDD</color>
+    <color name="admin_accent">#1EC8C3</color>
+    <color name="admin_text_primary">#0E1A28</color>
+    <color name="admin_text_secondary">#4C6175</color>
+    <color name="admin_shadow">#590C1A2C</color>
+    <color name="admin_danger">#E24D4D</color>
 </resources>
