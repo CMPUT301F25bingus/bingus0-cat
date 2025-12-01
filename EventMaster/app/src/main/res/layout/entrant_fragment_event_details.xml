@@ -86,7 +86,9 @@
                             android:layout_weight="1"
                             android:text="Event Name"
                             android:textSize="24sp"
-                            android:textColor="#000000" />
+                            android:textColor="#000000"
+                            android:maxLines="2"
+                            android:ellipsize="end" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btn_show_qr"
