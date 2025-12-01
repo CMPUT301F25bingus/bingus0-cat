@@ -6,6 +6,7 @@
     android:layout_marginBottom="12dp"
     app:cardCornerRadius="12dp"
     app:cardElevation="2dp"
+    app:cardBackgroundColor="@color/status_badge_bg"
     android:clickable="true"
     android:focusable="true"
     app:rippleColor="@color/teal_dark">

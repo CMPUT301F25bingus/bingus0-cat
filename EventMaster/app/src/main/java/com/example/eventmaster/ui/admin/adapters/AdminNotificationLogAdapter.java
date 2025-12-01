@@ -14,19 +14,26 @@ import com.example.eventmaster.utils.TimeUtils;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * RecyclerView adapter for displaying notifications in admin notification log.
  * Shows detailed information including recipient, sender, event, type, and timestamp.
+ * Uses resolved names for better readability.
  */
 public class AdminNotificationLogAdapter extends RecyclerView.Adapter<AdminNotificationLogAdapter.NotificationLogViewHolder> {
 
     private List<Notification> notifications;
+    private Map<String, String> userNameMap;  // userId/deviceId -> display name
+    private Map<String, String> eventNameMap; // eventId -> event name
 
     public AdminNotificationLogAdapter() {
         this.notifications = new ArrayList<>();
+        this.userNameMap = new HashMap<>();
+        this.eventNameMap = new HashMap<>();
     }
 
     /**
@@ -36,6 +43,22 @@ public class AdminNotificationLogAdapter extends RecyclerView.Adapter<AdminNotif
      */
     public void setNotifications(List<Notification> newNotifications) {
         this.notifications = newNotifications != null ? newNotifications : new ArrayList<>();
+        notifyDataSetChanged();
+    }
+
+    /**
+     * Sets the resolved user names map (userId/deviceId -> display name).
+     */
+    public void setUserNameMap(Map<String, String> userNameMap) {
+        this.userNameMap = userNameMap != null ? userNameMap : new HashMap<>();
+        notifyDataSetChanged();
+    }
+
+    /**
+     * Sets the resolved event names map (eventId -> event name).
+     */
+    public void setEventNameMap(Map<String, String> eventNameMap) {
+        this.eventNameMap = eventNameMap != null ? eventNameMap : new HashMap<>();
         notifyDataSetChanged();
     }
 
@@ -50,7 +73,7 @@ public class AdminNotificationLogAdapter extends RecyclerView.Adapter<AdminNotif
     @Override
     public void onBindViewHolder(@NonNull NotificationLogViewHolder holder, int position) {
         Notification notification = notifications.get(position);
-        holder.bind(notification);
+        holder.bind(notification, userNameMap, eventNameMap);
     }
 
     @Override
@@ -84,7 +107,7 @@ public class AdminNotificationLogAdapter extends RecyclerView.Adapter<AdminNotif
             readStatusText = itemView.findViewById(R.id.notification_read_status);
         }
 
-        public void bind(Notification notification) {
+        public void bind(Notification notification, Map<String, String> userNameMap, Map<String, String> eventNameMap) {
             // Type
             String typeStr = notification.getType() != null ? 
                     notification.getType().name() : "GENERAL";
@@ -94,20 +117,44 @@ public class AdminNotificationLogAdapter extends RecyclerView.Adapter<AdminNotif
             titleText.setText(notification.getTitle() != null ? notification.getTitle() : "No title");
             messageText.setText(notification.getMessage() != null ? notification.getMessage() : "No message");
 
-            // Recipient
-            String recipient = notification.getRecipientUserId() != null ? 
-                    notification.getRecipientUserId() : "Unknown";
-            recipientText.setText("To: " + recipient);
+            // Recipient - use resolved name or fallback to ID
+            String recipientId = notification.getRecipientUserId();
+            String recipientDisplay;
+            if (recipientId == null || recipientId.isEmpty()) {
+                recipientDisplay = "Unknown";
+            } else if (userNameMap.containsKey(recipientId)) {
+                String recipientName = userNameMap.get(recipientId);
+                recipientDisplay = recipientName != null ? recipientName : recipientId;
+            } else {
+                recipientDisplay = recipientId;
+            }
+            recipientText.setText("To: " + recipientDisplay);
 
-            // Sender
-            String sender = notification.getSenderUserId() != null ? 
-                    notification.getSenderUserId() : "system";
-            senderText.setText("From: " + sender);
+            // Sender - use resolved name or fallback to ID
+            String senderId = notification.getSenderUserId();
+            String senderDisplay;
+            if (senderId == null || "system".equals(senderId)) {
+                senderDisplay = "System";
+            } else if (userNameMap.containsKey(senderId)) {
+                String senderName = userNameMap.get(senderId);
+                senderDisplay = senderName != null ? senderName : senderId;
+            } else {
+                senderDisplay = senderId;
+            }
+            senderText.setText("From: " + senderDisplay);
 
-            // Event ID
-            String eventId = notification.getEventId() != null ? 
-                    notification.getEventId() : "N/A";
-            eventIdText.setText("Event: " + eventId);
+            // Event - use resolved name or fallback to ID
+            String eventId = notification.getEventId();
+            String eventDisplay;
+            if (eventId == null || eventId.isEmpty()) {
+                eventDisplay = "N/A";
+            } else if (eventNameMap.containsKey(eventId)) {
+                String eventName = eventNameMap.get(eventId);
+                eventDisplay = eventName != null ? eventName : eventId;
+            } else {
+                eventDisplay = eventId;
+            }
+            eventIdText.setText("Event: " + eventDisplay);
 
             // Timestamp
             if (notification.getSentAt() != null) {

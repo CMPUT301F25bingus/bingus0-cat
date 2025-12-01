@@ -31,7 +31,9 @@
             android:layout_gravity="top"
             app:cardCornerRadius="24dp"
             app:cardElevation="8dp"
-            app:cardBackgroundColor="@color/surface_white">
+            app:cardBackgroundColor="@color/surface_white"
+            app:strokeColor="@color/teal_dark"
+            app:strokeWidth="2dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
