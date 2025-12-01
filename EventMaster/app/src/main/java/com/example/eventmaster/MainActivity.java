@@ -14,6 +14,7 @@ import com.example.eventmaster.ui.entrant.activities.EntrantWelcomeActivity;
 import com.example.eventmaster.utils.AuthHelper;
 import com.example.eventmaster.utils.CredentialStorageHelper;
 import com.example.eventmaster.utils.DeviceUtils;
+import com.example.eventmaster.utils.EntrantSessionPrefs;
 import com.google.android.material.button.MaterialButton;
 import com.google.firebase.auth.FirebaseAuth;
 
@@ -32,6 +33,21 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        // 1) If the last session on this device was entrant, try to auto-route via deviceId
+        if (EntrantSessionPrefs.wasLastEntrantActive(this)) {
+            tryAutoRouteEntrantAndFallback();
+            return;
+        }
+
+        // 2) Otherwise, use the existing auth + role routing logic
+        startNormalRouting();
+    }
+
+    /**
+     * Original startup logic, extracted from onCreate for reuse.
+     * Checks Firebase auth and saved organizer/admin credentials.
+     */
+    private void startNormalRouting() {
         // First, check if user is already signed in
         FirebaseAuth auth = FirebaseAuth.getInstance();
         if (auth.getCurrentUser() != null) {
@@ -52,6 +68,44 @@ public class MainActivity extends AppCompatActivity {
             // No user signed in, check for saved credentials for auto-login
             attemptAutoLogin();
         }
+    }
+
+    /**
+     * Attempts to route directly to the entrant portal using deviceId.
+     * If the entrant profile is missing or incomplete, falls back to normal routing.
+     */
+    private void tryAutoRouteEntrantAndFallback() {
+        String deviceId = DeviceUtils.getDeviceId(this);
+        ProfileRepositoryFs profileRepo = new ProfileRepositoryFs();
+
+        profileRepo.getEntrantByDeviceIdDoc(deviceId).addOnCompleteListener(task -> {
+            if (!task.isSuccessful()) {
+                // Failed to load entrant profile → fallback
+                startNormalRouting();
+                return;
+            }
+
+            Profile profile = task.getResult();
+            if (profile == null) {
+                // No entrant profile yet → fallback (user will see role selection)
+                startNormalRouting();
+                return;
+            }
+
+            boolean hasName = profile.getName() != null && !profile.getName().isEmpty();
+            boolean hasEmail = profile.getEmail() != null && !profile.getEmail().isEmpty();
+
+            if (hasName && hasEmail) {
+                // Entrant profile is complete → go straight to entrant welcome / portal
+                routeEntrant(profile);
+            } else {
+                // Incomplete entrant profile → send them to profile creation
+                Intent intent = new Intent(MainActivity.this, CreateProfileActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                startActivity(intent);
+                finish();
+            }
+        });
     }
 
     /**
