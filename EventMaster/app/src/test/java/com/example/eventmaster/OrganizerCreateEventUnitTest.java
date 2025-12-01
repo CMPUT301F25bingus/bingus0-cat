@@ -3,12 +3,15 @@ package com.example.eventmaster;
 import static org.junit.Assert.*;
 import android.graphics.Bitmap;
 
-import com.example.eventmaster.ui.organizer.OrganizerCreateEventActivity;
+import com.example.eventmaster.ui.organizer.activities.OrganizerCreateEventActivity;
+import com.example.eventmaster.utils.QRCodeGenerator;
+import com.google.android.material.checkbox.MaterialCheckBox;
 import com.google.firebase.Timestamp;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 
@@ -20,7 +23,10 @@ public class OrganizerCreateEventUnitTest {
 
     @Before
     public void setUp() {
-        activity = new OrganizerCreateEventActivity();
+        activity = Robolectric.buildActivity(OrganizerCreateEventActivity.class)
+                .create()
+                .start()
+                .get();
     }
 
     @Test
@@ -37,16 +43,33 @@ public class OrganizerCreateEventUnitTest {
 
     @Test
     public void testCreateQrBitmap_notNull() {
-        Bitmap qr = activity.createQrBitmap("eventmaster://event/123", 400);
-        assertNotNull(qr);
-        assertEquals(400, qr.getWidth());
-        assertEquals(400, qr.getHeight());
+        Bitmap qr = QRCodeGenerator.generateQRCode("eventmaster://event/123");
+        assertNotNull("QR bitmap should not be null", qr);
+        assertTrue(qr.getWidth() > 0);
+        assertTrue(qr.getHeight() > 0);
     }
 
     @Test
-    public void testBitmapToPng_notEmpty() {
-        Bitmap bmp = Bitmap.createBitmap(10, 10, Bitmap.Config.ARGB_8888);
-        byte[] bytes = activity.bitmapToPng(bmp);
-        assertTrue(bytes.length > 0);
+    public void testGenerateQRCode_bitmapSquare() {
+        Bitmap qr = QRCodeGenerator.generateQRCode("test");
+        assertEquals("QR should be square", qr.getWidth(), qr.getHeight());
+    }
+
+    @Test
+    public void testGeolocationCheckbox_toggle() {
+        MaterialCheckBox cb = activity.findViewById(R.id.cbRequireLocation);
+
+        assertNotNull("Geolocation checkbox should exist", cb);
+
+        // Default should be false
+        assertFalse(cb.isChecked());
+
+        // Toggle ON
+        cb.setChecked(true);
+        assertTrue(cb.isChecked());
+
+        // Toggle OFF
+        cb.setChecked(false);
+        assertFalse(cb.isChecked());
     }
 }

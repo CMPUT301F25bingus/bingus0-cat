@@ -84,4 +84,20 @@ public class PosterRepositoryFs implements PosterRepository {
             return Tasks.forException(e);
         }
     }
+
+    /**
+     * Deletes the poster image from Firebase Storage.
+     *
+     * @param eventId Firestore event identifier used for the storage path
+     * @return {@link Task} that completes when deletion is successful
+     */
+    @Override
+    public Task<Void> delete(String eventId) {
+        try {
+            StorageReference ref = root.child("events/" + eventId + "/poster.jpg");
+            return ref.delete();
+        } catch (Exception e) {
+            return Tasks.forException(e);
+        }
+    }
 }

@@ -68,9 +68,17 @@ public class ProfileRepositoryFs {
         Profile p = doc.toObject(Profile.class);
         if (p == null) p = new Profile();
 
-        // Ensure ID is set
+        // Ensure ID is set - check both userId and userID (case variations)
         if (p.getUserId() == null || p.getUserId().isEmpty()) {
-            p.setUserId(doc.getId());
+            String userId = doc.getString("userId");
+            if (userId == null || userId.isEmpty()) {
+                userId = doc.getString("userID"); // Try uppercase ID variant
+            }
+            if (userId != null && !userId.isEmpty()) {
+                p.setUserId(userId);
+            } else {
+                p.setUserId(doc.getId()); // Fallback to document ID
+            }
         }
 
         // Apply null-safe defaults using raw fields
@@ -88,6 +96,12 @@ public class ProfileRepositoryFs {
             if (legacyPhone != null && !legacyPhone.isEmpty()) {
                 p.setPhoneNumber(legacyPhone);
             }
+        }
+
+        // Ensure profileImageUrl is loaded (Firestore toObject should handle it, but be explicit for safety)
+        String imageUrl = doc.getString("profileImageUrl");
+        if (imageUrl != null && !imageUrl.isEmpty()) {
+            p.setProfileImageUrl(imageUrl);
         }
 
         return p;
@@ -124,6 +138,38 @@ public class ProfileRepositoryFs {
             if (v != null) fields.put("phoneNumber", v);
         }
         return db.collection(COLL).document(userId).set(fields);
+    }
+
+    // ---------- Entrant helpers (deviceId-based profiles) ----------
+
+    /**
+     * For entrants: profile doc ID = deviceId.
+     * Creates or overwrites the entrant profile for this device.
+     */
+    public Task<Void> upsertEntrantByDeviceId(@NonNull Profile p) {
+        String deviceId = p.getDeviceId();
+        if (deviceId == null || deviceId.isEmpty()) {
+            return Tasks.forException(new IllegalArgumentException("deviceId is required for entrants"));
+        }
+        Map<String, Object> data = toMap(p, /*includeId*/ false);
+        return db.collection(COLL).document(deviceId).set(data);
+    }
+
+    /**
+     * Get entrant profile by deviceId, using deviceId as the document ID.
+     * Returns null if the profile does not exist yet.
+     */
+    public Task<Profile> getEntrantByDeviceIdDoc(@NonNull String deviceId) {
+        return db.collection(COLL).document(deviceId)
+                .get()
+                .continueWith(task -> {
+                    if (!task.isSuccessful()) throw task.getException();
+                    DocumentSnapshot doc = task.getResult();
+                    if (doc == null || !doc.exists()) {
+                        return null;
+                    }
+                    return fromDoc(doc);
+                });
     }
 
     /** Partial update (merge). */
@@ -166,10 +212,13 @@ public class ProfileRepositoryFs {
         return db.collection(COLL).document(userId)
                 .get()
                 .continueWith(task -> {
-                    if (!task.isSuccessful()) throw task.getException();
+                    if (!task.isSuccessful()) {
+                        Exception e = task.getException();
+                        throw new IllegalStateException("Failed to get profile for userId: " + userId + ", Error: " + (e != null ? e.getMessage() : "unknown"));
+                    }
                     DocumentSnapshot doc = task.getResult();
                     if (doc == null || !doc.exists()) {
-                        throw new IllegalStateException("Profile not found: " + userId);
+                        throw new IllegalStateException("Profile not found for userId: " + userId + ". Document ID must exactly match the UID from Firebase Authentication.");
                     }
                     return fromDoc(doc);
                 });
@@ -192,8 +241,54 @@ public class ProfileRepositoryFs {
                 });
     }
 
+    /** Get profile by device ID (for entrants to find existing profile on same device). 
+     * Returns null if not found (use addOnCompleteListener and check result). */
+    public Task<Profile> getByDeviceId(@NonNull String deviceId) {
+        return db.collection(COLL)
+                .whereEqualTo("deviceId", deviceId)
+                .whereEqualTo("role", "entrant")
+                .get()
+                .continueWith(task -> {
+                    if (!task.isSuccessful()) throw task.getException();
+                    QuerySnapshot snap = task.getResult();
+                    if (snap != null && !snap.isEmpty()) {
+                        // Return the first matching profile
+                        for (DocumentSnapshot doc : snap.getDocuments()) {
+                            Profile p = fromDoc(doc);
+                            if (p.getActive() && !p.getBanned()) {
+                                return p;
+                            }
+                        }
+                    }
+                    // Return null if not found (this is normal for first-time users)
+                    return null;
+                });
+    }
+
     public Task<List<Profile>> getEntrants() { return getByRole("entrant"); }
     public Task<List<Profile>> getOrganizers() { return getByRole("organizer"); }
+    
+    /** Get profile by email (for checking duplicates). 
+     * Returns null if not found. */
+    public Task<Profile> getByEmail(@NonNull String email) {
+        return db.collection(COLL)
+                .whereEqualTo("email", email)
+                .limit(1)
+                .get()
+                .continueWith(task -> {
+                    if (!task.isSuccessful()) throw task.getException();
+                    QuerySnapshot snap = task.getResult();
+                    if (snap != null && !snap.isEmpty()) {
+                        for (DocumentSnapshot doc : snap.getDocuments()) {
+                            Profile p = fromDoc(doc);
+                            if (p.getActive() && !p.getBanned()) {
+                                return p;
+                            }
+                        }
+                    }
+                    return null;
+                });
+    }
 
     // ---------- Reads (callback overloads) ----------
 

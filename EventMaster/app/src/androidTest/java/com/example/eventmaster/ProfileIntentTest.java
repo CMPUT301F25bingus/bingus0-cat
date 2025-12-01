@@ -10,8 +10,8 @@ import androidx.test.core.app.ActivityScenario;
 import androidx.test.espresso.intent.Intents;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
-import com.example.eventmaster.ui.profile.EditProfileActivity;
-import com.example.eventmaster.ui.profile.ProfileActivity;
+import com.example.eventmaster.ui.shared.activities.EditProfileActivity;
+import com.example.eventmaster.ui.shared.activities.ProfileActivity;
 
 import org.junit.After;
 import org.junit.Before;

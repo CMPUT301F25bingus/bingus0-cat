@@ -9,7 +9,8 @@ import androidx.test.espresso.matcher.ViewMatchers;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
 
-import com.example.eventmaster.ui.entrant.EventDetailsActivity;
+import com.example.eventmaster.ui.entrant.activities.EventDetailsActivity;
+import com.example.eventmaster.ui.entrant.activities.EventDetailsActivity;
 
 import org.junit.After;
 import org.junit.Before;
@@ -48,7 +49,7 @@ public class EventDetailsActivityTest {
         return new Intent(Intent.ACTION_MAIN)
                 .setClassName("com.example.eventmaster",
                         "com.example.eventmaster.ui.entrant.EventDetailsActivity")
-                .putExtra(com.example.eventmaster.ui.entrant.EventDetailsActivity.EXTRA_EVENT_ID, "test_event_1")
+                .putExtra(com.example.eventmaster.ui.entrant.activities.EventDetailsActivity.EXTRA_EVENT_ID, "test_event_1")
                 .putExtra("TEST_MODE", true)
                 .putExtra("TEST_FORCE_INVITED", forceInvited);
     }
@@ -149,6 +150,8 @@ public class EventDetailsActivityTest {
     }
 
 }
+
+
 
 
 

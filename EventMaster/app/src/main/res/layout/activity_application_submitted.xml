@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:background="@color/surface_white">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="32dp"
+        android:gravity="center">
+
+        <!-- Success Icon -->
+        <ImageView
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:src="@drawable/ic_star_outline"
+            android:contentDescription="Success icon"
+            android:layout_marginTop="40dp"
+            android:layout_marginBottom="24dp"
+            app:tint="#4CAF50" />
+
+        <!-- Title -->
+        <com.google.android.material.textview.MaterialTextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Application Submitted!"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary_dark"
+            android:layout_marginBottom="16dp"
+            android:gravity="center" />
+
+        <!-- Description -->
+        <com.google.android.material.textview.MaterialTextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Your application has been received. We'll review it and notify you once a decision is made."
+            android:textSize="16sp"
+            android:textColor="@color/text_secondary_dark"
+            android:gravity="center"
+            android:layout_marginBottom="48dp"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp" />
+
+        <!-- Check Application Status Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnCheckStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Check Application Status"
+            android:textAllCaps="false"
+            android:textColor="@color/teal_dark"
+            app:cornerRadius="12dp"
+            app:strokeColor="@color/teal_dark"
+            app:strokeWidth="2dp"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Back to Login Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnBackToLogin"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Back to Login"
+            android:textAllCaps="false"
+            android:textColor="@android:color/white"
+            app:cornerRadius="12dp"
+            app:backgroundTint="@color/teal_dark"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Continue as Entrant Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnContinueEntrant"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Continue as Entrant"
+            android:textAllCaps="false"
+            android:textColor="@color/teal_dark"
+            style="@style/Widget.MaterialComponents.Button.TextButton" />
+
+    </LinearLayout>
+</ScrollView>
+

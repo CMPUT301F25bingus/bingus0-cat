@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#CDE7E4">
+
+    <!-- Main Content Container -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="40dp">
+
+        <!-- Logo Section - Large and Centered -->
+        <FrameLayout
+            android:layout_width="240dp"
+            android:layout_height="240dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="48dp">
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_gravity="center"
+                app:cardCornerRadius="120dp"
+                app:cardElevation="0dp"
+                app:cardBackgroundColor="@android:color/white"
+                app:strokeWidth="0dp">
+
+                <ImageView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:src="@drawable/eventmasterlogo"
+                    android:contentDescription="EventMaster logo"
+                    android:scaleType="fitCenter"
+                    android:padding="32dp" />
+            </com.google.android.material.card.MaterialCardView>
+        </FrameLayout>
+
+        <!-- Title Section -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="EventMaster"
+            android:textSize="48sp"
+            android:textStyle="bold"
+            android:textColor="#111827"
+            android:letterSpacing="0.03"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="16dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Your fair shot at every event"
+            android:textSize="20sp"
+            android:textColor="#6B7280"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="80dp" />
+
+        <!-- Get Started Button - Fixed Alignment -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnContinue"
+            android:layout_width="match_parent"
+            android:layout_height="68dp"
+            android:text="Get Started"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="@android:color/white"
+            android:gravity="center"
+            android:drawableEnd="@drawable/ic_arrow_right"
+            android:drawablePadding="12dp"
+            android:drawableTint="@android:color/white"
+            app:cornerRadius="24dp"
+            app:backgroundTint="#0F8A86"
+            app:elevation="8dp"
+            android:layout_marginBottom="24dp"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp"
+            android:insetLeft="0dp"
+            android:insetRight="0dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp" />
+
+        <!-- Footer - Minimal -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:text="Fair • Transparent • Equal"
+            android:textSize="14sp"
+            android:textColor="#6B7280"
+            android:letterSpacing="0.05" />
+
+    </LinearLayout>
+
+</FrameLayout>

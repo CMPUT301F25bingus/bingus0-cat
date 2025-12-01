@@ -5,7 +5,8 @@ import androidx.test.espresso.intent.Intents;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
 
-import com.example.eventmaster.ui.entrant.EventListActivity;
+import com.example.eventmaster.ui.entrant.activities.EventListActivity;
+import com.example.eventmaster.ui.entrant.activities.EventListActivity;
 
 import org.junit.After;
 import org.junit.Before;
@@ -81,6 +82,8 @@ public class EventListActivityTest {
         scenario.close();
     }
 }
+
+
 
 
 

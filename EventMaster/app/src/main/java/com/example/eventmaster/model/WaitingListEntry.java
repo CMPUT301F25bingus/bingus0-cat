@@ -15,9 +15,10 @@ public class WaitingListEntry {
     private String email;
     private String phone;
     private Timestamp joinedDate;
-    private Double latitude;    // Optional geolocation
-    private Double longitude;   // Optional geolocation
+    private Double lat;    // Optional geolocation
+    private Double lng;   // Optional geolocation
     private String status;      // "waiting", "chosen", "accepted", "declined", "cancelled"
+    private Profile profile;    // Profile information for the entrant
 
     // Empty constructor required by Firestore
     public WaitingListEntry() {}
@@ -68,12 +69,20 @@ public class WaitingListEntry {
     public Timestamp getJoinedDate() { return joinedDate; }
     public void setJoinedDate(Timestamp joinedDate) { this.joinedDate = joinedDate; }
 
-    public Double getLatitude() { return latitude; }
-    public void setLatitude(Double latitude) { this.latitude = latitude; }
+    public Double getlat() { return lat; }
+    public void setlat(Double lat) { this.lat = lat; }
 
-    public Double getLongitude() { return longitude; }
-    public void setLongitude(Double longitude) { this.longitude = longitude; }
+    public Double getlng() { return lng; }
+    public void setlng(Double lng) { this.lng = lng; }
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+
+    public Profile getProfile() {
+        return profile;
+    }
+
+    public void setProfile(Profile profile) {
+        this.profile = profile;
+    }
 }
