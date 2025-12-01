@@ -98,6 +98,12 @@ public class ProfileRepositoryFs {
             }
         }
 
+        // Ensure profileImageUrl is loaded (Firestore toObject should handle it, but be explicit for safety)
+        String imageUrl = doc.getString("profileImageUrl");
+        if (imageUrl != null && !imageUrl.isEmpty()) {
+            p.setProfileImageUrl(imageUrl);
+        }
+
         return p;
     }
 

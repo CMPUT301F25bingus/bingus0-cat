@@ -30,9 +30,12 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
+import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
@@ -41,8 +44,10 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.eventmaster.MainActivity;
 import com.example.eventmaster.R;
-import com.google.android.material.appbar.MaterialToolbar;
+import com.example.eventmaster.utils.AuthHelper;
+import com.example.eventmaster.utils.CredentialStorageHelper;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.checkbox.MaterialCheckBox;
 import com.google.android.material.textfield.TextInputEditText;
@@ -63,10 +68,9 @@ import java.util.Map;
 public class OrganizerCreateEventActivity extends AppCompatActivity {
 
     // UI Components
-    private MaterialToolbar topBar;
     private ImageView imgPosterPreview;
-    private MaterialButton btnPickPoster;
-    public MaterialButton tvRegOpen, tvRegClose;
+    private android.widget.ImageButton btnPickPoster;
+    public MaterialButton tvRegOpen, tvRegClose, tvEventDate;
     private MaterialButton btnPublish;
     private MaterialCheckBox cbGenerateQr;
     private TextInputEditText editTitle, editDescription, editLocation, editCapacity, editWaitingLimit;
@@ -81,13 +85,14 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
     private Uri posterUri = null;
     public String regStartIso = null;
     public String regEndIso = null;
+    public String eventDateIso = null;
 
     // Poster picker launcher
     private final ActivityResultLauncher<String> pickPoster =
             registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
                 if (uri != null) {
-                    posterUri = uri;
-                    imgPosterPreview.setImageURI(uri);
+                    // Show confirmation dialog with image preview
+                    showPosterConfirmationDialog(uri);
                 }
             });
 
@@ -112,7 +117,6 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
         setContentView(R.layout.organizer_activity_create_event);
 
         // Bind views
-        topBar = findViewById(R.id.topBar);
         imgPosterPreview = findViewById(R.id.imgPosterPreview);
         btnPickPoster = findViewById(R.id.btnPickPoster);
         editTitle = findViewById(R.id.editTitle);
@@ -120,6 +124,7 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
         editLocation = findViewById(R.id.editLocation);
         tvRegOpen = findViewById(R.id.tvRegOpen);
         tvRegClose = findViewById(R.id.tvRegClose);
+        tvEventDate = findViewById(R.id.tvEventDate);
         cbGenerateQr = findViewById(R.id.cbGenerateQr);
         btnPublish = findViewById(R.id.btnPublish);
         progress = findViewById(R.id.progress);
@@ -131,19 +136,28 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
 
 
 
-        // Toolbar back button
-        if (topBar != null) topBar.setNavigationOnClickListener(v -> onBackPressed());
+        // Back button handler
+        ImageButton btnBack = findViewById(R.id.btnBack);
+        if (btnBack != null) {
+            btnBack.setOnClickListener(v -> onBackPressed());
+        }
 
         // Registration start picker
         tvRegOpen.setOnClickListener(v -> showDatePickerDialog(date -> {
             regStartIso = date;
-            tvRegOpen.setText("Start: " + date);
+            tvRegOpen.setText(date);
         }));
 
         // Registration end picker
         tvRegClose.setOnClickListener(v -> showDatePickerDialog(date -> {
             regEndIso = date;
-            tvRegClose.setText("End: " + date);
+            tvRegClose.setText(date);
+        }));
+
+        // Event date picker (when the event actually happens)
+        tvEventDate.setOnClickListener(v -> showDatePickerDialog(date -> {
+            eventDateIso = date;
+            tvEventDate.setText(date);
         }));
 
         // Poster selection handler
@@ -209,12 +223,20 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
         if (TextUtils.isEmpty(title)) { editTitle.setError("Required"); return; }
         if (TextUtils.isEmpty(regStartIso)) { toast("Pick a start date"); return; }
         if (TextUtils.isEmpty(regEndIso)) { toast("Pick an end date"); return; }
+        if (TextUtils.isEmpty(eventDateIso)) { toast("Pick an event date"); return; }
 
         Timestamp regStart = parseDateToTimestamp(regStartIso);
         Timestamp regEnd = parseDateToTimestamp(regEndIso);
+        Timestamp eventDate = parseDateToTimestamp(eventDateIso);
 
-        if (regStart == null || regEnd == null) { toast("Invalid date/time"); return; }
-        if (regEnd.compareTo(regStart) < 0) { toast("End must be after start"); return; }
+        if (regStart == null || regEnd == null || eventDate == null) { 
+            toast("Invalid date/time"); 
+            return; 
+        }
+        if (regEnd.compareTo(regStart) < 0) { 
+            toast("Registration end must be after start"); 
+            return; 
+        }
 
         if (TextUtils.isEmpty(capStr)) { editCapacity.setError("Required"); return; }
         int capacity;
@@ -289,6 +311,7 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
         base.put("price", price);
         base.put("waitingListLimit", waitingListLimit);
         base.put("eventType", selectedEventType);
+        base.put("eventDate", eventDate);
 
 
         // Write base event document
@@ -477,6 +500,44 @@ public class OrganizerCreateEventActivity extends AppCompatActivity {
             e.printStackTrace();
             return null;
         }
+    }
+
+    private void showPosterConfirmationDialog(Uri uri) {
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
+        builder.setTitle("Confirm Poster");
+        
+        // Create a layout for the dialog with image preview
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(32, 32, 32, 16);
+        
+        // Image preview
+        ImageView preview = new ImageView(this);
+        preview.setLayoutParams(new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                dpToPx(200)));
+        preview.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+        preview.setAdjustViewBounds(true);
+        preview.setImageURI(uri);
+        preview.setBackgroundColor(0xFFE0F2F1);
+        
+        layout.addView(preview);
+        
+        builder.setView(layout);
+        builder.setPositiveButton("Confirm", (dialog, which) -> {
+            posterUri = uri;
+            imgPosterPreview.setImageURI(uri);
+            imgPosterPreview.setVisibility(View.VISIBLE);
+        });
+        builder.setNegativeButton("Cancel", (dialog, which) -> {
+            // Do nothing, user cancelled
+        });
+        builder.show();
+    }
+
+    private int dpToPx(int dp) {
+        float density = getResources().getDisplayMetrics().density;
+        return Math.round(dp * density);
     }
 
     private byte[] readAllBytes(Uri uri) throws IOException {

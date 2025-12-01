@@ -99,7 +99,7 @@ public class MainActivity extends AppCompatActivity {
         if ("admin".equals(role)) {
             intent = new Intent(MainActivity.this, AdminWelcomeActivity.class);
         } else if ("organizer".equals(role)) {
-            intent = new Intent(MainActivity.this, com.example.eventmaster.ui.organizer.activities.OrganizerHomeActivity.class);
+            intent = new Intent(MainActivity.this, com.example.eventmaster.ui.organizer.activities.OrganizerManageEventsActivity.class);
         } else if ("entrant".equals(role)) {
             // Entrants use device ID login, so clear any saved email/password credentials
             CredentialStorageHelper.clearCredentials(this);
@@ -143,7 +143,7 @@ public class MainActivity extends AppCompatActivity {
                     if ("admin".equals(role)) {
                         intent = new Intent(MainActivity.this, AdminWelcomeActivity.class);
                     } else if ("organizer".equals(role)) {
-                        intent = new Intent(MainActivity.this, com.example.eventmaster.ui.organizer.activities.OrganizerHomeActivity.class);
+                        intent = new Intent(MainActivity.this, com.example.eventmaster.ui.organizer.activities.OrganizerManageEventsActivity.class);
                     } else if ("entrant".equals(role)) {
                         // Check if profile is complete (has name and email)
                         if (profile.getName() != null && !profile.getName().isEmpty()

@@ -3,6 +3,8 @@ package com.example.eventmaster.ui.shared.activities;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -13,6 +15,7 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.ContextCompat;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.bumptech.glide.Glide;
 import com.example.eventmaster.R;
 import com.example.eventmaster.data.api.EventRepository;
 import com.example.eventmaster.data.api.NotificationService;
@@ -21,7 +24,6 @@ import com.example.eventmaster.data.firestore.NotificationServiceFs;
 import com.example.eventmaster.data.firestore.ProfileRepositoryFs;
 import com.example.eventmaster.model.Event;
 import com.example.eventmaster.model.Profile;
-import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
@@ -56,7 +58,8 @@ public class ProfileActivity extends AppCompatActivity {
     private String currentId = "demoUser123";
 
     // === UI elements ===
-    private TextView tvHeroName, tvHeroEmail, tvBanned;
+    private TextView tvHeroName, tvHeroEmail;
+    private ImageView imgAvatar;
     private TextInputLayout layoutName, layoutEmail, layoutPhone;
     private TextInputEditText inputName, inputEmail, inputPhone, inputDeviceId;
     private MaterialButton btnEdit, btnCancelEdit, btnDelete, btnLogout;
@@ -69,14 +72,10 @@ public class ProfileActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.shared_activity_profile);
 
-        // 🔹 Setup Toolbar with back arrow
-        MaterialToolbar toolbar = findViewById(R.id.toolbar);
-        if (toolbar != null) {
-            // Make it act as the app bar
-            setSupportActionBar(toolbar);
-            if (getSupportActionBar() != null) {
-                getSupportActionBar().setDisplayHomeAsUpEnabled(false);
-            }
+        // 🔹 Setup back button (if present in layout)
+        ImageButton btnBack = findViewById(R.id.btnBack);
+        if (btnBack != null) {
+            btnBack.setOnClickListener(v -> finish());
         }
 
         // 🔹 Use real UID if Firebase Auth user exists
@@ -87,7 +86,7 @@ public class ProfileActivity extends AppCompatActivity {
         // 🔹 Bind layout views
         tvHeroName = findViewById(R.id.tvHeroName);
         tvHeroEmail = findViewById(R.id.tvHeroEmail);
-        tvBanned = findViewById(R.id.tvBanned);
+        imgAvatar = findViewById(R.id.imgAvatar);
         layoutName = findViewById(R.id.layoutName);
         layoutEmail = findViewById(R.id.layoutEmail);
         layoutPhone = findViewById(R.id.layoutPhone);
@@ -469,10 +468,23 @@ public class ProfileActivity extends AppCompatActivity {
         if (inputPhone != null) inputPhone.setText(rawPhone);
         if (inputDeviceId != null) inputDeviceId.setText(device);
 
-        boolean banned = profile.getBanned();
-        if (tvBanned != null) {
-            tvBanned.setVisibility(banned ? View.VISIBLE : View.GONE);
-            tvBanned.setText(banned ? "BANNED" : "");
+        // Load profile picture if available
+        if (imgAvatar != null) {
+            String imageUrl = profile.getProfileImageUrl();
+            if (imageUrl != null && !imageUrl.isEmpty()) {
+                // Clear any tint before loading real image
+                imgAvatar.setColorFilter(null);
+                Glide.with(this)
+                        .load(imageUrl)
+                        .circleCrop()
+                        .placeholder(R.drawable.ic_avatar_placeholder)
+                        .error(R.drawable.ic_avatar_placeholder)
+                        .into(imgAvatar);
+            } else {
+                // Use placeholder with tint
+                imgAvatar.setImageResource(R.drawable.ic_avatar_placeholder);
+                imgAvatar.setColorFilter(android.graphics.Color.parseColor("#15837C"));
+            }
         }
     }
 

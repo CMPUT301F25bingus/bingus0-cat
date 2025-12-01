@@ -1,299 +1,672 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fillViewport="true">
+    android:background="#CDE7E4">
 
-    <FrameLayout
+    <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:padding="12dp">
+        android:fillViewport="true">
 
-        <com.google.android.material.card.MaterialCardView
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            app:cardCornerRadius="16dp"
-            app:cardUseCompatPadding="true"
-            app:cardBackgroundColor="#5EC1B6">
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
 
+            <!-- Teal Header Section (matching Manage Events page) -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="#15837C"
+                android:padding="20dp"
+                android:paddingTop="40dp">
+
+                <!-- Back button and title row -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="20dp">
+
+                    <ImageButton
+                        android:id="@+id/btnBack"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:background="@android:color/transparent"
+                        android:src="@android:drawable/ic_menu_revert"
+                        android:contentDescription="Back"
+                        android:padding="12dp"
+                        app:tint="@android:color/white" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Create Event"
+                        android:textColor="@android:color/white"
+                        android:textSize="20sp"
+                        android:textStyle="bold"
+                        android:gravity="center" />
+
+                    <View
+                        android:layout_width="48dp"
+                        android:layout_height="48dp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Form Content -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:padding="16dp">
 
-                <!-- TOP BAR with default chevron -->
-                <com.google.android.material.appbar.MaterialToolbar
-                    android:id="@+id/topBar"
+            <!-- EVENT NAME & POSTER SECTION -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp"
+                app:cardBackgroundColor="@android:color/white">
+
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@android:color/transparent"
-                    app:navigationIcon="?attr/homeAsUpIndicator"
-                    app:title="Create Event"
-                    app:titleTextColor="@android:color/white" />
+                    android:orientation="vertical"
+                    android:padding="16dp">
 
-                <!-- POSTER -->
-                <ImageView
-                    android:id="@+id/imgPosterPreview"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:layout_marginBottom="8dp"
-                    android:adjustViewBounds="true"
-                    android:scaleType="fitCenter"
-                    android:background="#D8F2EF"
-                    android:contentDescription="Poster preview"/>
-
-
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnPickPoster"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Upload event poster"
-                    android:textAllCaps="false"
-                    android:textColor="#222222"
-                    app:cornerRadius="12dp"
-                    app:backgroundTint="@android:color/white"
-                    app:strokeWidth="1dp"
-                    app:strokeColor="#33000000"/>
-
-                <!-- TITLE -->
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    app:boxBackgroundMode="filled"
-                    app:boxBackgroundColor="@android:color/white"
-                    app:boxStrokeColor="#22000000">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/editTitle"
+                    <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="Event Name"
-                        android:inputType="textCapSentences"
-                        android:maxLines="1"
-                        android:textColor="#222222"/>
-                </com.google.android.material.textfield.TextInputLayout>
+                        android:text="Event Name"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="#15837C"
+                        android:layout_marginBottom="12dp" />
 
-                <!-- DESCRIPTION -->
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    app:boxBackgroundMode="filled"
-                    app:boxBackgroundColor="@android:color/white"
-                    app:boxStrokeColor="#22000000">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/editDescription"
+                    <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="Description"
-                        android:inputType="textMultiLine"
-                        android:minLines="4"
-                        android:gravity="top|start"
-                        android:textColor="#222222"/>
-                </com.google.android.material.textfield.TextInputLayout>
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
 
-                <!-- LOCATION -->
-                <com.google.android.material.textfield.TextInputLayout
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="12dp"
+                            app:boxBackgroundMode="outline"
+                            app:boxBackgroundColor="@android:color/white"
+                            app:boxStrokeColor="#15837C"
+                            app:boxCornerRadiusTopStart="12dp"
+                            app:boxCornerRadiusTopEnd="12dp"
+                            app:boxCornerRadiusBottomStart="12dp"
+                            app:boxCornerRadiusBottomEnd="12dp"
+                            app:hintEnabled="false">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/editTitle"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:hint="Enter event name"
+                                android:inputType="textCapSentences"
+                                android:maxLines="1"
+                                android:minHeight="56dp"
+                                android:padding="16dp"
+                                android:textColor="#222222"
+                                android:textSize="16sp" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <ImageButton
+                            android:id="@+id/btnPickPoster"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
+                            android:layout_gravity="center_vertical"
+                            android:background="@drawable/camera_button_background"
+                            android:src="@android:drawable/ic_menu_camera"
+                            android:contentDescription="Add poster image"
+                            android:padding="16dp"
+                            android:scaleType="fitCenter"
+                            app:tint="@android:color/white" />
+                    </LinearLayout>
+
+                    <!-- Poster Preview -->
+                    <ImageView
+                        android:id="@+id/imgPosterPreview"
+                        android:layout_width="match_parent"
+                        android:layout_height="200dp"
+                        android:layout_marginTop="12dp"
+                        android:adjustViewBounds="true"
+                        android:scaleType="centerCrop"
+                        android:background="#F5F5F5"
+                        android:contentDescription="Poster preview"
+                        android:visibility="gone"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- DESCRIPTION SECTION -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp"
+                app:cardBackgroundColor="@android:color/white">
+
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    app:boxBackgroundMode="filled"
-                    app:boxBackgroundColor="@android:color/white"
-                    app:boxStrokeColor="#22000000">
+                    android:orientation="vertical"
+                    android:padding="16dp">
 
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/editLocation"
+                    <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="Location"
-                        android:inputType="textCapWords"
-                        android:maxLines="1"
-                        android:textColor="#222222"/>
-                </com.google.android.material.textfield.TextInputLayout>
+                        android:text="Description"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="#15837C"
+                        android:layout_marginBottom="12dp" />
 
-                <!-- CAPACITY -->
-                <com.google.android.material.textfield.TextInputLayout
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:boxBackgroundMode="outline"
+                        app:boxBackgroundColor="@android:color/white"
+                        app:boxStrokeColor="#15837C"
+                        app:boxCornerRadiusTopStart="12dp"
+                        app:boxCornerRadiusTopEnd="12dp"
+                        app:boxCornerRadiusBottomStart="12dp"
+                        app:boxCornerRadiusBottomEnd="12dp"
+                        app:hintEnabled="false">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/editDescription"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Enter event description"
+                            android:inputType="textMultiLine"
+                            android:minLines="3"
+                            android:maxLines="10"
+                            android:scrollbars="vertical"
+                            android:gravity="top|start"
+                            android:textColor="#222222"
+                            android:textSize="16sp"
+                            android:padding="16dp"/>
+                    </com.google.android.material.textfield.TextInputLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- LOCATION SECTION -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp"
+                app:cardBackgroundColor="@android:color/white">
+
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    app:boxBackgroundMode="filled"
-                    app:boxBackgroundColor="@android:color/white"
-                    app:boxStrokeColor="#22000000">
+                    android:orientation="vertical"
+                    android:padding="16dp">
 
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/editCapacity"
+                    <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="Capacity (number of entrants allowed)"
-                        android:inputType="number"
-                        android:maxLines="1"
-                        android:textColor="#222222"/>
-                </com.google.android.material.textfield.TextInputLayout>
+                        android:text="Location"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="#15837C"
+                        android:layout_marginBottom="12dp" />
 
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:boxBackgroundMode="outline"
+                        app:boxBackgroundColor="@android:color/white"
+                        app:boxStrokeColor="#15837C"
+                        app:boxCornerRadiusTopStart="12dp"
+                        app:boxCornerRadiusTopEnd="12dp"
+                        app:boxCornerRadiusBottomStart="12dp"
+                        app:boxCornerRadiusBottomEnd="12dp"
+                        app:hintEnabled="false">
 
-                <!-- optional: max # of ppl in waiting list -->
-                <com.google.android.material.textfield.TextInputLayout
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/editLocation"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Enter location"
+                            android:inputType="textCapWords"
+                            android:maxLines="1"
+                            android:textColor="#222222"
+                            android:textSize="16sp"
+                            android:padding="16dp"/>
+                    </com.google.android.material.textfield.TextInputLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- CAPACITY SECTION -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp"
+                app:cardBackgroundColor="@android:color/white">
+
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    app:boxBackgroundMode="filled"
-                    app:boxBackgroundColor="@android:color/white"
-                    app:boxStrokeColor="#22000000">
+                    android:orientation="vertical"
+                    android:padding="16dp">
 
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/editWaitingListLimit"
+                    <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="Optional: Max Waiting List Size"
-                        android:inputType="number"
-                        android:maxLines="1"
-                        android:textColor="#222222"/>
-                </com.google.android.material.textfield.TextInputLayout>
+                        android:text="Capacity"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="#15837C"
+                        android:layout_marginBottom="12dp" />
 
-                <!-- PRICE -->
-                <com.google.android.material.textfield.TextInputLayout
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:weightSum="2">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="6dp"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="Lottery Size"
+                                android:textSize="14sp"
+                                android:textColor="#666666"
+                                android:layout_marginBottom="8dp" />
+
+                            <com.google.android.material.textfield.TextInputLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                app:boxBackgroundMode="outline"
+                                app:boxBackgroundColor="@android:color/white"
+                                app:boxStrokeColor="#15837C"
+                                app:boxCornerRadiusTopStart="12dp"
+                                app:boxCornerRadiusTopEnd="12dp"
+                                app:boxCornerRadiusBottomStart="12dp"
+                                app:boxCornerRadiusBottomEnd="12dp"
+                                app:hintEnabled="false">
+
+                                <com.google.android.material.textfield.TextInputEditText
+                                    android:id="@+id/editCapacity"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:hint="0"
+                                    android:inputType="number"
+                                    android:maxLines="1"
+                                    android:textColor="#222222"
+                                    android:textSize="16sp"
+                                    android:padding="16dp"/>
+                            </com.google.android.material.textfield.TextInputLayout>
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginStart="6dp"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="Optional Waiting List Size"
+                                android:textSize="14sp"
+                                android:textColor="#666666"
+                                android:layout_marginBottom="8dp" />
+
+                            <com.google.android.material.textfield.TextInputLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                app:boxBackgroundMode="outline"
+                                app:boxBackgroundColor="@android:color/white"
+                                app:boxStrokeColor="#15837C"
+                                app:boxCornerRadiusTopStart="12dp"
+                                app:boxCornerRadiusTopEnd="12dp"
+                                app:boxCornerRadiusBottomStart="12dp"
+                                app:boxCornerRadiusBottomEnd="12dp"
+                                app:hintEnabled="false">
+
+                                <com.google.android.material.textfield.TextInputEditText
+                                    android:id="@+id/editWaitingListLimit"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:hint="0"
+                                    android:inputType="number"
+                                    android:maxLines="1"
+                                    android:textColor="#222222"
+                                    android:textSize="16sp"
+                                    android:padding="16dp"/>
+                            </com.google.android.material.textfield.TextInputLayout>
+                        </LinearLayout>
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- PRICE & EVENT TYPE SECTION -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp"
+                app:cardBackgroundColor="@android:color/white">
+
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    app:boxBackgroundMode="filled"
-                    app:boxBackgroundColor="@android:color/white"
-                    app:boxStrokeColor="#22000000">
+                    android:orientation="vertical"
+                    android:padding="16dp">
 
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/editPrice"
+                    <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="Price ($)"
-                        android:inputType="numberDecimal"
-                        android:maxLines="1"
-                        android:textColor="#222222"/>
-                </com.google.android.material.textfield.TextInputLayout>
+                        android:text="Price"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="#15837C"
+                        android:layout_marginBottom="12dp" />
 
-                <!-- EVENT TYPE DROPDOWN -->
-                <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/eventTypeLayout"
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"
+                        app:boxBackgroundMode="outline"
+                        app:boxBackgroundColor="@android:color/white"
+                        app:boxStrokeColor="#15837C"
+                        app:boxCornerRadiusTopStart="12dp"
+                        app:boxCornerRadiusTopEnd="12dp"
+                        app:boxCornerRadiusBottomStart="12dp"
+                        app:boxCornerRadiusBottomEnd="12dp"
+                        app:hintEnabled="false">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/editPrice"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="0.00"
+                            android:inputType="numberDecimal"
+                            android:maxLines="1"
+                            android:textColor="#222222"
+                            android:textSize="16sp"
+                            android:padding="16dp"/>
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Event Type"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="#15837C"
+                        android:layout_marginBottom="12dp" />
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/eventTypeLayout"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:boxBackgroundMode="outline"
+                        app:boxBackgroundColor="@android:color/white"
+                        app:boxStrokeColor="#15837C"
+                        app:boxCornerRadiusTopStart="12dp"
+                        app:boxCornerRadiusTopEnd="12dp"
+                        app:boxCornerRadiusBottomStart="12dp"
+                        app:boxCornerRadiusBottomEnd="12dp"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
+
+                        <AutoCompleteTextView
+                            android:id="@+id/eventTypeDropdown"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Select event type"
+                            android:inputType="none"
+                            android:focusable="false"
+                            android:textColor="#222222"
+                            android:textSize="16sp"
+                            android:padding="16dp"/>
+                    </com.google.android.material.textfield.TextInputLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- DATES SECTION -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp"
+                app:cardBackgroundColor="@android:color/white">
+
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    app:boxBackgroundMode="filled"
-                    app:boxBackgroundColor="@android:color/white"
-                    app:boxStrokeColor="#22000000"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
+                    android:orientation="vertical"
+                    android:padding="16dp">
 
-                    <AutoCompleteTextView
-                        android:id="@+id/eventTypeDropdown"
+                    <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="Event Type"
-                        android:inputType="none"
-                        android:focusable="false"
+                        android:text="Registration Date"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="#15837C"
+                        android:layout_marginBottom="12dp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:weightSum="2">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="6dp"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Start"
+                                android:textSize="14sp"
+                                android:textColor="#666666"
+                                android:layout_marginBottom="8dp" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/tvRegOpen"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="Select Date"
+                                android:textAllCaps="false"
+                                android:textColor="#222222"
+                                android:minHeight="56dp"
+                                app:backgroundTint="#F5F5F5"
+                                app:cornerRadius="12dp"
+                                app:icon="@android:drawable/ic_menu_today"
+                                app:iconTint="#15837C"
+                                app:iconGravity="start"
+                                app:iconPadding="8dp"
+                                app:strokeWidth="1dp"
+                                app:strokeColor="#15837C"
+                                style="@style/Widget.Material3.Button.OutlinedButton"/>
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginStart="6dp"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="End"
+                                android:textSize="14sp"
+                                android:textColor="#666666"
+                                android:layout_marginBottom="8dp" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/tvRegClose"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="Select Date"
+                                android:textAllCaps="false"
+                                android:textColor="#222222"
+                                android:minHeight="56dp"
+                                app:backgroundTint="#F5F5F5"
+                                app:cornerRadius="12dp"
+                                app:icon="@android:drawable/ic_menu_today"
+                                app:iconTint="#15837C"
+                                app:iconGravity="start"
+                                app:iconPadding="8dp"
+                                app:strokeWidth="1dp"
+                                app:strokeColor="#15837C"
+                                style="@style/Widget.Material3.Button.OutlinedButton"/>
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Event Date"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="#15837C"
+                        android:layout_marginTop="16dp"
+                        android:layout_marginBottom="12dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/tvEventDate"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Select Date"
+                        android:textAllCaps="false"
                         android:textColor="#222222"
-                        android:padding="12dp"/>
-                </com.google.android.material.textfield.TextInputLayout>
+                        android:minHeight="56dp"
+                        app:backgroundTint="#F5F5F5"
+                        app:cornerRadius="12dp"
+                        app:icon="@android:drawable/ic_menu_today"
+                        app:iconTint="#15837C"
+                        app:iconGravity="start"
+                        app:iconPadding="8dp"
+                        app:strokeWidth="1dp"
+                        app:strokeColor="#15837C"
+                        style="@style/Widget.Material3.Button.OutlinedButton"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
-                <!-- DATE "CHIPS" -->
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/tvRegOpen"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:text="Start Date"
-                    android:textAllCaps="false"
-                    android:textColor="#222222"
-                    app:backgroundTint="#D8F2EF"
-                    app:cornerRadius="12dp"
-                    app:icon="@android:drawable/ic_menu_today"
-                    app:iconTint="#222222"
-                    app:iconPadding="8dp"/>
+            <!-- OPTIONS SECTION -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp"
+                app:cardBackgroundColor="@android:color/white">
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/tvRegClose"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="End Date"
-                    android:textAllCaps="false"
-                    android:textColor="#222222"
-                    app:backgroundTint="#D8F2EF"
-                    app:cornerRadius="12dp"
-                    app:icon="@android:drawable/ic_menu_today"
-                    app:iconTint="#222222"
-                    app:iconPadding="8dp"/>
-
-                <!-- GENERATE QR -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginTop="10dp">
+                    android:orientation="vertical"
+                    android:padding="16dp">
 
-                    <com.google.android.material.checkbox.MaterialCheckBox
-                        android:id="@+id/cbGenerateQr"
-                        android:layout_width="wrap_content"
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:checked="true"
-                        app:buttonTint="#6C5CE7"/>
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="12dp">
 
-                    <TextView
-                        android:layout_width="wrap_content"
+                        <com.google.android.material.checkbox.MaterialCheckBox
+                            android:id="@+id/cbGenerateQr"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checked="true"
+                            app:buttonTint="#15837C"/>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Generate QR Code"
+                            android:textColor="#222222"
+                            android:textSize="16sp"
+                            android:layout_marginStart="8dp"/>
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Generate QR Code"
-                        android:textColor="@android:color/white"
-                        android:layout_marginStart="8dp"/>
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <com.google.android.material.checkbox.MaterialCheckBox
+                            android:id="@+id/cbRequireLocation"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checked="false"
+                            app:buttonTint="#15837C" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Require geolocation on join"
+                            android:textColor="#222222"
+                            android:textSize="16sp"
+                            android:layout_marginStart="8dp"/>
+                    </LinearLayout>
                 </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
-                <!-- REQUIRE GEOLOCATION -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginTop="8dp">
+            <!-- PUBLISH BUTTON -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnPublish"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="16dp"
+                android:text="Publish Event"
+                android:textAllCaps="false"
+                android:textColor="@android:color/white"
+                android:textSize="18sp"
+                android:padding="16dp"
+                app:cornerRadius="16dp"
+                app:backgroundTint="#15837C"
+                app:elevation="4dp" />
 
-                    <com.google.android.material.checkbox.MaterialCheckBox
-                        android:id="@+id/cbRequireLocation"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:checked="false"
-                        app:buttonTint="#6C5CE7" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Require geolocation on join"
-                        android:textColor="@android:color/white"
-                        android:layout_marginStart="8dp"/>
-                </LinearLayout>
-
-                <!-- PUBLISH -->
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnPublish"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:text="Publish Event"
-                    android:textAllCaps="false"
-                    android:textColor="@android:color/white"
-                    app:cornerRadius="14dp"
-                    app:backgroundTint="#0F8A86" />
-
-                <ProgressBar
-                    android:id="@+id/progress"
-                    style="?android:attr/progressBarStyleLarge"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_horizontal"
-                    android:visibility="gone"
-                    android:layout_marginTop="8dp"
-                    android:layout_marginBottom="4dp"/>
+            <ProgressBar
+                android:id="@+id/progress"
+                style="?android:attr/progressBarStyleLarge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:visibility="gone"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="16dp"/>
             </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-    </FrameLayout>
-</ScrollView>
+        </LinearLayout>
+    </ScrollView>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
