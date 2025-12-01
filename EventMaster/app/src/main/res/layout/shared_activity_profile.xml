@@ -10,14 +10,14 @@
         android:layout_height="match_parent"
         android:fillViewport="true">
 
-        <LinearLayout
-            android:layout_width="match_parent"
+<LinearLayout
+    android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+    android:orientation="vertical">
 
             <!-- Teal Header Section (matching organizer page) -->
             <LinearLayout
-                android:layout_width="match_parent"
+        android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:background="#15837C"
@@ -68,8 +68,8 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content">
 
-                        <ImageView
-                            android:id="@+id/imgAvatar"
+                    <ImageView
+                        android:id="@+id/imgAvatar"
                             android:layout_width="100dp"
                             android:layout_height="100dp"
                             android:background="@drawable/circle_shape"
@@ -119,7 +119,7 @@
             </LinearLayout>
 
             <!-- Personal Information Card -->
-            <com.google.android.material.card.MaterialCardView
+        <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="16dp"
@@ -141,57 +141,57 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
-                        android:gravity="center_vertical"
+                    android:gravity="center_vertical"
                         android:layout_marginBottom="16dp">
 
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Personal Information"
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Personal Information"
                             android:textColor="@android:color/black"
                             android:textSize="18sp"
-                            android:textStyle="bold" />
+                        android:textStyle="bold" />
 
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnCancelEdit"
-                            style="@style/Widget.Material3.Button.TextButton"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Cancel"
-                            android:textAllCaps="false"
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnCancelEdit"
+                        style="@style/Widget.Material3.Button.TextButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Cancel"
+                        android:textAllCaps="false"
                             android:textColor="#666666"
                             android:textSize="14sp"
                             android:minHeight="0dp"
                             android:paddingStart="8dp"
                             android:paddingEnd="8dp"
-                            android:visibility="gone" />
+                        android:visibility="gone" />
 
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnEdit"
-                            style="@style/Widget.Material3.Button.TextButton"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Edit"
-                            android:textAllCaps="false"
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnEdit"
+                        style="@style/Widget.Material3.Button.TextButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Edit"
+                        android:textAllCaps="false"
                             android:textColor="#15837C"
                             android:textSize="14sp"
                             android:minHeight="0dp"
                             android:paddingStart="8dp"
                             android:paddingEnd="8dp"
-                            app:icon="@drawable/ic_edit_24"
+                        app:icon="@drawable/ic_edit_24"
                             app:iconSize="18dp"
                             app:iconTint="#15837C"
                             app:iconGravity="start" />
-                    </LinearLayout>
+                </LinearLayout>
 
                     <!-- Input Fields with outlined style -->
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/layoutName"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/layoutName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
                         android:layout_marginBottom="12dp"
-                        android:hint="Full Name"
+                    android:hint="Full Name"
                         app:boxBackgroundMode="outline"
                         app:boxBackgroundColor="@android:color/white"
                         app:boxStrokeColor="#15837C"
@@ -201,20 +201,20 @@
                         app:boxCornerRadiusBottomEnd="12dp"
                         app:hintTextColor="#15837C">
 
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/inputName"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:textColor="@android:color/black"
-                            android:textSize="16sp" />
-                    </com.google.android.material.textfield.TextInputLayout>
-
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/layoutEmail"
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/inputName"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                            android:textColor="@android:color/black"
+                            android:textSize="16sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/layoutEmail"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
                         android:layout_marginBottom="12dp"
-                        android:hint="Email Address"
+                    android:hint="Email Address"
                         app:boxBackgroundMode="outline"
                         app:boxBackgroundColor="@android:color/white"
                         app:boxStrokeColor="#15837C"
@@ -224,19 +224,19 @@
                         app:boxCornerRadiusBottomEnd="12dp"
                         app:hintTextColor="#15837C">
 
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/inputEmail"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:textColor="@android:color/black"
-                            android:textSize="16sp" />
-                    </com.google.android.material.textfield.TextInputLayout>
-
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/layoutPhone"
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/inputEmail"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="Phone Number"
+                            android:textColor="@android:color/black"
+                            android:textSize="16sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/layoutPhone"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Phone Number"
                         app:boxBackgroundMode="outline"
                         app:boxBackgroundColor="@android:color/white"
                         app:boxStrokeColor="#15837C"
@@ -246,21 +246,21 @@
                         app:boxCornerRadiusBottomEnd="12dp"
                         app:hintTextColor="#15837C">
 
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/inputPhone"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/inputPhone"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
                             android:textColor="@android:color/black"
                             android:textSize="16sp" />
-                    </com.google.android.material.textfield.TextInputLayout>
+                </com.google.android.material.textfield.TextInputLayout>
 
                     <!-- Hidden Device ID field -->
-                    <com.google.android.material.textfield.TextInputLayout
+                <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/layoutDeviceId"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
                         android:visibility="gone"
-                        android:hint="Device ID"
+                    android:hint="Device ID"
                         app:boxBackgroundMode="outline"
                         app:boxBackgroundColor="@android:color/white"
                         app:boxStrokeColor="#15837C"
@@ -270,13 +270,13 @@
                         app:boxCornerRadiusBottomEnd="12dp"
                         app:hintTextColor="#15837C">
 
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/inputDeviceId"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/inputDeviceId"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
                             android:textColor="@android:color/black"
                             android:textSize="16sp" />
-                    </com.google.android.material.textfield.TextInputLayout>
+                </com.google.android.material.textfield.TextInputLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -302,40 +302,40 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Account Actions"
+                    android:text="Account Actions"
                         android:textColor="@android:color/black"
                         android:textSize="18sp"
                         android:textStyle="bold"
                         android:layout_marginBottom="12dp" />
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnDelete"
-                        android:layout_width="match_parent"
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnDelete"
+                    android:layout_width="match_parent"
                         android:layout_height="56dp"
-                        android:text="Delete Profile"
-                        android:textAllCaps="false"
-                        android:textColor="@android:color/white"
+                    android:text="Delete Profile"
+                    android:textAllCaps="false"
+                    android:textColor="@android:color/white"
                         android:textSize="16sp"
-                        app:backgroundTint="@color/btn_danger"
+                    app:backgroundTint="@color/btn_danger"
                         app:cornerRadius="12dp"
                         app:elevation="2dp" />
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnLogout"
-                        android:layout_width="match_parent"
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnLogout"
+                    android:layout_width="match_parent"
                         android:layout_height="56dp"
                         android:layout_marginTop="12dp"
-                        android:text="Log Out"
-                        android:textAllCaps="false"
-                        android:textColor="@android:color/white"
+                    android:text="Log Out"
+                    android:textAllCaps="false"
+                    android:textColor="@android:color/white"
                         android:textSize="16sp"
                         app:backgroundTint="#15837C"
                         app:cornerRadius="12dp"
                         app:elevation="2dp" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
-        </LinearLayout>
+</LinearLayout>
     </ScrollView>
 
     <!-- Bottom Navigation Bar (for entrants) -->

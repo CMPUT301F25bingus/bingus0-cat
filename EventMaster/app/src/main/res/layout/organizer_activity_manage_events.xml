@@ -74,7 +74,7 @@
                         android:id="@+id/btnSettings"
                         android:layout_width="48dp"
                         android:layout_height="48dp"
-                        android:background="@android:color/transparent"
+                    android:background="@android:color/transparent"
                         android:src="@drawable/ic_settings"
                         android:contentDescription="Settings"
                         android:padding="12dp"
@@ -235,10 +235,10 @@
     </ScrollView>
 
     <!-- Fragment Container for Overlays -->
-    <FrameLayout
-        android:id="@+id/fragment_container"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        <FrameLayout
+            android:id="@+id/fragment_container"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
         android:visibility="gone"
         android:clickable="true"
         android:focusable="true"

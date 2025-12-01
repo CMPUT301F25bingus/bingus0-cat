@@ -15,7 +15,7 @@ import com.example.eventmaster.data.firestore.OrganizerApplicationRepositoryFs;
 import com.example.eventmaster.model.OrganizerApplication;
 import com.example.eventmaster.model.Profile;
 import com.example.eventmaster.ui.admin.activities.AdminWelcomeActivity;
-import com.example.eventmaster.ui.organizer.activities.OrganizerHomeActivity;
+import com.example.eventmaster.ui.organizer.activities.OrganizerManageEventsActivity;
 import com.example.eventmaster.utils.AuthHelper;
 import com.example.eventmaster.utils.CredentialStorageHelper;
 import com.google.android.material.button.MaterialButton;
@@ -332,10 +332,10 @@ public class SharedLoginActivity extends AppCompatActivity {
     }
 
     /**
-     * Navigates to Organizer Home Activity.
+     * Navigates to Organizer Manage Events Activity.
      */
     private void navigateToOrganizerHome() {
-        Intent intent = new Intent(this, OrganizerHomeActivity.class);
+        Intent intent = new Intent(this, OrganizerManageEventsActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();

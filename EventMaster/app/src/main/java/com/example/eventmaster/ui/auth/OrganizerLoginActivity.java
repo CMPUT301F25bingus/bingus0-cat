@@ -10,7 +10,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.eventmaster.R;
 import com.example.eventmaster.model.Profile;
-import com.example.eventmaster.ui.organizer.activities.OrganizerHomeActivity;
+import com.example.eventmaster.ui.organizer.activities.OrganizerManageEventsActivity;
 import com.example.eventmaster.utils.AuthHelper;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.FirebaseUser;
@@ -251,7 +251,7 @@ public class OrganizerLoginActivity extends AppCompatActivity {
     // NAVIGATION
     // ---------------------------------------------------------------------
     private void navigateToOrganizerHome() {
-        Intent intent = new Intent(OrganizerLoginActivity.this, OrganizerHomeActivity.class);
+        Intent intent = new Intent(OrganizerLoginActivity.this, OrganizerManageEventsActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();

@@ -90,18 +90,18 @@ public class OrganizerManageEventsActivity extends AppCompatActivity {
         tvActiveEvents = findViewById(R.id.tvActiveEvents);
         btnSettings = findViewById(R.id.btnSettings);
         btnCreateEvents = findViewById(R.id.btnCreateEvents);
-        
+
         overlayContainer = findViewById(R.id.fragment_container);
 
         recycler = findViewById(R.id.recyclerEvents);
         if (recycler != null) {
-            recycler.setLayoutManager(new LinearLayoutManager(this));
+        recycler.setLayoutManager(new LinearLayoutManager(this));
 
             // Adapter uses filtered events list
             adapter = new EventAdapter(filteredEvents);
-            recycler.setAdapter(adapter);
+        recycler.setAdapter(adapter);
 
-            adapter.setOnEventClickListener(this::openManageSpecificEvent);
+        adapter.setOnEventClickListener(this::openManageSpecificEvent);
         }
 
         // Initialize filter tabs
@@ -229,20 +229,20 @@ public class OrganizerManageEventsActivity extends AppCompatActivity {
 
                     for (QueryDocumentSnapshot doc : snap) {
                         try {
-                            String eventId = doc.getString("eventId");
-                            if (eventId == null || eventId.isEmpty()) {
-                                eventId = doc.getId();
-                            }
+                        String eventId = doc.getString("eventId");
+                        if (eventId == null || eventId.isEmpty()) {
+                            eventId = doc.getId();
+                        }
 
-                            Map<String, Object> m = new HashMap<>();
-                            m.put("eventId", eventId);
-                            m.put("title", doc.getString("title"));
-                            m.put("location", doc.getString("location"));
-                            m.put("regStart", doc.get("registrationOpen"));
-                            m.put("regEnd", doc.get("registrationClose"));
-                            m.put("posterUrl", doc.get("posterUrl"));
-                            m.put("capacity", doc.getLong("capacity"));
-                            m.put("geolocationRequired", doc.getBoolean("geolocationRequired"));
+                        Map<String, Object> m = new HashMap<>();
+                        m.put("eventId", eventId);
+                        m.put("title", doc.getString("title"));
+                        m.put("location", doc.getString("location"));
+                        m.put("regStart", doc.get("registrationOpen"));
+                        m.put("regEnd", doc.get("registrationClose"));
+                        m.put("posterUrl", doc.get("posterUrl"));
+                        m.put("capacity", doc.getLong("capacity"));
+                        m.put("geolocationRequired", doc.getBoolean("geolocationRequired"));
                             // Store event date for filtering
                             Object eventDateObj = doc.get("eventDate");
                             if (eventDateObj != null) {
@@ -274,11 +274,11 @@ public class OrganizerManageEventsActivity extends AppCompatActivity {
                                 Toast.LENGTH_SHORT
                         ).show();
                     } else {
-                        Toast.makeText(
-                                this,
+                    Toast.makeText(
+                            this,
                                 "Failed to load events: " + (errorMsg != null ? errorMsg : "Unknown error"),
-                                Toast.LENGTH_LONG
-                        ).show();
+                            Toast.LENGTH_LONG
+                    ).show();
                     }
                     android.util.Log.e("OrganizerManageEvents", "Error loading events", e);
                 });
@@ -529,8 +529,8 @@ public class OrganizerManageEventsActivity extends AppCompatActivity {
     private void syncOverlayVisibility() {
         boolean hasStack = getSupportFragmentManager().getBackStackEntryCount() > 0;
         if (overlayContainer != null) {
-            overlayContainer.setVisibility(hasStack ? View.VISIBLE : View.GONE);
-        }
+        overlayContainer.setVisibility(hasStack ? View.VISIBLE : View.GONE);
+    }
     }
 
     @Override
@@ -546,6 +546,6 @@ public class OrganizerManageEventsActivity extends AppCompatActivity {
                 updateFilterCounts();
                 applyFilter();
             });
-        }
     }
+}
 }

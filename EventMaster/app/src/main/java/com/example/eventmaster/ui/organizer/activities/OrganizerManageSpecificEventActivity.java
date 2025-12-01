@@ -7,7 +7,9 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.FrameLayout;
+import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -23,6 +25,8 @@ import com.example.eventmaster.R;
 import com.example.eventmaster.data.firestore.LotteryServiceFs;
 import com.example.eventmaster.ui.organizer.fragments.OrganizerEntrantsHubFragment;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
@@ -59,7 +63,7 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
     private String eventTitle;
 
     // UI ELEMENTS
-    private ImageView backButton;
+    private ImageButton backButton;
     private ImageView eventPoster;
     private TextView eventName;
     private TextView eventOrganizer;
@@ -68,14 +72,25 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
     private TextView eventCapacity;
     private TextView eventDescription;
     private TextView eventDates;
+    private TextView eventRegistrationStart;
+    private TextView eventRegistrationEnd;
     private TextView eventType;
 
+    // Description editing
+    private MaterialButton btnEditDescription;
+    private MaterialButton btnSaveDescription;
+    private MaterialButton btnCancelDescription;
+    private TextInputLayout layoutDescription;
+    private TextInputEditText editDescription;
+    private LinearLayout descriptionEditButtons;
+    private boolean isEditingDescription = false;
 
     // Action buttons
     private MaterialButton btnViewEntrants;
     private MaterialButton btnRunLottery;
     private MaterialButton btnViewMap;
-    private ImageView editPosterIcon;
+    private MaterialButton btnDeleteEvent;
+    private ImageButton editPosterIcon;
     private Uri newPosterUri = null;
 
     private FrameLayout fragmentContainer;
@@ -114,6 +129,14 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
             startActivity(mapIntent);
         });
 
+        // Description editing
+        btnEditDescription.setOnClickListener(v -> enterDescriptionEditMode());
+        btnSaveDescription.setOnClickListener(v -> saveDescription());
+        btnCancelDescription.setOnClickListener(v -> exitDescriptionEditMode());
+
+        // Delete event
+        btnDeleteEvent.setOnClickListener(v -> confirmDeleteEvent());
+
         getSupportFragmentManager().addOnBackStackChangedListener(() -> {
             if (getSupportFragmentManager().getBackStackEntryCount() == 0) {
                 fragmentContainer.setVisibility(View.GONE);
@@ -132,13 +155,23 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
         eventCapacity = findViewById(R.id.event_capacity_text);
         eventDescription = findViewById(R.id.event_description_text);
         eventDates = findViewById(R.id.event_date_text);
+        eventRegistrationStart = findViewById(R.id.event_registration_start_text);
+        eventRegistrationEnd = findViewById(R.id.event_registration_end_text);
+        eventType = findViewById(R.id.event_type_text);
+
+        // Description editing
+        btnEditDescription = findViewById(R.id.btnEditDescription);
+        btnSaveDescription = findViewById(R.id.btnSaveDescription);
+        btnCancelDescription = findViewById(R.id.btnCancelDescription);
+        layoutDescription = findViewById(R.id.layoutDescription);
+        editDescription = findViewById(R.id.editDescription);
+        descriptionEditButtons = findViewById(R.id.descriptionEditButtons);
 
         btnViewEntrants = findViewById(R.id.btnViewEntrants);
         btnRunLottery = findViewById(R.id.btnRunLottery);
-
         btnViewMap = findViewById(R.id.btnViewMap);
+        btnDeleteEvent = findViewById(R.id.btnDeleteEvent);
         editPosterIcon = findViewById(R.id.edit_poster_icon);
-        eventType = findViewById(R.id.event_type_text);
 
         fragmentContainer = findViewById(R.id.fragment_container);
     }
@@ -256,7 +289,8 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
                     }
 
                     // --- LOCATION / CAPACITY / DESCRIPTION ---
-                    eventLocation.setText("📍 " + doc.getString("location"));
+                    String location = doc.getString("location");
+                    eventLocation.setText(location != null && !location.isEmpty() ? location : "Not specified");
 
                     Long cap = doc.getLong("capacity");
                     if (cap != null) eventCapacity.setText(String.valueOf(cap));
@@ -266,25 +300,26 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
                     // --- EVENT TYPE ---
                     String type = doc.getString("eventType");
                     eventType.setText(type != null && !type.isEmpty()
-                            ? "Type: " + type
-                            : "Type: Not specified");
+                            ? type
+                            : "Not specified");
 
-                    // --- DATE RANGE ---
-                    com.google.firebase.Timestamp start = doc.getTimestamp("registrationOpen");
-                    com.google.firebase.Timestamp end = doc.getTimestamp("registrationClose");
+                    // --- REGISTRATION DATES ---
+                    com.google.firebase.Timestamp regStart = doc.getTimestamp("registrationOpen");
+                    com.google.firebase.Timestamp regEnd = doc.getTimestamp("registrationClose");
 
-                    if (start != null && end != null) {
-                        String s = new java.text.SimpleDateFormat("MMM d")
-                                .format(start.toDate());
-                        String e = new java.text.SimpleDateFormat("MMM d")
-                                .format(end.toDate());
-
-                        eventDates.setText("📅 " + s + " → " + e);
+                    if (regStart != null && regEnd != null) {
+                        // Format with date and time
+                        java.text.SimpleDateFormat dateTimeFormat = new java.text.SimpleDateFormat("MMM d, yyyy 'at' h:mm a");
+                        String startStr = dateTimeFormat.format(regStart.toDate());
+                        String endStr = dateTimeFormat.format(regEnd.toDate());
+                        
+                        eventRegistrationStart.setText(startStr);
+                        eventRegistrationEnd.setText(endStr);
 
                         // --- LOTTERY BUTTON ENABLE/DISABLE LOGIC ---
                         Date now = new Date();
 
-                        if (now.before(end.toDate())) {
+                        if (now.before(regEnd.toDate())) {
                             // Registration still open → disable lottery
                             btnRunLottery.setEnabled(false);
                             btnRunLottery.setAlpha(0.4f);
@@ -302,6 +337,26 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
                             btnRunLottery.setAlpha(1f);
 
                             btnRunLottery.setOnClickListener(v -> runLottery());
+                        }
+                    } else {
+                        eventRegistrationStart.setText("Not set");
+                        eventRegistrationEnd.setText("Not set");
+                    }
+
+                    // --- EVENT DATE ---
+                    com.google.firebase.Timestamp eventDate = doc.getTimestamp("eventDate");
+                    if (eventDate != null) {
+                        java.text.SimpleDateFormat dateTimeFormat = new java.text.SimpleDateFormat("MMM d, yyyy 'at' h:mm a");
+                        String eventDateStr = dateTimeFormat.format(eventDate.toDate());
+                        eventDates.setText(eventDateStr);
+                    } else {
+                        // Fallback to registration close date
+                        if (regEnd != null) {
+                            java.text.SimpleDateFormat dateTimeFormat = new java.text.SimpleDateFormat("MMM d, yyyy 'at' h:mm a");
+                            String eventDateStr = dateTimeFormat.format(regEnd.toDate());
+                            eventDates.setText(eventDateStr);
+                        } else {
+                            eventDates.setText("Not set");
                         }
                     }
 
@@ -539,6 +594,86 @@ public class OrganizerManageSpecificEventActivity extends AppCompatActivity {
                 });
     }
 
+    /**
+     * Enters edit mode for description.
+     */
+    private void enterDescriptionEditMode() {
+        isEditingDescription = true;
+        String currentDesc = eventDescription.getText() != null 
+            ? eventDescription.getText().toString() 
+            : "";
+        editDescription.setText(currentDesc);
+        eventDescription.setVisibility(View.GONE);
+        layoutDescription.setVisibility(View.VISIBLE);
+        descriptionEditButtons.setVisibility(View.VISIBLE);
+        btnEditDescription.setVisibility(View.GONE);
+    }
 
+    /**
+     * Exits edit mode for description without saving.
+     */
+    private void exitDescriptionEditMode() {
+        isEditingDescription = false;
+        eventDescription.setVisibility(View.VISIBLE);
+        layoutDescription.setVisibility(View.GONE);
+        descriptionEditButtons.setVisibility(View.GONE);
+        btnEditDescription.setVisibility(View.VISIBLE);
+    }
+
+    /**
+     * Saves the updated description to Firestore.
+     */
+    private void saveDescription() {
+        String newDescription = editDescription.getText() != null 
+            ? editDescription.getText().toString().trim() 
+            : "";
+        
+        FirebaseFirestore.getInstance()
+            .collection("events")
+            .document(eventId)
+            .update("description", newDescription)
+            .addOnSuccessListener(v -> {
+                eventDescription.setText(newDescription);
+                exitDescriptionEditMode();
+                Toast.makeText(this, "Description updated!", Toast.LENGTH_SHORT).show();
+            })
+            .addOnFailureListener(e -> {
+                Toast.makeText(this, "Failed to update: " + e.getMessage(), 
+                    Toast.LENGTH_LONG).show();
+            });
+    }
+
+    /**
+     * Shows confirmation dialog before deleting the event.
+     */
+    private void confirmDeleteEvent() {
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Delete Event?")
+            .setMessage("Are you sure you want to delete this event? This action cannot be undone and will remove all associated data.")
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Delete", (d, which) -> deleteEvent())
+            .show();
+    }
+
+    /**
+     * Deletes the event from Firestore and navigates back.
+     */
+    private void deleteEvent() {
+        Toast.makeText(this, "Deleting event...", Toast.LENGTH_SHORT).show();
+        
+        // Delete the event document
+        FirebaseFirestore.getInstance()
+            .collection("events")
+            .document(eventId)
+            .delete()
+            .addOnSuccessListener(v -> {
+                Toast.makeText(this, "Event deleted", Toast.LENGTH_SHORT).show();
+                finish(); // Go back to Manage Events page
+            })
+            .addOnFailureListener(e -> {
+                Toast.makeText(this, "Failed to delete: " + e.getMessage(), 
+                    Toast.LENGTH_LONG).show();
+            });
+    }
 
 }

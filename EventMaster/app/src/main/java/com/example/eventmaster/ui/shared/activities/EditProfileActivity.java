@@ -137,7 +137,7 @@ public class EditProfileActivity extends AppCompatActivity {
 
         // Load current profile data
         if (profileId != null) {
-            repo.get(profileId, p -> {
+        repo.get(profileId, p -> {
                 currentProfile = p;
                 if (tvHeroName != null) tvHeroName.setText(p.getName() != null ? p.getName() : "User");
                 if (tvHeroEmail != null) tvHeroEmail.setText(p.getEmail() != null ? p.getEmail() : "");
@@ -164,9 +164,9 @@ public class EditProfileActivity extends AppCompatActivity {
                         imgAvatar.setColorFilter(android.graphics.Color.parseColor("#15837C"));
                     }
                 }
-            }, e -> {
-                Toast.makeText(this, "Failed to load profile: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-            });
+        }, e -> {
+            Toast.makeText(this, "Failed to load profile: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        });
         }
 
         // Edit button
@@ -352,20 +352,20 @@ public class EditProfileActivity extends AppCompatActivity {
             }
         }
 
-        repo.upsert(p)
-                .addOnSuccessListener(x -> {
-                    Toast.makeText(this, "Profile updated successfully!", Toast.LENGTH_SHORT).show();
+            repo.upsert(p)
+                    .addOnSuccessListener(x -> {
+                        Toast.makeText(this, "Profile updated successfully!", Toast.LENGTH_SHORT).show();
                     currentProfile = p;
                     if (tvHeroName != null) tvHeroName.setText(name);
                     if (tvHeroEmail != null) tvHeroEmail.setText(email);
                     exitEditMode(false);
-                    finish();
-                })
-                .addOnFailureListener(err -> {
-                    Toast.makeText(this, 
-                            "Failed to save: " + err.getMessage(), 
-                            Toast.LENGTH_LONG).show();
-                });
+                        finish();
+                    })
+                    .addOnFailureListener(err -> {
+                        Toast.makeText(this, 
+                                "Failed to save: " + err.getMessage(), 
+                                Toast.LENGTH_LONG).show();
+                    });
     }
 
     private void confirmDelete() {
