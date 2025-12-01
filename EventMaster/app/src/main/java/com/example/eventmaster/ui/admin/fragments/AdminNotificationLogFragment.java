@@ -21,14 +21,17 @@ import com.example.eventmaster.data.firestore.EventReadServiceFs;
 import com.example.eventmaster.model.Event;
 import com.example.eventmaster.model.Notification;
 import com.example.eventmaster.ui.admin.adapters.AdminNotificationLogAdapter;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -204,6 +207,7 @@ public class AdminNotificationLogFragment extends Fragment {
                             });
                             
                             adapter.setNotifications(allNotifications);
+                            resolveNamesForNotifications(allNotifications);
                             updateEmptyState();
                             Log.d(TAG, "Loaded " + allNotifications.size() + " notifications for organizer");
                         }
@@ -239,6 +243,7 @@ public class AdminNotificationLogFragment extends Fragment {
                                         });
                                         
                                         adapter.setNotifications(allNotifications);
+                                        resolveNamesForNotifications(allNotifications);
                                         updateEmptyState();
                                         Log.d(TAG, "Loaded " + allNotifications.size() + " notifications for organizer (without orderBy)");
                                     }
@@ -258,6 +263,7 @@ public class AdminNotificationLogFragment extends Fragment {
                                         });
                                         
                                         adapter.setNotifications(allNotifications);
+                                        resolveNamesForNotifications(allNotifications);
                                         updateEmptyState();
                                         if (allNotifications.isEmpty()) {
                                             Toast.makeText(requireContext(),
@@ -296,6 +302,7 @@ public class AdminNotificationLogFragment extends Fragment {
                     }
 
                     adapter.setNotifications(allNotifications);
+                    resolveNamesForNotifications(allNotifications);
                     updateEmptyState();
                     
                     Log.d(TAG, "Loaded " + allNotifications.size() + " notifications for event");
@@ -331,6 +338,7 @@ public class AdminNotificationLogFragment extends Fragment {
                                 });
 
                                 adapter.setNotifications(allNotifications);
+                                resolveNamesForNotifications(allNotifications);
                                 updateEmptyState();
                                 
                                 Log.d(TAG, "Loaded " + allNotifications.size() + " notifications for event (without orderBy)");
@@ -369,6 +377,7 @@ public class AdminNotificationLogFragment extends Fragment {
                     }
 
                     adapter.setNotifications(allNotifications);
+                    resolveNamesForNotifications(allNotifications);
                     updateEmptyState();
                     
                     Log.d(TAG, "Loaded " + allNotifications.size() + " notifications");
@@ -458,6 +467,170 @@ public class AdminNotificationLogFragment extends Fragment {
         } else {
             recyclerView.setVisibility(View.VISIBLE);
             emptyStateText.setVisibility(View.GONE);
+        }
+    }
+
+    /**
+     * Resolves user IDs and event IDs to human-readable names.
+     * Updates the adapter with resolved names.
+     */
+    private void resolveNamesForNotifications(List<Notification> notifications) {
+        if (notifications == null || notifications.isEmpty()) {
+            adapter.setUserNameMap(new HashMap<>());
+            adapter.setEventNameMap(new HashMap<>());
+            return;
+        }
+
+        // Collect unique user IDs and event IDs
+        Set<String> userIds = new HashSet<>();
+        Set<String> eventIds = new HashSet<>();
+
+        for (Notification notification : notifications) {
+            String recipientId = notification.getRecipientUserId();
+            if (recipientId != null && !recipientId.isEmpty()) {
+                userIds.add(recipientId);
+            }
+
+            String senderId = notification.getSenderUserId();
+            if (senderId != null && !senderId.isEmpty() && !"system".equals(senderId)) {
+                userIds.add(senderId);
+            }
+
+            String eventId = notification.getEventId();
+            if (eventId != null && !eventId.isEmpty()) {
+                eventIds.add(eventId);
+            }
+        }
+
+        // Resolve user names
+        resolveUserNames(userIds, (userNameMap) -> {
+            adapter.setUserNameMap(userNameMap);
+
+            // Resolve event names after user names are done
+            resolveEventNames(eventIds, (eventNameMap) -> {
+                adapter.setEventNameMap(eventNameMap);
+            });
+        });
+    }
+
+    /**
+     * Resolves user IDs to display names.
+     * Tries Firebase UID first, then deviceId lookup for entrants.
+     */
+    private void resolveUserNames(Set<String> userIds, java.util.function.Consumer<Map<String, String>> callback) {
+        if (userIds == null || userIds.isEmpty()) {
+            callback.accept(new HashMap<>());
+            return;
+        }
+
+        Map<String, String> userNameMap = new HashMap<>();
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        AtomicInteger remaining = new AtomicInteger(userIds.size());
+
+        for (String userId : userIds) {
+            // Try as Firebase UID first (profile document ID)
+            db.collection("profiles")
+                    .document(userId)
+                    .get()
+                    .addOnSuccessListener(doc -> {
+                        if (doc.exists()) {
+                            String name = doc.getString("name");
+                            if (name != null && !name.isEmpty()) {
+                                userNameMap.put(userId, name);
+                            }
+                        }
+                        
+                        // If not found as UID, try as deviceId (entrant profiles)
+                        if (!userNameMap.containsKey(userId)) {
+                            db.collection("profiles")
+                                    .whereEqualTo("deviceId", userId)
+                                    .whereEqualTo("role", "entrant")
+                                    .limit(1)
+                                    .get()
+                                    .addOnSuccessListener(querySnapshot -> {
+                                        if (querySnapshot != null && !querySnapshot.isEmpty()) {
+                                            DocumentSnapshot deviceDoc = querySnapshot.getDocuments().get(0);
+                                            String name = deviceDoc.getString("name");
+                                            if (name != null && !name.isEmpty()) {
+                                                userNameMap.put(userId, name);
+                                            }
+                                        }
+                                        
+                                        if (remaining.decrementAndGet() == 0) {
+                                            callback.accept(userNameMap);
+                                        }
+                                    })
+                                    .addOnFailureListener(e -> {
+                                        Log.d(TAG, "Failed to resolve user name as deviceId: " + userId);
+                                        if (remaining.decrementAndGet() == 0) {
+                                            callback.accept(userNameMap);
+                                        }
+                                    });
+                        } else {
+                            if (remaining.decrementAndGet() == 0) {
+                                callback.accept(userNameMap);
+                            }
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        // If UID lookup fails, try deviceId
+                        db.collection("profiles")
+                                .whereEqualTo("deviceId", userId)
+                                .whereEqualTo("role", "entrant")
+                                .limit(1)
+                                .get()
+                                .addOnSuccessListener(querySnapshot -> {
+                                    if (querySnapshot != null && !querySnapshot.isEmpty()) {
+                                        DocumentSnapshot deviceDoc = querySnapshot.getDocuments().get(0);
+                                        String name = deviceDoc.getString("name");
+                                        if (name != null && !name.isEmpty()) {
+                                            userNameMap.put(userId, name);
+                                        }
+                                    }
+                                    
+                                    if (remaining.decrementAndGet() == 0) {
+                                        callback.accept(userNameMap);
+                                    }
+                                })
+                                .addOnFailureListener(ex -> {
+                                    Log.d(TAG, "Failed to resolve user name: " + userId);
+                                    if (remaining.decrementAndGet() == 0) {
+                                        callback.accept(userNameMap);
+                                    }
+                                });
+                    });
+        }
+    }
+
+    /**
+     * Resolves event IDs to event names.
+     */
+    private void resolveEventNames(Set<String> eventIds, java.util.function.Consumer<Map<String, String>> callback) {
+        if (eventIds == null || eventIds.isEmpty()) {
+            callback.accept(new HashMap<>());
+            return;
+        }
+
+        Map<String, String> eventNameMap = new HashMap<>();
+        AtomicInteger remaining = new AtomicInteger(eventIds.size());
+
+        for (String eventId : eventIds) {
+            eventReadService.get(eventId)
+                    .addOnSuccessListener(event -> {
+                        if (event != null && event.getName() != null && !event.getName().isEmpty()) {
+                            eventNameMap.put(eventId, event.getName());
+                        }
+                        
+                        if (remaining.decrementAndGet() == 0) {
+                            callback.accept(eventNameMap);
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.d(TAG, "Failed to resolve event name for: " + eventId);
+                        if (remaining.decrementAndGet() == 0) {
+                            callback.accept(eventNameMap);
+                        }
+                    });
         }
     }
 }
