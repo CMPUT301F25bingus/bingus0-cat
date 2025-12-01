@@ -88,6 +88,7 @@ public class EventDetailsFragment extends Fragment {
     private TextView eventNameText;
     private TextView organizerText;
     private TextView eventDateText;
+    private TextView eventTimeText;
     private TextView locationText;
     private TextView priceText;
     private TextView capacityText;
@@ -248,6 +249,7 @@ public class EventDetailsFragment extends Fragment {
         eventNameText = view.findViewById(R.id.event_name_text);
         organizerText = view.findViewById(R.id.event_organizer_text);
         eventDateText = view.findViewById(R.id.event_date_text);
+        eventTimeText = view.findViewById(R.id.event_time_text);
         locationText = view.findViewById(R.id.event_location_text);
         priceText = view.findViewById(R.id.event_price_text);
         capacityText = view.findViewById(R.id.event_capacity_text);
@@ -724,8 +726,12 @@ public class EventDetailsFragment extends Fragment {
 
         if (event.getEventDate() != null) {
             eventDateText.setText(eventDateFormat.format(event.getEventDate()));
+            // Format time in 12-hour format (e.g., "4:30 PM")
+            SimpleDateFormat timeFormat = new SimpleDateFormat("h:mm a", Locale.getDefault());
+            eventTimeText.setText(timeFormat.format(event.getEventDate()));
         } else {
             eventDateText.setText("TBA");
+            eventTimeText.setText("TBA");
         }
 
         // Poster image
