@@ -95,9 +95,6 @@ public class BrowseEntrantsActivity extends AppCompatActivity {
         );
 
         rv.setAdapter(adapter);
-
-        View vm = findViewById(R.id.tvViewMore);
-        if (vm != null) vm.setVisibility(View.GONE);
     }
 
     private void switchToUsers() {

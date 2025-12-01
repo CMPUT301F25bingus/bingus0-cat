@@ -92,6 +92,7 @@ public class EventDetailsFragment extends Fragment {
     private TextView priceText;
     private TextView capacityText;
     private TextView registrationDateText;
+    private TextView registrationEndText;
     private TextView descriptionText;
     private TextView waitingListCountText;
     private MaterialButton joinButton;
@@ -251,6 +252,7 @@ public class EventDetailsFragment extends Fragment {
         priceText = view.findViewById(R.id.event_price_text);
         capacityText = view.findViewById(R.id.event_capacity_text);
         registrationDateText = view.findViewById(R.id.registration_date_text);
+        registrationEndText = view.findViewById(R.id.registration_end_text);
         descriptionText = view.findViewById(R.id.event_description_text);
         waitingListCountText = view.findViewById(R.id.waiting_list_count_text);
         joinButton = view.findViewById(R.id.join_waiting_list_button);
@@ -713,9 +715,11 @@ public class EventDetailsFragment extends Fragment {
         if (event.getRegistrationStartDate() != null && event.getRegistrationEndDate() != null) {
             String start = shortDateFormat.format(event.getRegistrationStartDate());
             String end = shortDateFormat.format(event.getRegistrationEndDate());
-            registrationDateText.setText("Registration: " + start + " - " + end);
+            registrationDateText.setText(start);
+            registrationEndText.setText(end);
         } else {
-            registrationDateText.setText("Registration: TBA");
+            registrationDateText.setText("TBA");
+            registrationEndText.setText("TBA");
         }
 
         if (event.getEventDate() != null) {
@@ -757,7 +761,7 @@ public class EventDetailsFragment extends Fragment {
         waitingListRepository.getWaitingListCount(eventId, new WaitingListRepository.OnCountListener() {
             @Override
             public void onSuccess(int count) {
-                waitingListCountText.setText(count + " people have joined the waiting list");
+                waitingListCountText.setText(String.valueOf(count));
 
                 // CODE CHECK START
 
