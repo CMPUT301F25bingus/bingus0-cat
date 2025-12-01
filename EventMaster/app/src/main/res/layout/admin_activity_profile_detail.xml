@@ -13,7 +13,7 @@
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:orientation="vertical"
             android:padding="16dp">
 
@@ -148,14 +148,16 @@
             <!-- Events Created Card -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="0dp"
+                android:layout_weight="1"
                 app:cardCornerRadius="24dp"
                 app:cardElevation="4dp"
-                app:cardBackgroundColor="@color/surface_white">
+                app:cardBackgroundColor="@color/surface_white"
+                android:layout_marginBottom="16dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+                    android:layout_height="match_parent"
                     android:orientation="vertical"
                     android:padding="20dp">
 
@@ -193,44 +195,53 @@
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/rvEvents"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="16dp" />
-
-                    <!-- View Notification Logs Button -->
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnViewNotificationLogs"
-                        android:layout_width="match_parent"
-                        android:layout_height="56dp"
-                        android:text="View Notification Logs"
-                        android:textSize="15sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/white"
-                        app:icon="@drawable/ic_bell_outline"
-                        app:iconGravity="start"
-                        app:iconTint="@color/white"
-                        app:backgroundTint="@color/color_prof_primary"
-                        app:cornerRadius="12dp"
-                        android:elevation="4dp" />
+                        android:layout_height="0dp"
+                        android:layout_weight="1" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
     </ScrollView>
 
-    <!-- Ban Organizer Button (Fixed at Bottom) -->
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnBan"
+    <!-- Bottom Action Buttons Container -->
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="56dp"
+        android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        android:text="Ban Organizer"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        android:textColor="@color/white"
-        app:icon="@drawable/ic_warning_triangle"
-        app:iconGravity="start"
-        app:iconTint="@color/white"
-        app:backgroundTint="@color/color_prof_danger"
-        app:cornerRadius="12dp"
-        android:elevation="8dp"
-        android:layout_margin="16dp" />
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:background="@android:color/transparent">
+
+        <!-- View Notification Logs Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnViewNotificationLogs"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="View Notification Logs"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:textColor="@color/white"
+            app:icon="@drawable/ic_bell_outline"
+            app:iconGravity="start"
+            app:iconTint="@color/white"
+            app:backgroundTint="#0F8A86"
+            app:cornerRadius="12dp"
+            android:elevation="4dp"
+            android:layout_marginBottom="12dp" />
+
+        <!-- Ban Organizer Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnBan"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="Ban Organizer"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="@color/white"
+            app:icon="@drawable/ic_warning_triangle"
+            app:iconGravity="start"
+            app:iconTint="@color/white"
+            app:backgroundTint="@color/color_prof_danger"
+            app:cornerRadius="12dp"
+            android:elevation="8dp" />
+    </LinearLayout>
 </FrameLayout>

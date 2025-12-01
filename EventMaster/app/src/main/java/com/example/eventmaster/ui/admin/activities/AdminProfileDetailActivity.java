@@ -71,6 +71,11 @@ public class AdminProfileDetailActivity extends AppCompatActivity {
         rvEvents = findViewById(R.id.rvEvents);
         rvEvents.setLayoutManager(new LinearLayoutManager(this));
         eventsAdapter = new OrganizerEventsAdapter();
+        eventsAdapter.setOnEventClickListener(eventId -> {
+            Intent intent = new Intent(this, AdminEventDetailsActivity.class);
+            intent.putExtra(AdminEventDetailsActivity.EXTRA_EVENT_ID, eventId);
+            startActivity(intent);
+        });
         rvEvents.setAdapter(eventsAdapter);
         
         tvEventsCount = findViewById(R.id.tvEventsCount);

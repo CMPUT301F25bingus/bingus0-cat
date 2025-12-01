@@ -23,7 +23,9 @@ import com.bumptech.glide.Glide;
 import com.example.eventmaster.R;
 import com.example.eventmaster.data.api.EventRepository;
 import com.example.eventmaster.data.firestore.EventRepositoryFs;
+import com.example.eventmaster.data.firestore.ProfileRepositoryFs;
 import com.example.eventmaster.model.Event;
+import com.example.eventmaster.model.Profile;
 
 import com.example.eventmaster.ui.admin.activities.AdminNotificationLogActivity;
 import com.google.android.material.button.MaterialButton;
@@ -42,6 +44,7 @@ public class AdminEventDetailsFragment extends Fragment {
     private static final String ARG_EVENT_ID = "event_id";
 
     private EventRepository eventRepository;
+    private ProfileRepositoryFs profileRepository;
     private String eventId;
     private Event currentEvent;
 
@@ -85,6 +88,7 @@ public class AdminEventDetailsFragment extends Fragment {
         }
 
         eventRepository = new EventRepositoryFs();
+        profileRepository = new ProfileRepositoryFs();
         Log.d(TAG, "onCreate: eventId=" + eventId);
     }
 
@@ -168,7 +172,8 @@ public class AdminEventDetailsFragment extends Fragment {
         if (organizerName != null && !organizerName.isEmpty()) {
             organizerText.setText("by " + organizerName);
         } else if (event.getOrganizerId() != null) {
-            organizerText.setText("by " + event.getOrganizerId());
+            // Fetch organizer name from profile
+            loadOrganizerName(event.getOrganizerId());
         } else {
             organizerText.setText("by Unknown");
         }
@@ -281,6 +286,33 @@ public class AdminEventDetailsFragment extends Fragment {
             geolocationIcon.setVisibility(View.VISIBLE);
             geolocationIcon.setColorFilter(requireContext().getResources().getColor(android.R.color.darker_gray, null));
         }
+    }
+
+    /**
+     * Loads organizer name from profile if not already stored in event.
+     */
+    private void loadOrganizerName(String organizerId) {
+        if (organizerId == null || organizerId.isEmpty()) {
+            organizerText.setText("by Unknown");
+            return;
+        }
+
+        // Set a temporary text while loading
+        organizerText.setText("by " + organizerId);
+
+        profileRepository.get(organizerId,
+            profile -> {
+                if (profile != null && profile.getName() != null && !profile.getName().isEmpty()) {
+                    organizerText.setText("by " + profile.getName());
+                } else {
+                    organizerText.setText("by Unknown");
+                }
+            },
+            error -> {
+                Log.e(TAG, "Failed to load organizer profile", error);
+                organizerText.setText("by Unknown");
+            }
+        );
     }
 
     /**

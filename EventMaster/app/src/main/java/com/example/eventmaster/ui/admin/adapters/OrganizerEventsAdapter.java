@@ -30,11 +30,16 @@ public class OrganizerEventsAdapter extends RecyclerView.Adapter<OrganizerEvents
 
     private final List<Event> data = new ArrayList<>();
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("MMMM d, yyyy", Locale.getDefault());
+    private OnEventClickListener clickListener;
 
     public void replace(List<Event> items) {
         data.clear();
         if (items != null) data.addAll(items);
         notifyDataSetChanged();
+    }
+
+    public void setOnEventClickListener(OnEventClickListener listener) {
+        this.clickListener = listener;
     }
 
     @NonNull @Override
@@ -63,6 +68,13 @@ public class OrganizerEventsAdapter extends RecyclerView.Adapter<OrganizerEvents
         // Set status badge background color
         int bgResId = isCompleted ? R.drawable.bg_status_completed : R.drawable.bg_status_ongoing;
         h.tvStatus.setBackgroundResource(bgResId);
+        
+        // Set click listener on the entire item view
+        h.itemView.setOnClickListener(v -> {
+            if (clickListener != null && e.getId() != null) {
+                clickListener.onEventClick(e.getId());
+            }
+        });
     }
 
     /**
@@ -114,6 +126,10 @@ public class OrganizerEventsAdapter extends RecyclerView.Adapter<OrganizerEvents
     }
 
     @Override public int getItemCount() { return data.size(); }
+
+    public interface OnEventClickListener {
+        void onEventClick(String eventId);
+    }
 
     static class VH extends RecyclerView.ViewHolder {
         final TextView tvTitle;
