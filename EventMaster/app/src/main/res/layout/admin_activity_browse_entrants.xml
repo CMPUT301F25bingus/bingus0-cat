@@ -16,6 +16,45 @@
         app:navigationIcon="@drawable/ic_arrow_back"
         app:navigationIconTint="@android:color/black"/>
 
+    <!-- Filter/Tab Bar -->
+    <LinearLayout
+        android:id="@+id/filterBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:background="@color/profile_nav"
+        android:gravity="center">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnUsers"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
+            android:text="Users"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            app:cornerRadius="12dp"
+            app:backgroundTint="@color/color_prof_primary"
+            android:elevation="4dp"/>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnOrganizers"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:text="Organizers"
+            android:textColor="@color/text_primary_dark"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            app:cornerRadius="12dp"
+            app:backgroundTint="@color/status_badge_bg"
+            android:elevation="2dp"/>
+    </LinearLayout>
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvProfiles"
         android:layout_width="match_parent"
@@ -31,5 +70,6 @@
         android:text="View more"
         android:gravity="center"
         android:padding="16dp"
-        android:textColor="@android:color/white"/>
+        android:textColor="@android:color/white"
+        android:visibility="gone"/>
 </LinearLayout>

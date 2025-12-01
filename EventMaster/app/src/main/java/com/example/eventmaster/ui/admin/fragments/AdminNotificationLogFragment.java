@@ -41,6 +41,7 @@ public class AdminNotificationLogFragment extends Fragment {
     private static final String TAG = "AdminNotificationLog";
     private static final String COLLECTION_NOTIFICATIONS = "notifications";
     private static final String ARG_ORGANIZER_ID = "organizerId";
+    private static final String ARG_EVENT_ID = "eventId";
 
     private RecyclerView recyclerView;
     private ImageView backButton;
@@ -48,16 +49,22 @@ public class AdminNotificationLogFragment extends Fragment {
     private AdminNotificationLogAdapter adapter;
     private List<Notification> allNotifications = new ArrayList<>();
     private String organizerId;
+    private String eventId;
     private EventReadService eventReadService;
 
     public AdminNotificationLogFragment() {
         // Required empty public constructor
     }
 
-    public static AdminNotificationLogFragment newInstance(String organizerId) {
+    public static AdminNotificationLogFragment newInstance(String organizerId, String eventId) {
         AdminNotificationLogFragment fragment = new AdminNotificationLogFragment();
         Bundle args = new Bundle();
-        args.putString(ARG_ORGANIZER_ID, organizerId);
+        if (organizerId != null) {
+            args.putString(ARG_ORGANIZER_ID, organizerId);
+        }
+        if (eventId != null) {
+            args.putString(ARG_EVENT_ID, eventId);
+        }
         fragment.setArguments(args);
         return fragment;
     }
@@ -67,6 +74,7 @@ public class AdminNotificationLogFragment extends Fragment {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
             organizerId = getArguments().getString(ARG_ORGANIZER_ID);
+            eventId = getArguments().getString(ARG_EVENT_ID);
         }
         eventReadService = new EventReadServiceFs();
     }
@@ -90,8 +98,10 @@ public class AdminNotificationLogFragment extends Fragment {
         recyclerView.setAdapter(adapter);
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
 
-        // Load notifications (filtered by organizer if organizerId is provided)
-        if (organizerId != null && !organizerId.isEmpty()) {
+        // Load notifications (filtered by eventId, organizerId, or all)
+        if (eventId != null && !eventId.isEmpty()) {
+            loadNotificationsForEvent();
+        } else if (organizerId != null && !organizerId.isEmpty()) {
             loadNotificationsForOrganizer();
         } else {
             loadAllNotifications();
@@ -258,6 +268,81 @@ public class AdminNotificationLogFragment extends Fragment {
                                 });
                     });
         }
+    }
+
+    /**
+     * Loads notifications for a specific event.
+     */
+    private void loadNotificationsForEvent() {
+        Log.d(TAG, "Loading notifications for event: " + eventId);
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        db.collection(COLLECTION_NOTIFICATIONS)
+                .whereEqualTo("eventId", eventId)
+                .orderBy("sentAt", Query.Direction.DESCENDING)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    allNotifications.clear();
+                    
+                    for (QueryDocumentSnapshot doc : querySnapshot) {
+                        try {
+                            Notification notification = parseNotification(doc);
+                            if (notification != null) {
+                                allNotifications.add(notification);
+                            }
+                        } catch (Exception e) {
+                            Log.e(TAG, "Error parsing notification document: " + doc.getId(), e);
+                        }
+                    }
+
+                    adapter.setNotifications(allNotifications);
+                    updateEmptyState();
+                    
+                    Log.d(TAG, "Loaded " + allNotifications.size() + " notifications for event");
+                })
+                .addOnFailureListener(e -> {
+                    // If orderBy fails, try without orderBy
+                    Log.w(TAG, "Query with orderBy failed, trying without orderBy: " + e.getMessage());
+                    db.collection(COLLECTION_NOTIFICATIONS)
+                            .whereEqualTo("eventId", eventId)
+                            .get()
+                            .addOnSuccessListener(querySnapshot -> {
+                                allNotifications.clear();
+                                
+                                for (QueryDocumentSnapshot doc : querySnapshot) {
+                                    try {
+                                        Notification notification = parseNotification(doc);
+                                        if (notification != null) {
+                                            allNotifications.add(notification);
+                                        }
+                                    } catch (Exception ex) {
+                                        Log.e(TAG, "Error parsing notification document: " + doc.getId(), ex);
+                                    }
+                                }
+                                
+                                // Sort manually by sentAt
+                                allNotifications.sort((a, b) -> {
+                                    Date dateA = a.getSentAt();
+                                    Date dateB = b.getSentAt();
+                                    if (dateA == null && dateB == null) return 0;
+                                    if (dateA == null) return 1;
+                                    if (dateB == null) return -1;
+                                    return dateB.compareTo(dateA); // Descending
+                                });
+
+                                adapter.setNotifications(allNotifications);
+                                updateEmptyState();
+                                
+                                Log.d(TAG, "Loaded " + allNotifications.size() + " notifications for event (without orderBy)");
+                            })
+                            .addOnFailureListener(ex -> {
+                                Log.e(TAG, "Failed to load notifications for event", ex);
+                                Toast.makeText(requireContext(),
+                                        "Failed to load notifications: " + ex.getMessage(),
+                                        Toast.LENGTH_SHORT).show();
+                                updateEmptyState();
+                            });
+                });
     }
 
     /**

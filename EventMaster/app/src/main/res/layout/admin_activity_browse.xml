@@ -1,55 +1,265 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:orientation="vertical" android:gravity="center"
-    android:layout_width="match_parent" android:layout_height="match_parent"
-    android:background="@color/profile_bg" android:padding="32dp">
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/profile_bg"
+    android:fillViewport="true">
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="24dp">
+
+        <!-- White Card Container -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="8dp"
+            app:cardBackgroundColor="@color/surface_white">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="32dp">
+
+                <!-- Header Section -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Admin Dashboard"
+                    android:textSize="24sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_primary_dark"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginBottom="8dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Manage your platform"
+                    android:textSize="16sp"
+                    android:textColor="@color/text_secondary_dark"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginBottom="32dp" />
+
+                <!-- Category Card 1: Manage Events -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardManageEvents"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="2dp"
+                    app:cardBackgroundColor="@color/status_badge_bg"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground">
 
     <LinearLayout
-        android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="vertical" android:gravity="center"
-        android:padding="24dp" android:background="@color/profile_nav"
-        android:elevation="2dp" android:layout_margin="16dp" android:clipToOutline="true">
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:padding="20dp">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnOrganizers"
-            android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:text="Browse organizers" android:textColor="@android:color/white"
-            app:cornerRadius="14dp" app:backgroundTint="@color/profile_button"
-            android:layout_marginBottom="12dp"/>
+                        <!-- Calendar Icon -->
+                        <ImageView
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:src="@drawable/ic_calendar_outline"
+                            android:contentDescription="Events icon"
+                            app:tint="@color/text_primary_dark"
+                            android:layout_marginEnd="16dp" />
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnEvents"
-            android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:text="Browse events" android:textColor="@android:color/white"
-            app:cornerRadius="14dp" app:backgroundTint="@color/profile_button"
-            android:layout_marginBottom="12dp"/>
+                        <!-- Text Content -->
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnProfiles"
-            android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:text="Browse profiles" android:textColor="@android:color/white"
-            app:cornerRadius="14dp" app:backgroundTint="@color/profile_button"
-            android:layout_marginBottom="12dp"/>
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Manage Events"
+                                android:textSize="18sp"
+                                android:textStyle="bold"
+                                android:textColor="@color/text_primary_dark"
+                                android:layout_marginBottom="4dp" />
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnImages"
-            android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:text="Browse images" android:textColor="@android:color/white"
-            app:cornerRadius="14dp" app:backgroundTint="@color/profile_button"
-            android:layout_marginBottom="12dp"/>
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Browse, view, and remove events and their images"
+                                android:textSize="14sp"
+                                android:textColor="@color/text_secondary_dark" />
+                        </LinearLayout>
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnNotifications"
-            android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:text="Notifications" android:textColor="@android:color/white"
-            app:cornerRadius="14dp" app:backgroundTint="@color/profile_button"
-            android:layout_marginBottom="12dp"/>
+                        <!-- Count Badge -->
+                        <TextView
+                            android:id="@+id/tvEventsCount"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="24"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/color_prof_primary"
+                            android:layout_marginStart="12dp"
+                            android:minWidth="32dp"
+                            android:gravity="center" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnReviewApplications"
-            android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:text="Review Applications" android:textColor="@android:color/white"
-            app:cornerRadius="14dp" app:backgroundTint="@color/profile_button"/>
+                <!-- Category Card 2: Users & Organizers -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardUsersOrganizers"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="2dp"
+                    app:cardBackgroundColor="@color/status_badge_bg"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:padding="20dp">
+
+                        <!-- People Icon -->
+                        <ImageView
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:src="@drawable/ic_people_outline"
+                            android:contentDescription="Users icon"
+                            app:tint="@color/text_primary_dark"
+                            android:layout_marginEnd="16dp" />
+
+                        <!-- Text Content -->
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Users &amp; Organizers"
+                                android:textSize="18sp"
+                                android:textStyle="bold"
+                                android:textColor="@color/text_primary_dark"
+                                android:layout_marginBottom="4dp" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Browse profiles, filter by role, and remove users"
+                                android:textSize="14sp"
+                                android:textColor="@color/text_secondary_dark" />
+                        </LinearLayout>
+
+                        <!-- Count Badge -->
+                        <TextView
+                            android:id="@+id/tvUsersCount"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="1.2K"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/color_prof_primary"
+                            android:layout_marginStart="12dp"
+                            android:minWidth="40dp"
+                            android:gravity="center" />
     </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Category Card 3: Review Applications -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardReviewApplications"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="2dp"
+                    app:cardBackgroundColor="@color/status_badge_bg"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:padding="20dp">
+
+                        <!-- Clipboard Icon -->
+                        <ImageView
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:src="@drawable/ic_clipboard_text_outline"
+                            android:contentDescription="Applications icon"
+                            app:tint="@color/text_primary_dark"
+                            android:layout_marginEnd="16dp" />
+
+                        <!-- Text Content -->
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Review Applications"
+                                android:textSize="18sp"
+                                android:textStyle="bold"
+                                android:textColor="@color/text_primary_dark"
+                                android:layout_marginBottom="4dp" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Review and approve organizer applications"
+                                android:textSize="14sp"
+                                android:textColor="@color/text_secondary_dark" />
 </LinearLayout>
+
+                        <!-- Count Badge -->
+                        <TextView
+                            android:id="@+id/tvApplicationsCount"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/color_prof_primary"
+                            android:layout_marginStart="12dp"
+                            android:minWidth="40dp"
+                            android:gravity="center" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Footer -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|center_horizontal"
+            android:layout_marginBottom="24dp"
+            android:text="Secure admin access • EventMaster"
+            android:textSize="12sp"
+            android:textColor="@color/white"
+            android:alpha="0.9" />
+    </FrameLayout>
+</ScrollView>
