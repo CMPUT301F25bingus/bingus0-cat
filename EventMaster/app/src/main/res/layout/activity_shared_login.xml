@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true"
-    android:background="@color/surface_white">
+    android:background="#CDE7E4">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -15,65 +15,91 @@
 
         <!-- App Icon/Logo -->
         <ImageView
-            android:layout_width="80dp"
-            android:layout_height="80dp"
-            android:src="@drawable/ic_calendar_outline"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:layout_marginBottom="32dp"
+            android:src="@drawable/eventmasterlogo"
             android:contentDescription="EventMaster logo"
-            android:layout_marginBottom="24dp"
-            app:tint="@color/teal_dark" />
+            android:scaleType="fitCenter"
+            android:elevation="8dp" />
 
         <!-- Title -->
         <com.google.android.material.textview.MaterialTextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Log in"
-            android:textSize="24sp"
+            android:textSize="28sp"
             android:textStyle="bold"
-            android:textColor="@color/text_primary_dark"
-            android:layout_marginBottom="32dp" />
+            android:textColor="#111827"
+            android:letterSpacing="0.02"
+            android:layout_marginBottom="40dp" />
 
-        <!-- Email Input -->
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/emailLayout"
+        <!-- White Card Container for Inputs -->
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Email"
-            android:layout_marginBottom="16dp"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/emailEditText"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="textEmailAddress"
-                android:maxLines="1" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <!-- Password Input -->
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/passwordLayout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Password"
-            android:layout_marginBottom="16dp"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/passwordEditText"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="textPassword"
-                android:maxLines="1" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <!-- Remember Me Checkbox -->
-        <com.google.android.material.checkbox.MaterialCheckBox
-            android:id="@+id/checkRememberMe"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Remember me"
-            android:textColor="@color/text_primary_dark"
-            android:layout_gravity="start"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="6dp"
+            app:cardBackgroundColor="@android:color/white"
             android:layout_marginBottom="24dp"
-            app:buttonTint="@color/teal_dark" />
+            app:cardUseCompatPadding="true">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="24dp">
+
+                <!-- Email Input -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/emailLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Email"
+                    android:layout_marginBottom="20dp"
+                    app:hintTextColor="#15837C"
+                    app:boxStrokeColor="#15837C"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/emailEditText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textEmailAddress"
+                        android:maxLines="1"
+                        android:textColor="#111827" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Password Input -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/passwordLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Password"
+                    android:layout_marginBottom="20dp"
+                    app:hintTextColor="#15837C"
+                    app:boxStrokeColor="#15837C"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/passwordEditText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textPassword"
+                        android:maxLines="1"
+                        android:textColor="#111827" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Remember Me Checkbox -->
+                <com.google.android.material.checkbox.MaterialCheckBox
+                    android:id="@+id/checkRememberMe"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Remember me"
+                    android:textColor="#111827"
+                    android:layout_gravity="start"
+                    app:buttonTint="#0F8A86" />
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
         <!-- Error Message Display -->
         <TextView
@@ -91,24 +117,29 @@
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnLogin"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="56dp"
             android:text="Log in"
             android:textAllCaps="false"
             android:textColor="@android:color/white"
-            app:cornerRadius="12dp"
-            app:backgroundTint="@color/teal_dark"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            app:cornerRadius="16dp"
+            app:backgroundTint="#0F8A86"
+            app:elevation="4dp"
             android:layout_marginBottom="16dp" />
 
         <!-- Apply to be Organizer Button -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnApplyOrganizer"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="56dp"
             android:text="Apply to be Organizer"
             android:textAllCaps="false"
-            android:textColor="@color/teal_dark"
-            app:cornerRadius="12dp"
-            app:strokeColor="@color/teal_dark"
+            android:textColor="#0F8A86"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            app:cornerRadius="16dp"
+            app:strokeColor="#0F8A86"
             app:strokeWidth="2dp"
             style="@style/Widget.MaterialComponents.Button.OutlinedButton"
             android:layout_marginBottom="12dp" />
@@ -120,7 +151,8 @@
             android:layout_height="wrap_content"
             android:text="Check Application Status"
             android:textAllCaps="false"
-            android:textColor="@color/teal_dark"
+            android:textColor="#0F8A86"
+            android:textSize="14sp"
             style="@style/Widget.MaterialComponents.Button.TextButton" />
 
     </LinearLayout>
