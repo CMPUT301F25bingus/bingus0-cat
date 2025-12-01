@@ -1,54 +1,68 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:gravity="center"
     android:background="#CDE7E4">
 
     <!-- Circular welcome panel with animation -->
-    <LinearLayout
+    <FrameLayout
         android:id="@+id/welcomeContainer"
-        android:layout_width="260dp"
-        android:layout_height="260dp"
-        android:orientation="vertical"
-        android:gravity="center"
-        android:background="@drawable/circle_shape">
+        android:layout_width="280dp"
+        android:layout_height="280dp"
+        android:layout_gravity="center">
 
-        <TextView
-            android:id="@+id/textWelcome"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="WELCOME"
-            android:textColor="@android:color/black"
-            android:textStyle="bold"
-            android:textSize="32sp"
-            android:alpha="0" />
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"
+            app:cardCornerRadius="140dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="#15837C"
+            app:strokeWidth="0dp">
 
-        <TextView
-            android:id="@+id/textEntrant"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Entrant!"
-            android:textColor="@android:color/black"
-            android:textStyle="bold"
-            android:textSize="28sp"
-            android:layout_marginTop="8dp"
-            android:alpha="0" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="40dp">
 
-        <ImageView
-            android:id="@+id/iconPerson"
-            android:layout_width="80dp"
-            android:layout_height="80dp"
-            android:layout_marginTop="16dp"
-            android:src="@drawable/baseline_person_24"
-            android:contentDescription="Entrant icon"
-            app:tint="@android:color/black"
-            android:alpha="0"
-            android:scaleX="0.5"
-            android:scaleY="0.5" />
+                <TextView
+                    android:id="@+id/textWelcome"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="WELCOME"
+                    android:textColor="@android:color/white"
+                    android:textStyle="bold"
+                    android:textSize="36sp"
+                    android:letterSpacing="0.05"
+                    android:alpha="0" />
 
-    </LinearLayout>
+                <TextView
+                    android:id="@+id/textEntrant"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Entrant!"
+                    android:textColor="@android:color/white"
+                    android:textStyle="bold"
+                    android:textSize="32sp"
+                    android:layout_marginTop="12dp"
+                    android:alpha="0" />
 
-</LinearLayout>
+                <ImageView
+                    android:id="@+id/iconPerson"
+                    android:layout_width="100dp"
+                    android:layout_height="100dp"
+                    android:layout_marginTop="24dp"
+                    android:src="@drawable/baseline_person_24"
+                    android:contentDescription="Entrant icon"
+                    app:tint="@android:color/white"
+                    android:alpha="0"
+                    android:scaleX="0.5"
+                    android:scaleY="0.5" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+    </FrameLayout>
+
+</FrameLayout>
