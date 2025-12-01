@@ -52,7 +52,7 @@ public class EditProfileActivity extends AppCompatActivity {
     private TextView tvHeroName, tvHeroEmail;
     private ImageView imgAvatar;
     private TextInputLayout layoutName, layoutEmail, layoutPhone;
-    private TextInputEditText inputName, inputEmail, inputPhone, inputDeviceId;
+    private TextInputEditText inputName, inputEmail, inputPhone;
     private MaterialButton btnEdit, btnCancelEdit, btnDelete, btnLogout;
     private ImageButton btnAddPicture;
     private boolean isEditing = false;
@@ -91,7 +91,7 @@ public class EditProfileActivity extends AppCompatActivity {
 
     @Override protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.shared_activity_profile);
+        setContentView(R.layout.organizer_activity_edit_profile);
 
         profileId = getIntent().getStringExtra("profileId");
         if (profileId == null && FirebaseAuth.getInstance().getCurrentUser() != null) {
@@ -114,24 +114,11 @@ public class EditProfileActivity extends AppCompatActivity {
         inputName = findViewById(R.id.inputName);
         inputEmail = findViewById(R.id.inputEmail);
         inputPhone = findViewById(R.id.inputPhone);
-        inputDeviceId = findViewById(R.id.inputDeviceId);
         btnEdit = findViewById(R.id.btnEdit);
         btnCancelEdit = findViewById(R.id.btnCancelEdit);
         btnDelete = findViewById(R.id.btnDelete);
         btnLogout = findViewById(R.id.btnLogout);
         btnAddPicture = findViewById(R.id.btnAddPicture);
-
-        // Hide bottom navigation for organizers
-        com.google.android.material.bottomnavigation.BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
-        if (bottomNav != null) {
-            bottomNav.setVisibility(View.GONE);
-        }
-
-        // Hide device ID field for organizers (organizers don't have device IDs)
-        TextInputLayout layoutDeviceId = findViewById(R.id.layoutDeviceId);
-        if (layoutDeviceId != null) {
-            layoutDeviceId.setVisibility(View.GONE);
-        }
 
         setFieldsEditable(false);
 

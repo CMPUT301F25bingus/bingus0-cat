@@ -1,6 +1,9 @@
 package com.example.eventmaster.ui.shared.activities;
 
+import android.Manifest;
 import android.content.Intent;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageButton;
@@ -8,6 +11,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.Nullable;
 import android.content.DialogInterface;
 
@@ -29,7 +34,12 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -60,17 +70,49 @@ public class ProfileActivity extends AppCompatActivity {
     // === UI elements ===
     private TextView tvHeroName, tvHeroEmail;
     private ImageView imgAvatar;
+    private ImageButton btnAddPicture;
     private TextInputLayout layoutName, layoutEmail, layoutPhone;
-    private TextInputEditText inputName, inputEmail, inputPhone, inputDeviceId;
+    private TextInputEditText inputName, inputEmail, inputPhone;
     private MaterialButton btnEdit, btnCancelEdit, btnDelete, btnLogout;
     private com.google.android.material.bottomnavigation.BottomNavigationView bottomNavigationView;
     private Profile currentProfile;
     private boolean isEditing = false;
+    private Uri profilePictureUri = null;
+
+    // Image picker launcher
+    private final ActivityResultLauncher<String> pickImage =
+            registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
+                if (uri != null) {
+                    profilePictureUri = uri;
+                    // Clear any tint before loading image
+                    if (imgAvatar != null) {
+                        imgAvatar.setColorFilter(null);
+                        // Show preview immediately with Glide (circular)
+                        Glide.with(this)
+                                .load(uri)
+                                .circleCrop()
+                                .placeholder(R.drawable.ic_avatar_placeholder)
+                                .into(imgAvatar);
+                    }
+                    // Upload the image
+                    uploadProfilePicture(uri);
+                }
+            });
+
+    // Permission launcher
+    private final ActivityResultLauncher<String> requestPermission =
+            registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> {
+                if (granted) {
+                    pickImage.launch("image/*");
+                } else {
+                    Toast.makeText(this, "Permission denied", Toast.LENGTH_SHORT).show();
+                }
+            });
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.shared_activity_profile);
+        setContentView(R.layout.entrant_activity_profile);
 
         // 🔹 Setup back button (if present in layout)
         ImageButton btnBack = findViewById(R.id.btnBack);
@@ -87,13 +129,13 @@ public class ProfileActivity extends AppCompatActivity {
         tvHeroName = findViewById(R.id.tvHeroName);
         tvHeroEmail = findViewById(R.id.tvHeroEmail);
         imgAvatar = findViewById(R.id.imgAvatar);
+        btnAddPicture = findViewById(R.id.btnAddPicture);
         layoutName = findViewById(R.id.layoutName);
         layoutEmail = findViewById(R.id.layoutEmail);
         layoutPhone = findViewById(R.id.layoutPhone);
         inputName = findViewById(R.id.inputName);
         inputEmail = findViewById(R.id.inputEmail);
         inputPhone = findViewById(R.id.inputPhone);
-        inputDeviceId = findViewById(R.id.inputDeviceId);
         btnEdit  = findViewById(R.id.btnEdit);
         btnCancelEdit = findViewById(R.id.btnCancelEdit);
         btnDelete= findViewById(R.id.btnDelete);
@@ -101,10 +143,6 @@ public class ProfileActivity extends AppCompatActivity {
         bottomNavigationView = findViewById(R.id.bottom_navigation);
 
         setFieldsEditable(false);
-        if (inputDeviceId != null) {
-            inputDeviceId.setEnabled(false);
-            inputDeviceId.setFocusable(false);
-        }
 
         btnEdit.setOnClickListener(v -> {
             if (isEditing) {
@@ -120,6 +158,26 @@ public class ProfileActivity extends AppCompatActivity {
 
         // 🔹 Logout button → sign out and go to role selection
         btnLogout.setOnClickListener(v -> handleLogout());
+
+        // Add picture button
+        if (btnAddPicture != null) {
+            btnAddPicture.setOnClickListener(v -> {
+                if (Build.VERSION.SDK_INT >= 33) {
+                    requestPermission.launch(Manifest.permission.READ_MEDIA_IMAGES);
+                } else {
+                    requestPermission.launch(Manifest.permission.READ_EXTERNAL_STORAGE);
+                }
+            });
+        }
+
+        // Also make avatar clickable
+        if (imgAvatar != null) {
+            imgAvatar.setOnClickListener(v -> {
+                if (btnAddPicture != null) {
+                    btnAddPicture.performClick();
+                }
+            });
+        }
 
         // Setup bottom navigation (for entrants)
         setupBottomNavigation();
@@ -466,7 +524,6 @@ public class ProfileActivity extends AppCompatActivity {
         if (inputName != null) inputName.setText(rawName);
         if (inputEmail != null) inputEmail.setText(rawEmail);
         if (inputPhone != null) inputPhone.setText(rawPhone);
-        if (inputDeviceId != null) inputDeviceId.setText(device);
 
         // Load profile picture if available
         if (imgAvatar != null) {
@@ -577,5 +634,76 @@ public class ProfileActivity extends AppCompatActivity {
         return editText != null && editText.getText() != null
                 ? editText.getText().toString().trim()
                 : "";
+    }
+
+    /**
+     * Uploads profile picture to Firebase Storage and updates profile document.
+     */
+    private void uploadProfilePicture(Uri uri) {
+        if (currentId == null || uri == null) {
+            Toast.makeText(this, "Cannot upload picture", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Toast.makeText(this, "Uploading picture...", Toast.LENGTH_SHORT).show();
+
+        try {
+            byte[] bytes = readAllBytes(uri);
+            StorageReference ref = FirebaseStorage.getInstance()
+                    .getReference("profiles/" + currentId + "/profile.jpg");
+
+            ref.putBytes(bytes)
+                    .continueWithTask(task -> {
+                        if (!task.isSuccessful()) throw task.getException();
+                        return ref.getDownloadUrl();
+                    })
+                    .addOnSuccessListener(downloadUrl -> {
+                        String imageUrl = downloadUrl.toString();
+                        // Update profile with image URL
+                        if (currentProfile != null) {
+                            currentProfile.setProfileImageUrl(imageUrl);
+                        }
+                        // Update in Firestore
+                        FirebaseFirestore.getInstance()
+                                .collection("profiles")
+                                .document(currentId)
+                                .update("profileImageUrl", imageUrl)
+                                .addOnSuccessListener(unused -> {
+                                    Toast.makeText(this, "Profile picture updated!", Toast.LENGTH_SHORT).show();
+                                    // Update currentProfile object
+                                    if (currentProfile != null) {
+                                        currentProfile.setProfileImageUrl(imageUrl);
+                                    }
+                                    // Reload profile to show updated image
+                                    loadProfile();
+                                })
+                                .addOnFailureListener(e -> {
+                                    Toast.makeText(this, "Failed to save URL: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                                });
+                    })
+                    .addOnFailureListener(e -> {
+                        Toast.makeText(this, "Upload failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    });
+        } catch (Exception e) {
+            Toast.makeText(this, "Failed to read image: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
+    }
+
+    /**
+     * Reads all bytes from a URI.
+     */
+    private byte[] readAllBytes(Uri uri) throws IOException {
+        InputStream inputStream = getContentResolver().openInputStream(uri);
+        if (inputStream == null) {
+            throw new IOException("Cannot open input stream for URI: " + uri);
+        }
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        byte[] buffer = new byte[4096];
+        int bytesRead;
+        while ((bytesRead = inputStream.read(buffer)) != -1) {
+            outputStream.write(buffer, 0, bytesRead);
+        }
+        inputStream.close();
+        return outputStream.toByteArray();
     }
 }
