@@ -502,6 +502,8 @@ public class ProfileActivity extends AppCompatActivity {
         FirebaseAuth.getInstance().signOut();
         // Clear saved "Remember me" credentials
         com.example.eventmaster.utils.CredentialStorageHelper.clearCredentials(this);
+        // Clear entrant session preference so user doesn't auto-login as entrant
+        com.example.eventmaster.utils.EntrantSessionPrefs.setLastEntrantActive(this, false);
 
         Intent intent = new Intent(this, com.example.eventmaster.MainActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
