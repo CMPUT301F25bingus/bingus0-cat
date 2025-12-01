@@ -34,6 +34,7 @@ public class LotteryServiceFs implements LotteryService {
 
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
     private final ProfileRepositoryFs profileRepo = new ProfileRepositoryFs();
+    private final NotificationServiceFs notificationService = new NotificationServiceFs();
     private static final String TAG = "LotteryServiceFs";
 
     /**
@@ -161,52 +162,27 @@ public class LotteryServiceFs implements LotteryService {
 
                                         // Send notification to winner (US 01.04.01) with event name - check opt-out preference
                                         String winnerUserId = e.getUserId();
+                                        
+                                        // Try to get profile by userId first (for organizers/legacy entrants)
                                         profileRepo.get(winnerUserId)
                                                 .addOnSuccessListener(profile -> {
-                                                    // Only send notification if user has notifications enabled
-                                                    if (profile != null && profile.isNotificationsEnabled()) {
-                                                        Map<String, Object> notification = new HashMap<>();
-                                                        notification.put("eventId", eventId);
-                                                        notification.put("recipientUserId", winnerUserId);
-                                                        notification.put("senderUserId", "system");
-                                                        notification.put("type", "LOTTERY_WON");
-                                                        notification.put("title", "🎉 You've been selected!");
-                                                        notification.put("message", "Congratulations! You've been chosen in the lottery for \"" + eventName + "\". Go to the event details to accept or decline your invitation.");
-                                                        notification.put("isRead", false);
-                                                        notification.put("sentAt", Timestamp.now());
-
-                                                        db.collection("notifications")
-                                                                .add(notification)
-                                                                .addOnSuccessListener(docRef -> {
-                                                                    Log.d(TAG, "🔔 Sent notification to " + winnerUserId);
-                                                                })
-                                                                .addOnFailureListener(ex -> {
-                                                                    Log.e(TAG, "❌ Failed to send notification to " + winnerUserId, ex);
-                                                                });
-                                                    } else {
-                                                        Log.d(TAG, "⏭️ Skipping notification for " + winnerUserId + " (opted out)");
-                                                    }
+                                                    sendWinnerNotification(profile, eventId, eventName, winnerUserId);
                                                 })
                                                 .addOnFailureListener(ex -> {
-                                                    // If we can't fetch profile, default to sending notification (backward compatibility)
-                                                    Log.w(TAG, "⚠️ Could not fetch profile for " + winnerUserId + ", sending notification anyway", ex);
-                                                    Map<String, Object> notification = new HashMap<>();
-                                                    notification.put("eventId", eventId);
-                                                    notification.put("recipientUserId", winnerUserId);
-                                                    notification.put("senderUserId", "system");
-                                                    notification.put("type", "LOTTERY_WON");
-                                                    notification.put("title", "🎉 You've been selected!");
-                                                    notification.put("message", "Congratulations! You've been chosen in the lottery for \"" + eventName + "\". Go to the event details to accept or decline your invitation.");
-                                                    notification.put("isRead", false);
-                                                    notification.put("sentAt", Timestamp.now());
-
-                                                    db.collection("notifications")
-                                                            .add(notification)
-                                                            .addOnSuccessListener(docRef -> {
-                                                                Log.d(TAG, "🔔 Sent notification to " + winnerUserId + " (profile fetch failed)");
+                                                    // Fallback: try to get profile by deviceId (for deviceId-based entrants)
+                                                    Log.d(TAG, "Profile not found by userId " + winnerUserId + ", trying deviceId lookup");
+                                                    profileRepo.getByDeviceId(winnerUserId)
+                                                            .addOnSuccessListener(profile -> {
+                                                                sendWinnerNotification(profile, eventId, eventName, winnerUserId);
                                                             })
                                                             .addOnFailureListener(err -> {
-                                                                Log.e(TAG, "❌ Failed to send notification to " + winnerUserId, err);
+                                                                Log.w(TAG, "⚠️ Could not fetch profile for " + winnerUserId + " (tried userId and deviceId)", err);
+                                                                // Create a minimal profile with deviceId for notification
+                                                                Profile fallbackProfile = new Profile();
+                                                                fallbackProfile.setUserId(winnerUserId);
+                                                                fallbackProfile.setDeviceId(winnerUserId);
+                                                                fallbackProfile.setNotificationsEnabled(true);
+                                                                sendWinnerNotification(fallbackProfile, eventId, eventName, winnerUserId);
                                                             });
                                                 });
                                     }
@@ -238,52 +214,27 @@ public class LotteryServiceFs implements LotteryService {
 
                                         // Send notification to loser (US 01.04.02) with event name - check opt-out preference
                                         String loserUserId = e.getUserId();
+                                        
+                                        // Try to get profile by userId first (for organizers/legacy entrants)
                                         profileRepo.get(loserUserId)
                                                 .addOnSuccessListener(profile -> {
-                                                    // Only send notification if user has notifications enabled
-                                                    if (profile != null && profile.isNotificationsEnabled()) {
-                                                        Map<String, Object> notification = new HashMap<>();
-                                                        notification.put("eventId", eventId);
-                                                        notification.put("recipientUserId", loserUserId);
-                                                        notification.put("senderUserId", "system");
-                                                        notification.put("type", "LOTTERY_LOST");
-                                                        notification.put("title", "Lottery Results - " + eventName);
-                                                        notification.put("message", "Thank you for your interest. Unfortunately, you were not selected in this lottery for \"" + eventName + "\". But don't worry! a spot might still open if someone else changes their mind.");
-                                                        notification.put("isRead", false);
-                                                        notification.put("sentAt", Timestamp.now());
-
-                                                        db.collection("notifications")
-                                                                .add(notification)
-                                                                .addOnSuccessListener(docRef -> {
-                                                                    Log.d(TAG, "🔔 Sent 'not selected' notification to " + loserUserId);
-                                                                })
-                                                                .addOnFailureListener(ex -> {
-                                                                    Log.e(TAG, "❌ Failed to send notification to " + loserUserId, ex);
-                                                                });
-                                                    } else {
-                                                        Log.d(TAG, "⏭️ Skipping notification for " + loserUserId + " (opted out)");
-                                                    }
+                                                    sendLoserNotification(profile, eventId, eventName, loserUserId);
                                                 })
                                                 .addOnFailureListener(ex -> {
-                                                    // If we can't fetch profile, default to sending notification (backward compatibility)
-                                                    Log.w(TAG, "⚠️ Could not fetch profile for " + loserUserId + ", sending notification anyway", ex);
-                                                    Map<String, Object> notification = new HashMap<>();
-                                                    notification.put("eventId", eventId);
-                                                    notification.put("recipientUserId", loserUserId);
-                                                    notification.put("senderUserId", "system");
-                                                    notification.put("type", "LOTTERY_LOST");
-                                                    notification.put("title", "Lottery Results - " + eventName);
-                                                    notification.put("message", "Thank you for your interest. Unfortunately, you were not selected in this lottery for \"" + eventName + "\". But don't worry! a spot might still open if someone else changes their mind.");
-                                                    notification.put("isRead", false);
-                                                    notification.put("sentAt", Timestamp.now());
-
-                                                    db.collection("notifications")
-                                                            .add(notification)
-                                                            .addOnSuccessListener(docRef -> {
-                                                                Log.d(TAG, "🔔 Sent 'not selected' notification to " + loserUserId + " (profile fetch failed)");
+                                                    // Fallback: try to get profile by deviceId (for deviceId-based entrants)
+                                                    Log.d(TAG, "Profile not found by userId " + loserUserId + ", trying deviceId lookup");
+                                                    profileRepo.getByDeviceId(loserUserId)
+                                                            .addOnSuccessListener(profile -> {
+                                                                sendLoserNotification(profile, eventId, eventName, loserUserId);
                                                             })
                                                             .addOnFailureListener(err -> {
-                                                                Log.e(TAG, "❌ Failed to send notification to " + loserUserId, err);
+                                                                Log.w(TAG, "⚠️ Could not fetch profile for " + loserUserId + " (tried userId and deviceId)", err);
+                                                                // Create a minimal profile with deviceId for notification
+                                                                Profile fallbackProfile = new Profile();
+                                                                fallbackProfile.setUserId(loserUserId);
+                                                                fallbackProfile.setDeviceId(loserUserId);
+                                                                fallbackProfile.setNotificationsEnabled(true);
+                                                                sendLoserNotification(fallbackProfile, eventId, eventName, loserUserId);
                                                             });
                                                 });
                                     }
@@ -296,5 +247,81 @@ public class LotteryServiceFs implements LotteryService {
                         return Tasks.forException(e);
                     }
                 });
+    }
+
+    /**
+     * Helper method to send winner notification using NotificationServiceFs.
+     * Ensures deviceId and recipientId fields are properly stored.
+     */
+    private void sendWinnerNotification(Profile profile, String eventId, String eventName, String userId) {
+        if (profile == null) {
+            Log.w(TAG, "Cannot send notification: profile is null for " + userId);
+            return;
+        }
+
+        // Only send notification if user has notifications enabled
+        if (!profile.isNotificationsEnabled()) {
+            Log.d(TAG, "⏭️ Skipping notification for " + userId + " (opted out)");
+            return;
+        }
+
+        // Ensure deviceId is set for entrants
+        if (profile.getDeviceId() == null || profile.getDeviceId().isEmpty()) {
+            // For entrants, userId is often the deviceId
+            if ("entrant".equals(profile.getRole()) || profile.getRole() == null) {
+                profile.setDeviceId(userId);
+            }
+        }
+
+        String title = "🎉 You've been selected!";
+        String message = "Congratulations! You've been chosen in the lottery for \"" + eventName + "\". Go to the event details to accept or decline your invitation.";
+
+        List<Profile> winnerProfiles = Collections.singletonList(profile);
+        notificationService.sendNotificationToSelectedEntrants(
+                eventId,
+                winnerProfiles,
+                title,
+                message,
+                () -> Log.d(TAG, "🔔 Sent notification to " + userId),
+                err -> Log.e(TAG, "❌ Failed to send notification to " + userId + ": " + err)
+        );
+    }
+
+    /**
+     * Helper method to send loser notification using NotificationServiceFs.
+     * Ensures deviceId and recipientId fields are properly stored.
+     */
+    private void sendLoserNotification(Profile profile, String eventId, String eventName, String userId) {
+        if (profile == null) {
+            Log.w(TAG, "Cannot send notification: profile is null for " + userId);
+            return;
+        }
+
+        // Only send notification if user has notifications enabled
+        if (!profile.isNotificationsEnabled()) {
+            Log.d(TAG, "⏭️ Skipping notification for " + userId + " (opted out)");
+            return;
+        }
+
+        // Ensure deviceId is set for entrants
+        if (profile.getDeviceId() == null || profile.getDeviceId().isEmpty()) {
+            // For entrants, userId is often the deviceId
+            if ("entrant".equals(profile.getRole()) || profile.getRole() == null) {
+                profile.setDeviceId(userId);
+            }
+        }
+
+        String title = "Lottery Results - " + eventName;
+        String message = "Thank you for your interest. Unfortunately, you were not selected in this lottery for \"" + eventName + "\". But don't worry! a spot might still open if someone else changes their mind.";
+
+        List<Profile> loserProfiles = Collections.singletonList(profile);
+        notificationService.sendNotificationToNotSelectedEntrants(
+                eventId,
+                loserProfiles,
+                title,
+                message,
+                () -> Log.d(TAG, "🔔 Sent 'not selected' notification to " + userId),
+                err -> Log.e(TAG, "❌ Failed to send notification to " + userId + ": " + err)
+        );
     }
 }

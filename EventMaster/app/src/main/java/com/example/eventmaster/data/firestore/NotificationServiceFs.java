@@ -201,35 +201,49 @@ public class NotificationServiceFs implements NotificationService {
         int totalCount = eligibleProfiles.size();
 
         for (Profile profile : eligibleProfiles) {
+            // Prefer Firebase userId when available (organizers/legacy entrants),
+            // but fall back to deviceId for device-based entrants.
             String recipientUserId = profile.getUserId();
-            if (recipientUserId == null || recipientUserId.isEmpty()) {
-                Log.w(TAG, "Profile " + profile.getName() + " has null/empty userId, skipping notification");
+            String deviceId = profile.getDeviceId();
+
+            if ((recipientUserId == null || recipientUserId.isEmpty())
+                    && (deviceId == null || deviceId.isEmpty())) {
+                Log.w(TAG, "Profile " + profile.getName() + " has no userId or deviceId, skipping notification");
                 int completed = successCount.get() + failureCount.incrementAndGet();
                 if (completed == totalCount) {
                     handleBatchCompletion(successCount.get(), failureCount.get(), totalCount, onSuccess, onFailure);
                 }
                 continue;
             }
-            Log.d(TAG, "Creating notification for profile: " + profile.getName() + 
-                    ", userId: " + recipientUserId + ", type: " + type + ", eventId: " + eventId);
-            createNotificationRecord(eventId, recipientUserId, type, title, message,
+
+            // Primary identifier we store in recipientUserId; for pure entrants this will be deviceId
+            String primaryRecipientId = (recipientUserId != null && !recipientUserId.isEmpty())
+                    ? recipientUserId
+                    : deviceId;
+
+            Log.d(TAG, "Creating notification for profile: " + profile.getName() +
+                    ", primaryRecipientId=" + primaryRecipientId +
+                    ", deviceId=" + deviceId +
+                    ", type=" + type + ", eventId=" + eventId);
+
+            createNotificationRecord(eventId, primaryRecipientId, deviceId, type, title, message,
                     () -> {
                         int completed = successCount.incrementAndGet() + failureCount.get();
-                        Log.d(TAG, "Notification sent successfully to " + recipientUserId + 
+                        Log.d(TAG, "Notification sent successfully to " + primaryRecipientId +
                                 " (" + completed + "/" + totalCount + ")");
-                        
+
                         if (completed == totalCount) {
-                            handleBatchCompletion(successCount.get(), failureCount.get(), 
+                            handleBatchCompletion(successCount.get(), failureCount.get(),
                                     totalCount, onSuccess, onFailure);
                         }
                     },
                     error -> {
                         int completed = successCount.get() + failureCount.incrementAndGet();
-                        Log.e(TAG, "Failed to send notification to " + profile.getUserId() + 
+                        Log.e(TAG, "Failed to send notification to " + primaryRecipientId +
                                 ": " + error + " (" + completed + "/" + totalCount + ")");
-                        
+
                         if (completed == totalCount) {
-                            handleBatchCompletion(successCount.get(), failureCount.get(), 
+                            handleBatchCompletion(successCount.get(), failureCount.get(),
                                     totalCount, onSuccess, onFailure);
                         }
                     }
@@ -288,14 +302,17 @@ public class NotificationServiceFs implements NotificationService {
     private void createNotificationRecord(
             String eventId,
             String recipientUserId,
+            String deviceId,
             Notification.NotificationType type,
             String title,
             String message,
             OnSuccessListener onSuccess,
             OnFailureListener onFailure) {
         
-        Log.d(TAG, "createNotificationRecord: eventId=" + eventId + 
-                ", recipientUserId=" + recipientUserId + ", type=" + type);
+        Log.d(TAG, "createNotificationRecord: eventId=" + eventId +
+                ", recipientUserId=" + recipientUserId +
+                ", deviceId=" + deviceId +
+                ", type=" + type);
         
         Notification notification = new Notification(
                 eventId,
@@ -308,7 +325,7 @@ public class NotificationServiceFs implements NotificationService {
         
         Log.d(TAG, "Notification object created: recipientUserId=" + notification.getRecipientUserId());
 
-        Map<String, Object> notificationData = createNotificationData(notification);
+        Map<String, Object> notificationData = createNotificationData(notification, deviceId);
 
         firestore.collection(COLLECTION_NOTIFICATIONS)
                 .add(notificationData)
@@ -344,13 +361,17 @@ public class NotificationServiceFs implements NotificationService {
      * @param notification The notification to convert
      * @return Map of notification data
      */
-    private Map<String, Object> createNotificationData(Notification notification) {
+    private Map<String, Object> createNotificationData(Notification notification, String deviceId) {
         Map<String, Object> data = new HashMap<>();
         data.put("eventId", notification.getEventId());
         data.put("recipientUserId", notification.getRecipientUserId());
         // Also add legacy recipientId field for backward compatibility
         if (notification.getRecipientUserId() != null) {
             data.put("recipientId", notification.getRecipientUserId());
+        }
+        // Store deviceId when available so device-based entrants can be queried reliably
+        if (deviceId != null && !deviceId.isEmpty()) {
+            data.put("deviceId", deviceId);
         }
         data.put("senderUserId", notification.getSenderUserId());
         data.put("type", notification.getType().name());
@@ -359,7 +380,8 @@ public class NotificationServiceFs implements NotificationService {
         data.put("sentAt", notification.getSentAt());
         data.put("isRead", notification.isRead());
         
-        Log.d(TAG, "createNotificationData: recipientUserId=" + notification.getRecipientUserId() + 
+        Log.d(TAG, "createNotificationData: recipientUserId=" + notification.getRecipientUserId() +
+                ", deviceId=" + deviceId +
                 ", eventId=" + notification.getEventId() + ", type=" + notification.getType() +
                 ", title=" + notification.getTitle());
         
