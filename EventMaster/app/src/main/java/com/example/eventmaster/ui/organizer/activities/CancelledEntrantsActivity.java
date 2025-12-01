@@ -20,7 +20,6 @@ import com.example.eventmaster.model.Profile;
 import com.example.eventmaster.model.WaitingListEntry;
 import com.example.eventmaster.ui.organizer.adapters.CancelledEntrantsAdapter;
 import com.google.android.gms.tasks.Task;
-import com.google.android.material.appbar.MaterialToolbar;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.SetOptions;
@@ -56,7 +55,8 @@ public class CancelledEntrantsActivity extends AppCompatActivity {
     private CancelledEntrantsAdapter adapter;
     private TextView totalCountText;
     private TextView sendNotificationButton;
-    private MaterialToolbar backButton;
+    private android.view.View backButton;
+    private TextView emptyStateText;
 
     private final List<Profile> cancelledProfiles = new ArrayList<>();
     private final List<String> cancelledStatuses = new ArrayList<>();
@@ -85,6 +85,7 @@ public class CancelledEntrantsActivity extends AppCompatActivity {
         totalCountText = findViewById(R.id.total_selected_count);
         backButton = findViewById(R.id.back_button_container);
         sendNotificationButton = findViewById(R.id.textSendNotification);
+        emptyStateText = findViewById(R.id.empty_state_text);
 
         notificationService = new NotificationServiceFs();
         profileRepo = new ProfileRepositoryFs();
@@ -357,6 +358,15 @@ public class CancelledEntrantsActivity extends AppCompatActivity {
      */
     private void updateCount() {
         totalCountText.setText("Total cancelled entrants: " + cancelledProfiles.size());
+        
+        // Show/hide empty state
+        if (cancelledProfiles.isEmpty()) {
+            if (emptyStateText != null) emptyStateText.setVisibility(android.view.View.VISIBLE);
+            recyclerView.setVisibility(android.view.View.GONE);
+        } else {
+            if (emptyStateText != null) emptyStateText.setVisibility(android.view.View.GONE);
+            recyclerView.setVisibility(android.view.View.VISIBLE);
+        }
     }
 
     /**

@@ -68,6 +68,7 @@ public class SelectedEntrantsActivity extends AppCompatActivity {
     private TextView totalSelectedCount;
     private TextView sendNotificationButton;
     private TextView exportCsvButton;
+    private TextView emptyStateText;
 
     // Data
     private String eventId;
@@ -118,6 +119,7 @@ public class SelectedEntrantsActivity extends AppCompatActivity {
         totalSelectedCount = findViewById(R.id.total_selected_count);
         sendNotificationButton = findViewById(R.id.send_notification_button);
         exportCsvButton = findViewById(R.id.export_csv_button);
+        emptyStateText = findViewById(R.id.empty_state_text);
     }
 
     /**
@@ -325,6 +327,15 @@ public class SelectedEntrantsActivity extends AppCompatActivity {
     private void updateUI() {
         String countText = "Total selected entrants: " + selectedEntrants.size();
         totalSelectedCount.setText(countText);
+        
+        // Show/hide empty state
+        if (selectedEntrants.isEmpty()) {
+            if (emptyStateText != null) emptyStateText.setVisibility(android.view.View.VISIBLE);
+            recyclerView.setVisibility(android.view.View.GONE);
+        } else {
+            if (emptyStateText != null) emptyStateText.setVisibility(android.view.View.GONE);
+            recyclerView.setVisibility(android.view.View.VISIBLE);
+        }
     }
 
     /**
