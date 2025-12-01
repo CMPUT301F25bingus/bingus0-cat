@@ -48,14 +48,34 @@
 
             </androidx.constraintlayout.widget.ConstraintLayout>
 
-            <!-- Event Poster Image - Larger to fit entire poster -->
-            <ImageView
-                android:id="@+id/event_poster_image"
+            <!-- Event Poster Image with Delete Button -->
+            <RelativeLayout
                 android:layout_width="match_parent"
-                android:layout_height="400dp"
-                android:scaleType="centerCrop"
-                android:background="#E3E8E8"
-                android:contentDescription="Event Poster" />
+                android:layout_height="400dp">
+
+                    <ImageView
+                        android:id="@+id/event_poster_image"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:scaleType="centerCrop"
+                        android:background="#E3E8E8"
+                        android:contentDescription="Event Poster" />
+
+                <!-- Delete Button (Pencil/Edit Icon) -->
+                <ImageButton
+                    android:id="@+id/btn_delete_poster"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_alignParentEnd="true"
+                    android:layout_alignParentTop="true"
+                    android:layout_margin="12dp"
+                    android:background="@drawable/bg_rounded_white"
+                    android:src="@drawable/ic_edit_24"
+                    android:contentDescription="Delete Poster"
+                    android:padding="8dp"
+                    android:elevation="4dp"
+                    app:tint="#666666" />
+            </RelativeLayout>
 
             <!-- White Content Card -->
             <com.google.android.material.card.MaterialCardView
@@ -75,12 +95,12 @@
                     <!-- Event Title -->
                     <TextView
                         android:id="@+id/event_name_text"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Event Name"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Event Name"
                         android:textSize="24sp"
-                        android:textStyle="bold"
-                        android:textColor="#000000"
+                    android:textStyle="bold"
+                    android:textColor="#000000"
                         android:layout_marginBottom="8dp" />
 
                     <!-- Organizer with icon -->
@@ -98,8 +118,8 @@
                             android:tint="#666666"
                             android:contentDescription="Organizer" />
 
-                        <TextView
-                            android:id="@+id/event_organizer_text"
+                <TextView
+                    android:id="@+id/event_organizer_text"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="by Unknown"
@@ -130,8 +150,8 @@
                             app:cardBackgroundColor="#F5F5F5">
 
                             <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
                                 android:orientation="vertical"
                                 android:gravity="center"
                                 android:padding="12dp">
@@ -149,11 +169,11 @@
                                     android:layout_height="wrap_content"
                                     android:text="Date"
                                     android:textSize="12sp"
-                                    android:textColor="#666666"
+                    android:textColor="#666666"
                                     android:layout_marginBottom="4dp" />
 
-                                <TextView
-                                    android:id="@+id/event_date_text"
+                <TextView
+                    android:id="@+id/event_date_text"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:text="TBA"
@@ -220,8 +240,8 @@
                             app:cardBackgroundColor="#F5F5F5">
 
                             <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
                                 android:orientation="vertical"
                                 android:gravity="center"
                                 android:padding="12dp">
@@ -242,8 +262,8 @@
                                     android:textColor="#666666"
                                     android:layout_marginBottom="4dp" />
 
-                                <TextView
-                                    android:id="@+id/event_location_text"
+                <TextView
+                    android:id="@+id/event_location_text"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:text="TBA"
@@ -268,8 +288,8 @@
                             app:cardBackgroundColor="#F5F5F5">
 
                             <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
                                 android:orientation="vertical"
                                 android:gravity="center"
                                 android:padding="12dp">
@@ -290,8 +310,8 @@
                                     android:textColor="#666666"
                                     android:layout_marginBottom="4dp" />
 
-                                <TextView
-                                    android:id="@+id/event_price_text"
+                <TextView
+                    android:id="@+id/event_price_text"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:text="Free"
@@ -313,8 +333,8 @@
                             app:cardBackgroundColor="#F5F5F5">
 
                             <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
                                 android:orientation="vertical"
                                 android:gravity="center"
                                 android:padding="12dp">
@@ -335,8 +355,8 @@
                                     android:textColor="#666666"
                                     android:layout_marginBottom="4dp" />
 
-                                <TextView
-                                    android:id="@+id/event_capacity_text"
+                <TextView
+                    android:id="@+id/event_capacity_text"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:text="Unlimited"
@@ -416,8 +436,8 @@
                             app:cardBackgroundColor="#F5F5F5">
 
                             <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
                                 android:orientation="vertical"
                                 android:gravity="center"
                                 android:padding="12dp">
@@ -445,7 +465,7 @@
                                     android:text="Not specified"
                                     android:textSize="14sp"
                                     android:textStyle="bold"
-                                    android:textColor="#000000"
+                    android:textColor="#000000"
                                     android:maxLines="2"
                                     android:ellipsize="end"
                                     android:gravity="center" />
@@ -652,22 +672,22 @@
                     </com.google.android.material.card.MaterialCardView>
 
                     <!-- Description Section -->
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
                         android:text="Description"
                         android:textSize="16sp"
                         android:textStyle="bold"
-                        android:textColor="#000000"
+                    android:textColor="#000000"
                         android:layout_marginBottom="8dp" />
 
-                    <TextView
-                        android:id="@+id/event_description_text"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="No description available."
-                        android:textSize="14sp"
-                        android:textColor="#333333"
+                <TextView
+                    android:id="@+id/event_description_text"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="No description available."
+                    android:textSize="14sp"
+                    android:textColor="#333333"
                         android:lineSpacingExtra="4dp"
                         android:layout_marginBottom="24dp" />
 

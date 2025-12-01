@@ -22,7 +22,9 @@ import androidx.core.content.ContextCompat;
 import com.bumptech.glide.Glide;
 import com.example.eventmaster.R;
 import com.example.eventmaster.data.api.EventRepository;
+import com.example.eventmaster.data.api.PosterRepository;
 import com.example.eventmaster.data.firestore.EventRepositoryFs;
+import com.example.eventmaster.data.firestore.PosterRepositoryFs;
 import com.example.eventmaster.data.firestore.ProfileRepositoryFs;
 import com.example.eventmaster.model.Event;
 import com.example.eventmaster.model.Profile;
@@ -30,6 +32,11 @@ import com.example.eventmaster.model.Profile;
 import com.example.eventmaster.ui.admin.activities.AdminNotificationLogActivity;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.firebase.firestore.FieldValue;
+
+import java.util.HashMap;
+import java.util.Map;
+import android.widget.ImageButton;
 
 import java.text.SimpleDateFormat;
 import java.util.Locale;
@@ -45,11 +52,13 @@ public class AdminEventDetailsFragment extends Fragment {
 
     private EventRepository eventRepository;
     private ProfileRepositoryFs profileRepository;
+    private PosterRepository posterRepository;
     private String eventId;
     private Event currentEvent;
 
     // UI Elements
     private ImageView posterImage;
+    private ImageButton btnDeletePoster;
     private ImageView backButton;
     private TextView eventNameText;
     private TextView organizerText;
@@ -89,6 +98,7 @@ public class AdminEventDetailsFragment extends Fragment {
 
         eventRepository = new EventRepositoryFs();
         profileRepository = new ProfileRepositoryFs();
+        posterRepository = new PosterRepositoryFs();
         Log.d(TAG, "onCreate: eventId=" + eventId);
     }
 
@@ -100,6 +110,7 @@ public class AdminEventDetailsFragment extends Fragment {
 
         // Initialize UI
         posterImage = view.findViewById(R.id.event_poster_image);
+        btnDeletePoster = view.findViewById(R.id.btn_delete_poster);
         backButton = view.findViewById(R.id.back_button);
         eventNameText = view.findViewById(R.id.event_name_text);
         organizerText = view.findViewById(R.id.event_organizer_text);
@@ -127,6 +138,7 @@ public class AdminEventDetailsFragment extends Fragment {
 
         backButton.setOnClickListener(v -> requireActivity().onBackPressed());
         btnViewNotificationLogs.setOnClickListener(v -> openNotificationLogs());
+        btnDeletePoster.setOnClickListener(v -> showDeletePosterConfirmation());
 
         // Load event details
         loadEventDetails();
@@ -221,6 +233,15 @@ public class AdminEventDetailsFragment extends Fragment {
                     .load(event.getPosterUrl())
                     .placeholder(R.drawable.ic_avatar_placeholder)
                     .into(posterImage);
+            // Show delete button when image exists
+            if (btnDeletePoster != null) {
+                btnDeletePoster.setVisibility(View.VISIBLE);
+            }
+        } else {
+            // Hide delete button when no image
+            if (btnDeletePoster != null) {
+                btnDeletePoster.setVisibility(View.GONE);
+            }
         }
 
         // Additional Details
@@ -370,6 +391,69 @@ public class AdminEventDetailsFragment extends Fragment {
         });
         
         dialog.show();
+    }
+
+    /**
+     * Shows a confirmation dialog before deleting the poster image.
+     */
+    private void showDeletePosterConfirmation() {
+        if (eventId == null || currentEvent == null) {
+            Toast.makeText(requireContext(), "Error: Cannot delete poster", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Delete Poster")
+                .setMessage("Are you sure you want to delete this event's poster image? This action cannot be undone.")
+                .setPositiveButton("Delete", (dialog, which) -> deletePoster())
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    /**
+     * Deletes the poster image from Firebase Storage and updates the event document.
+     */
+    private void deletePoster() {
+        if (eventId == null) {
+            Toast.makeText(requireContext(), "Error: Invalid event ID", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Show loading state
+        btnDeletePoster.setEnabled(false);
+        Toast.makeText(requireContext(), "Deleting poster...", Toast.LENGTH_SHORT).show();
+
+        // Delete from Firebase Storage
+        posterRepository.delete(eventId)
+                .addOnSuccessListener(aVoid -> {
+                    Log.d(TAG, "Poster deleted from Storage successfully");
+                    // Update Firestore to remove posterUrl
+                    Map<String, Object> updates = new HashMap<>();
+                    updates.put("posterUrl", FieldValue.delete());
+                    
+                    eventRepository.update(eventId, updates)
+                            .addOnSuccessListener(v -> {
+                                Log.d(TAG, "Event updated: posterUrl removed");
+                                // Update UI
+                                posterImage.setImageResource(R.drawable.ic_avatar_placeholder);
+                                btnDeletePoster.setVisibility(View.GONE);
+                                if (currentEvent != null) {
+                                    currentEvent.setPosterUrl(null);
+                                }
+                                Toast.makeText(requireContext(), "Poster deleted successfully", Toast.LENGTH_SHORT).show();
+                                btnDeletePoster.setEnabled(true);
+                            })
+                            .addOnFailureListener(e -> {
+                                Log.e(TAG, "Failed to update event after deleting poster", e);
+                                Toast.makeText(requireContext(), "Poster deleted but failed to update event", Toast.LENGTH_SHORT).show();
+                                btnDeletePoster.setEnabled(true);
+                            });
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Failed to delete poster from Storage", e);
+                    Toast.makeText(requireContext(), "Failed to delete poster: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    btnDeletePoster.setEnabled(true);
+                });
     }
 }
 
