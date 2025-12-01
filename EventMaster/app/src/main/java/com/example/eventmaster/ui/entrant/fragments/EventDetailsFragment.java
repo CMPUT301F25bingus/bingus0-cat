@@ -1005,6 +1005,10 @@ public class EventDetailsFragment extends Fragment {
                         Toast.LENGTH_SHORT).show();
 
                 isInWaitingList = true;
+                
+                // Send notification when user joins waiting list with geolocation
+                sendJoinedWaitingListNotification(eventId, userId);
+                
                 loadEventDetails(); // refresh count & button state
             }
 
@@ -1021,16 +1025,11 @@ public class EventDetailsFragment extends Fragment {
     // CODE CHECK DEV END ^
 
     /**
-     * Handles the standard process of joining the waiting list when no
-     * geolocation requirement exists. Validates registration dates, event
-     * data, and user identity before creating a waiting list entry.
+     * Handles the process of joining the waiting list. Validates registration dates,
+     * event data, and user identity before showing the guidelines dialog.
+     * The guidelines dialog will handle geolocation requirements if needed.
      */
     private void handleJoinWaitingList() {
-        // --- GEOLOCATION REQUIREMENT CHECK ---
-        if (currentEvent != null && currentEvent.isGeolocationRequired()) {
-            requestLocationThenJoin();
-            return; // stop normal joining path
-        }
         // Validate eventId and userId first
         if (eventId == null || eventId.isEmpty()) {
             Toast.makeText(requireContext(), "Error: Event ID is missing", Toast.LENGTH_LONG).show();
